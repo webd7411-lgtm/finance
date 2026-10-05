@@ -269,6 +269,80 @@
                 </div>
             </div>
 
+            <!-- Daily Party & Khata Transactions Table -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-1 border-bottom">
+                    <h6 class="fw-bold text-dark m-0">
+                        <i class="bi bi-people-fill text-danger me-1"></i> Party & Supplier Transactions (Inflows & Outflows)
+                    </h6>
+                    <div class="small">
+                        <span class="text-success me-2">In: <strong class="font-monospace">+Rs. {{ number_format($totalPartyInflow, 2) }}</strong></span>
+                        <span class="text-danger me-2">Out: <strong class="font-monospace">-Rs. {{ number_format($totalPartyOutflow, 2) }}</strong></span>
+                        <span class="text-dark">Net: <strong class="font-monospace">{{ $netPartyMovement >= 0 ? '+' : '-' }}Rs. {{ number_format(abs($netPartyMovement), 2) }}</strong></span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Party / Payee</th>
+                                <th>Type</th>
+                                <th>Shift / Timing</th>
+                                <th>Channel / Mode</th>
+                                <th>Description / Memo</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($partyTransactions as $pt)
+                                <tr>
+                                    <td class="fw-bold text-dark">
+                                        {{ $pt->party_name }}
+                                        <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.68rem;">{{ ucfirst($pt->party_type) }}</span>
+                                        @if($pt->party_phone)
+                                            <small class="text-muted d-block font-monospace" style="font-size: 0.72rem;">{{ $pt->party_phone }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($pt->type === 'payment_in')
+                                            <span class="badge bg-success-subtle text-success border border-success px-2 py-0.5 small">Payment In</span>
+                                        @else
+                                            <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-0.5 small">Payment Out</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($pt->shift_name)
+                                            <span class="badge bg-light text-dark border px-2 py-0.5 small">{{ $pt->shift_name }}</span>
+                                        @else
+                                            <span class="badge bg-light text-secondary border px-2 py-0.5 small">Direct (Non-Shift)</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $pt->channel }}</td>
+                                    <td class="small text-muted">{{ $pt->details }}</td>
+                                    <td class="text-end font-monospace fw-bold {{ $pt->type === 'payment_in' ? 'text-success' : 'text-danger' }}">
+                                        {{ $pt->type === 'payment_in' ? '+' : '-' }}Rs. {{ number_format($pt->amount, 2) }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-2 text-muted small">No party payments recorded for this date.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        @if($partyTransactions->isNotEmpty())
+                            <tfoot class="table-light">
+                                <tr class="fw-bold">
+                                    <td colspan="5">Total Net Party Cash Flow:</td>
+                                    <td class="text-end font-monospace {{ $netPartyMovement >= 0 ? 'text-success' : 'text-danger' }}">
+                                        {{ $netPartyMovement >= 0 ? '+' : '-' }}Rs. {{ number_format(abs($netPartyMovement), 2) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+
             <!-- Direct Transactions (Payment In & Payment Out) -->
             <div class="mb-4">
                 <h6 class="fw-bold text-dark mb-3 pb-1 border-bottom">

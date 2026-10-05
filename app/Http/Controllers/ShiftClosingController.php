@@ -47,6 +47,10 @@ class ShiftClosingController extends Controller
     {
         $parties = Party::orderBy('name')->get();
         $accounts = Account::orderBy('type')->orderBy('name')->get();
+        $cashiers = User::where('status', 'active')->orderBy('name')->get();
+        if ($cashiers->isEmpty()) {
+            $cashiers = User::orderBy('name')->get();
+        }
 
         $lastShift = ShiftClosing::whereNotNull('invoice_end')
             ->where('invoice_end', '>', 0)
@@ -55,7 +59,7 @@ class ShiftClosingController extends Controller
 
         $suggestedInvoiceStart = $lastShift ? ((int) $lastShift->invoice_end + 1) : null;
 
-        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart'));
+        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'cashiers'));
     }
 
     public function store(Request $request)
@@ -91,11 +95,13 @@ class ShiftClosingController extends Controller
         $validated = $request->validate([
             'date' => ['required', 'date'],
             'shift_type' => ['required', Rule::in(['morning', 'evening'])],
+            'cashier_id' => ['nullable', 'integer', 'exists:users,id'],
             'invoice_start' => ['nullable', 'integer', 'min:1'],
             'invoice_end' => ['nullable', 'integer', 'gte:invoice_start'],
             'total_sale' => ['required', 'numeric', 'min:0'],
             'returns_amount' => ['nullable', 'numeric', 'min:0'],
-            'return_invoice_number' => ['nullable', 'string', 'max:100'],
+            'return_invoice_start' => ['nullable', 'integer', 'min:1'],
+            'return_invoice_end' => ['nullable', 'integer', 'min:1'],
             'expenses_amount' => ['nullable', 'numeric', 'min:0'],
             'expenses_details' => ['nullable', 'string', 'max:2000'],
             'party_payments' => ['nullable', 'array', 'max:20'],
@@ -121,6 +127,8 @@ class ShiftClosingController extends Controller
             'invoice_end.gte' => 'Invoice End number must be greater than or equal to Invoice Start number.',
         ]);
 
+        $cashierId = (int) ($validated['cashier_id'] ?? auth()->id());
+
         // Default zero values
         $n5000 = $validated['note_5000'] ?? 0;
         $n1000 = $validated['note_1000'] ?? 0;
@@ -133,6 +141,27 @@ class ShiftClosingController extends Controller
         $invoiceCount = isset($validated['invoice_start'], $validated['invoice_end'])
             ? $validated['invoice_end'] - $validated['invoice_start'] + 1
             : 0;
+
+        // Return Invoice Calculation
+        $retStart = $request->filled('return_invoice_start') ? (int) $request->input('return_invoice_start') : null;
+        $retEnd = $request->filled('return_invoice_end') ? (int) $request->input('return_invoice_end') : null;
+        if ($retStart !== null && $retEnd === null) {
+            $retEnd = $retStart;
+        } elseif ($retStart === null && $retEnd !== null) {
+            $retStart = $retEnd;
+        }
+
+        $totalReturnInvoices = 0;
+        $returnInvoiceNumber = null;
+        if ($retStart !== null && $retEnd !== null) {
+            if ($retEnd >= $retStart) {
+                $totalReturnInvoices = $retEnd - $retStart + 1;
+                $returnInvoiceNumber = $retStart === $retEnd ? "#{$retStart}" : "#{$retStart} - #{$retEnd}";
+            } else {
+                $totalReturnInvoices = 1;
+                $returnInvoiceNumber = "#{$retStart}";
+            }
+        }
 
         // Note Calculation
         $countedCash = ($n5000 * 5000) + ($n1000 * 1000) + ($n500 * 500) +
@@ -164,7 +193,12 @@ class ShiftClosingController extends Controller
 
         $closing = DB::transaction(function () use (
             $validated,
+            $cashierId,
             $invoiceCount,
+            $retStart,
+            $retEnd,
+            $totalReturnInvoices,
+            $returnInvoiceNumber,
             $totalSale,
             $returns,
             $expenses,
@@ -189,13 +223,16 @@ class ShiftClosingController extends Controller
             $closing = ShiftClosing::create([
                 'date' => $validated['date'],
                 'shift_type' => $validated['shift_type'],
-                'cashier_id' => auth()->id(),
+                'cashier_id' => $cashierId,
                 'total_invoices' => $invoiceCount,
                 'invoice_start' => $validated['invoice_start'] ?? null,
                 'invoice_end' => $validated['invoice_end'] ?? null,
                 'total_sale' => $totalSale,
                 'returns_amount' => $returns,
-                'return_invoice_number' => $validated['return_invoice_number'] ?? null,
+                'return_invoice_number' => $returnInvoiceNumber,
+                'return_invoice_start' => $retStart,
+                'return_invoice_end' => $retEnd,
+                'total_return_invoices' => $totalReturnInvoices,
                 'expenses_amount' => $expenses,
                 'expenses_details' => $validated['expenses_details'] ?? null,
                 'note_5000' => $n5000,

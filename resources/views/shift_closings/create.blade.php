@@ -95,59 +95,83 @@
     <div class="card-custom p-3 mb-3 bg-white shadow-sm border">
         <div class="d-flex align-items-center justify-content-between pb-2 mb-3 border-bottom flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-primary text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">1</span>
-                <h6 class="fw-bold text-dark m-0">Shift Details & Invoice Serial Range</h6>
+                <span class="badge bg-primary text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 0.8rem;">1</span>
+                <div>
+                    <h6 class="fw-bold text-dark m-0">Shift Details & Invoice Serial Range</h6>
+                    <small class="text-muted" style="font-size: 0.72rem;">Session configuration, assigned cashier and invoice serial sequence</small>
+                </div>
             </div>
-            <div class="text-muted small d-none d-sm-block">
-                <i class="bi bi-shield-check text-success me-1"></i> Authenticated Session &bull; Auto-calculating invoice count
+            <div class="text-muted small d-none d-md-flex align-items-center gap-2">
+                <span class="badge bg-light text-secondary border px-2 py-1">
+                    <i class="bi bi-person-circle text-primary me-1"></i> Logged in: {{ auth()->user()->name }}
+                </span>
             </div>
         </div>
 
-        <div class="row g-2 g-md-3 align-items-end">
-            <div class="col-12 col-sm-6 col-lg-2">
-                <label class="form-label small fw-semibold text-secondary">Closing Date <span class="text-danger">*</span></label>
+        <div class="row g-2 g-md-3">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">
+                    <i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span>
+                </label>
                 <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
-                    <input type="date" name="date" class="form-control form-control-sm" value="{{ old('date', date('Y-m-d')) }}" required>
+                    <input type="date" name="date" class="form-control form-control-sm fw-semibold" value="{{ old('date', date('Y-m-d')) }}" required style="height: 34px;">
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-lg-2">
-                <label class="form-label small fw-semibold text-secondary">Shift Cycle <span class="text-danger">*</span></label>
-                <select name="shift_type" class="form-select form-select-sm fw-semibold" required>
+
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">
+                    <i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span>
+                </label>
+                <select name="shift_type" class="form-select form-select-sm fw-semibold" required style="height: 34px;">
                     <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
                     <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
                 </select>
             </div>
-            <div class="col-6 col-sm-4 col-lg-2">
-                <label class="form-label small fw-semibold text-secondary">Invoice Start No.</label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-light text-muted">#</span>
-                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()">
-                </div>
-                @if(!empty($suggestedInvoiceStart))
-                    <small class="text-success d-block" style="font-size: 0.68rem;">
-                        <i class="bi bi-magic me-1"></i>Auto (Prev #{{ $suggestedInvoiceStart - 1 }})
-                    </small>
-                @endif
+
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">
+                    <i class="bi bi-person-badge text-primary me-1"></i>Shift Cashier <span class="text-danger">*</span>
+                </label>
+                <select name="cashier_id" class="form-select form-select-sm fw-semibold" required style="height: 34px;">
+                    @foreach($cashiers as $cUser)
+                        <option value="{{ $cUser->id }}" {{ old('cashier_id', auth()->id()) == $cUser->id ? 'selected' : '' }}>
+                            {{ $cUser->name }} ({{ ucfirst($cUser->role) }})
+                        </option>
+                    @endforeach
+                </select>
             </div>
-            <div class="col-6 col-sm-4 col-lg-2">
-                <label class="form-label small fw-semibold text-secondary">Invoice End No.</label>
+
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <label class="form-label small fw-semibold text-secondary mb-1 d-flex justify-content-between align-items-center w-100">
+                    <span><i class="bi bi-hash text-primary me-1"></i>Start Invoice</span>
+                    @if(!empty($suggestedInvoiceStart))
+                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next serial after #{{ $suggestedInvoiceStart - 1 }}">Auto #{{ $suggestedInvoiceStart }}</span>
+                    @endif
+                </label>
                 <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-light text-muted">#</span>
-                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()">
+                    <span class="input-group-text bg-light text-muted fw-bold">#</span>
+                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm fw-bold font-monospace" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()" style="height: 34px;">
                 </div>
-                <small class="text-muted d-block" style="font-size: 0.68rem;">Enter ending bill #</small>
             </div>
-            <div class="col-6 col-sm-4 col-lg-2">
-                <label class="form-label small fw-semibold text-secondary">Total Invoices</label>
+
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">
+                    <i class="bi bi-hash text-primary me-1"></i>End Invoice
+                </label>
                 <div class="input-group input-group-sm">
-                    <input type="number" id="invoice_count_display" class="form-control form-control-sm bg-light fw-bold text-center text-primary" value="0" readonly>
+                    <span class="input-group-text bg-light text-muted fw-bold">#</span>
+                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm fw-bold font-monospace" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()" style="height: 34px;">
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
+                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">
+                    <i class="bi bi-receipt text-primary me-1"></i>Total Invoices
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="number" id="invoice_count_display" class="form-control form-control-sm bg-light fw-bold text-center text-primary font-monospace" value="0" readonly style="height: 34px;">
                     <span class="input-group-text bg-light small text-muted">Bills</span>
                 </div>
-            </div>
-            <div class="col-6 col-sm-6 col-lg-2">
-                <label class="form-label small fw-semibold text-secondary">Logged Cashier</label>
-                <input type="text" class="form-control form-control-sm bg-light text-muted" value="{{ auth()->user()->name }}" readonly>
             </div>
         </div>
     </div>
@@ -166,8 +190,9 @@
                         </h6>
                     </div>
 
+                    <!-- Gross Sale -->
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">
+                        <label class="form-label small fw-semibold text-secondary mb-1">
                             Total Shift Gross Sale (Rs.) <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
@@ -177,23 +202,65 @@
                         <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
                     </div>
 
-                    <div class="p-2 rounded bg-light border">
+                    <!-- Sale Returns Card (Optional) -->
+                    <div class="p-3 mb-2 rounded bg-light border border-danger-subtle">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-danger">
+                                <i class="bi bi-arrow-return-left me-1"></i> (-) Sale Returns (Optional)
+                            </span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger small py-0 px-2" style="font-size: 0.68rem;">Deduction</span>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Return Amount (Rs.)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white text-muted">Rs.</span>
+                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm text-danger fw-bold" id="returns_amount" name="returns_amount" value="{{ old('returns_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-6 col-md-3">
+                                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Return Start #</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white text-muted fw-bold">#</span>
+                                    <input type="number" min="1" id="return_invoice_start" name="return_invoice_start" class="form-control form-control-sm font-monospace" placeholder="e.g. 15" value="{{ old('return_invoice_start', '') }}" oninput="calculateReturnInvoiceCount()">
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-6 col-md-3">
+                                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Return End #</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white text-muted fw-bold">#</span>
+                                    <input type="number" min="1" id="return_invoice_end" name="return_invoice_end" class="form-control form-control-sm font-monospace" placeholder="e.g. 18" value="{{ old('return_invoice_end', '') }}" oninput="calculateReturnInvoiceCount()">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Total Return Bills</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" id="return_invoice_count_display" class="form-control form-control-sm bg-white fw-bold text-center text-danger font-monospace" value="0" readonly>
+                                    <span class="input-group-text bg-white small text-muted">Bills</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shift Expenses Card -->
+                    <div class="p-3 rounded bg-light border">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-danger">
+                                <i class="bi bi-wallet2 me-1"></i> (-) Shift Direct Expenses (Optional)
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary border small py-0 px-2" style="font-size: 0.68rem;">Expense</span>
+                        </div>
                         <div class="row g-2">
                             <div class="col-12 col-sm-5">
-                                <label class="form-label small fw-semibold text-danger">(-) Sale Returns (Rs.)</label>
-                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="returns_amount" name="returns_amount" value="{{ old('returns_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
+                                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Expense Amount (Rs.)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white text-muted">Rs.</span>
+                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm text-danger fw-bold" id="expenses_amount" name="expenses_amount" value="{{ old('expenses_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
+                                </div>
                             </div>
                             <div class="col-12 col-sm-7">
-                                <label class="form-label small fw-semibold text-secondary">Return Invoice Number</label>
-                                <input type="text" class="form-control form-control-sm" name="return_invoice_number" value="{{ old('return_invoice_number', '') }}" maxlength="100" placeholder="e.g. RET-1250">
-                            </div>
-                            <div class="col-12 col-sm-5">
-                                <label class="form-label small fw-semibold text-danger">(-) Shift Expenses (Rs.)</label>
-                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="expenses_amount" name="expenses_amount" value="{{ old('expenses_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
-                            </div>
-                            <div class="col-12 col-sm-7">
-                                <label class="form-label small fw-semibold text-secondary">Expense Reason / Details</label>
-                                <input type="text" class="form-control form-control-sm" name="expenses_details" value="{{ old('expenses_details', '') }}" maxlength="2000" placeholder="e.g. Shop supplies, fuel, tea">
+                                <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Expense Reason / Details</label>
+                                <input type="text" class="form-control form-control-sm" name="expenses_details" value="{{ old('expenses_details', '') }}" maxlength="2000" placeholder="e.g. Shop supplies, fuel, tea, cleaning">
                             </div>
                         </div>
                     </div>
@@ -492,21 +559,57 @@
 @push('scripts')
 <script>
 function calculateInvoiceCount() {
-    const start = parseInt(document.getElementById('invoice_start').value) || 0;
-    const end = parseInt(document.getElementById('invoice_end').value) || 0;
+    const startVal = document.getElementById('invoice_start').value.trim();
+    const endVal = document.getElementById('invoice_end').value.trim();
+    const start = parseInt(startVal) || 0;
+    const end = parseInt(endVal) || 0;
     const display = document.getElementById('invoice_count_display');
-    if (start > 0 && end >= start) {
-        display.value = end - start + 1;
+    if (startVal !== '' && endVal !== '') {
+        if (end >= start) {
+            display.value = end - start + 1;
+            display.classList.remove('text-danger');
+            display.classList.add('text-primary');
+        } else {
+            display.value = 0;
+            display.classList.remove('text-primary');
+            display.classList.add('text-danger');
+        }
+    } else if (startVal !== '' || endVal !== '') {
+        display.value = 1;
         display.classList.remove('text-danger');
         display.classList.add('text-primary');
-    } else if (start > 0 && end > 0 && end < start) {
-        display.value = 0;
-        display.classList.remove('text-primary');
-        display.classList.add('text-danger');
     } else {
         display.value = 0;
         display.classList.remove('text-danger');
         display.classList.add('text-primary');
+    }
+}
+
+function calculateReturnInvoiceCount() {
+    const startVal = document.getElementById('return_invoice_start').value.trim();
+    const endVal = document.getElementById('return_invoice_end').value.trim();
+    const start = parseInt(startVal) || 0;
+    const end = parseInt(endVal) || 0;
+    const display = document.getElementById('return_invoice_count_display');
+
+    if (startVal !== '' && endVal !== '') {
+        if (end >= start) {
+            display.value = end - start + 1;
+            display.classList.remove('text-secondary');
+            display.classList.add('text-danger');
+        } else {
+            display.value = 0;
+            display.classList.remove('text-danger');
+            display.classList.add('text-secondary');
+        }
+    } else if (startVal !== '' || endVal !== '') {
+        display.value = 1;
+        display.classList.remove('text-secondary');
+        display.classList.add('text-danger');
+    } else {
+        display.value = 0;
+        display.classList.remove('text-danger');
+        display.classList.add('text-secondary');
     }
 }
 
@@ -792,6 +895,7 @@ noteInputs.forEach(function(input, index) {
 });
 
 calculateInvoiceCount();
+calculateReturnInvoiceCount();
 calculateClosing();
 </script>
 @endpush

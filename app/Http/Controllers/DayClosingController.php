@@ -111,6 +111,64 @@ class DayClosingController extends Controller
         $totalDigitalIn = max($shiftDigitalIn, $digitalTransactionsIn);
         $totalCombinedInflow = $totalCashIn + $totalDigitalIn;
 
+        // ----------------------------------------------------
+        // PARTY & KHATA TRANSACTIONS (Shift Payments + Direct Vouchers)
+        // ----------------------------------------------------
+        $partyTransactions = collect();
+
+        // 1. Shift Party Payments (Morning & Evening)
+        $shiftPayments = ShiftClosingPartyPayment::whereHas('shiftClosing', fn ($query) => $query->whereDate('date', $selectedDate))
+            ->with(['party', 'shiftClosing'])
+            ->get();
+
+        foreach ($shiftPayments as $sp) {
+            $shiftLabel = $sp->shiftClosing && $sp->shiftClosing->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
+            $partyTransactions->push((object)[
+                'id' => 'shift-' . $sp->id,
+                'party_name' => $sp->party->name ?? 'Unknown Party',
+                'party_type' => $sp->party->type ?? 'Party',
+                'party_phone' => $sp->party->phone ?? null,
+                'type' => 'payment_out',
+                'shift_name' => $shiftLabel,
+                'channel' => 'Cash Drawer',
+                'details' => $sp->details ?? 'Shift Cash Payout',
+                'inflow' => 0.00,
+                'outflow' => (float) $sp->amount,
+                'amount' => (float) $sp->amount,
+                'created_at' => $sp->created_at,
+            ]);
+        }
+
+        // 2. Direct Party Transactions (Non-Shift Vouchers)
+        $directPartyTxns = Transaction::whereDate('date', $selectedDate)
+            ->whereNotNull('party_id')
+            ->whereNull('shift_closing_id')
+            ->with(['party', 'account'])
+            ->get();
+
+        foreach ($directPartyTxns as $tx) {
+            $isIn = $tx->type === 'payment_in';
+            $partyTransactions->push((object)[
+                'id' => 'tx-' . $tx->id,
+                'party_name' => $tx->party->name ?? 'Unknown Party',
+                'party_type' => $tx->party->type ?? 'Party',
+                'party_phone' => $tx->party->phone ?? null,
+                'type' => $tx->type,
+                'shift_name' => null, // Non-shift transaction -> displayed without shift name!
+                'channel' => $tx->account->name ?? 'Direct Voucher',
+                'details' => $tx->description ?? $tx->bill_no ?? 'Direct Transaction',
+                'inflow' => $isIn ? (float) $tx->amount : 0.00,
+                'outflow' => !$isIn ? (float) $tx->amount : 0.00,
+                'amount' => (float) $tx->amount,
+                'created_at' => $tx->created_at,
+            ]);
+        }
+
+        $partyTransactions = $partyTransactions->sortBy('created_at')->values();
+        $totalPartyInflow = (float) $partyTransactions->sum('inflow');
+        $totalPartyOutflow = (float) $partyTransactions->sum('outflow');
+        $netPartyMovement = $totalPartyInflow - $totalPartyOutflow;
+
         // Check if day closing is already finalized
         $existingDayClosing = DayClosing::whereDate('date', $selectedDate)->first();
 
@@ -138,6 +196,10 @@ class DayClosingController extends Controller
             'accountSummaries',
             'totalDigitalIn',
             'totalCombinedInflow',
+            'partyTransactions',
+            'totalPartyInflow',
+            'totalPartyOutflow',
+            'netPartyMovement',
             'existingDayClosing',
             'history'
         ));
@@ -216,6 +278,60 @@ class DayClosingController extends Controller
         $totalDigitalIn = max($shiftDigitalIn, $digitalTransactionsIn);
         $totalCombinedInflow = (float)$dayClosing->total_cash_in + $totalDigitalIn;
 
+        // Party Transactions for this specific day
+        $partyTransactions = collect();
+
+        $shiftPayments = ShiftClosingPartyPayment::whereHas('shiftClosing', fn ($query) => $query->whereDate('date', $date))
+            ->with(['party', 'shiftClosing'])
+            ->get();
+
+        foreach ($shiftPayments as $sp) {
+            $shiftLabel = $sp->shiftClosing && $sp->shiftClosing->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
+            $partyTransactions->push((object)[
+                'id' => 'shift-' . $sp->id,
+                'party_name' => $sp->party->name ?? 'Unknown Party',
+                'party_type' => $sp->party->type ?? 'Party',
+                'party_phone' => $sp->party->phone ?? null,
+                'type' => 'payment_out',
+                'shift_name' => $shiftLabel,
+                'channel' => 'Cash Drawer',
+                'details' => $sp->details ?? 'Shift Cash Payout',
+                'inflow' => 0.00,
+                'outflow' => (float) $sp->amount,
+                'amount' => (float) $sp->amount,
+                'created_at' => $sp->created_at,
+            ]);
+        }
+
+        $directPartyTxns = Transaction::whereDate('date', $date)
+            ->whereNotNull('party_id')
+            ->whereNull('shift_closing_id')
+            ->with(['party', 'account'])
+            ->get();
+
+        foreach ($directPartyTxns as $tx) {
+            $isIn = $tx->type === 'payment_in';
+            $partyTransactions->push((object)[
+                'id' => 'tx-' . $tx->id,
+                'party_name' => $tx->party->name ?? 'Unknown Party',
+                'party_type' => $tx->party->type ?? 'Party',
+                'party_phone' => $tx->party->phone ?? null,
+                'type' => $tx->type,
+                'shift_name' => null, // Non-shift transaction -> displayed without shift name!
+                'channel' => $tx->account->name ?? 'Direct Voucher',
+                'details' => $tx->description ?? $tx->bill_no ?? 'Direct Transaction',
+                'inflow' => $isIn ? (float) $tx->amount : 0.00,
+                'outflow' => !$isIn ? (float) $tx->amount : 0.00,
+                'amount' => (float) $tx->amount,
+                'created_at' => $tx->created_at,
+            ]);
+        }
+
+        $partyTransactions = $partyTransactions->sortBy('created_at')->values();
+        $totalPartyInflow = (float) $partyTransactions->sum('inflow');
+        $totalPartyOutflow = (float) $partyTransactions->sum('outflow');
+        $netPartyMovement = $totalPartyInflow - $totalPartyOutflow;
+
         return view('day_closings.show', compact(
             'dayClosing',
             'morningShift',
@@ -223,7 +339,11 @@ class DayClosingController extends Controller
             'transactions',
             'accountSummaries',
             'totalDigitalIn',
-            'totalCombinedInflow'
+            'totalCombinedInflow',
+            'partyTransactions',
+            'totalPartyInflow',
+            'totalPartyOutflow',
+            'netPartyMovement'
         ));
     }
 

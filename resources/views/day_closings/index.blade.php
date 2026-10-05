@@ -245,6 +245,119 @@
     </div>
 </div>
 
+<!-- ==================== NEW SECTION: DAILY PARTY & KHATA TRANSACTIONS ==================== -->
+<div class="card-custom p-3 p-md-4 mb-3 bg-white border shadow-sm">
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-danger text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.85rem;">
+                <i class="bi bi-people-fill"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold text-dark m-0">Daily Party & Khata Transactions (Inflows & Outflows)</h6>
+                <small class="text-muted" style="font-size: 0.76rem;">All payments made to or received from suppliers, customers, and staff during shifts and direct vouchers</small>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 small">
+                <i class="bi bi-arrow-down-left me-1"></i> Total Received In: <strong class="font-monospace ms-1">+Rs. {{ number_format($totalPartyInflow, 2) }}</strong>
+            </span>
+            <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-1.5 small">
+                <i class="bi bi-arrow-up-right me-1"></i> Total Paid Out: <strong class="font-monospace ms-1">-Rs. {{ number_format($totalPartyOutflow, 2) }}</strong>
+            </span>
+            <span class="badge {{ $netPartyMovement >= 0 ? 'bg-primary-subtle text-primary border border-primary' : 'bg-warning-subtle text-warning-emphasis border border-warning' }} px-3 py-1.5 small">
+                <i class="bi bi-cash-stack me-1"></i> Net Party Flow: <strong class="font-monospace ms-1">{{ $netPartyMovement >= 0 ? '+' : '-' }}Rs. {{ number_format(abs($netPartyMovement), 2) }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Party Transactions Table -->
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 22%;">Party / Payee</th>
+                    <th style="width: 14%;">Type</th>
+                    <th style="width: 16%;">Shift / Timing</th>
+                    <th style="width: 14%;">Channel / Mode</th>
+                    <th style="width: 20%;">Detail / Reference</th>
+                    <th style="width: 14%;" class="text-end">Amount (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($partyTransactions as $pt)
+                    <tr>
+                        <td class="fw-bold text-dark">
+                            <i class="bi bi-person-circle text-secondary me-1"></i>
+                            {{ $pt->party_name }}
+                            <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.68rem;">{{ ucfirst($pt->party_type) }}</span>
+                            @if($pt->party_phone)
+                                <small class="text-muted d-block font-monospace" style="font-size: 0.72rem;">{{ $pt->party_phone }}</small>
+                            @endif
+                        </td>
+                        <td>
+                            @if($pt->type === 'payment_in')
+                                <span class="badge bg-success-subtle text-success border border-success px-2 py-0.5 small">
+                                    <i class="bi bi-arrow-down-left me-1"></i>Payment In
+                                </span>
+                            @else
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-0.5 small">
+                                    <i class="bi bi-arrow-up-right me-1"></i>Payment Out
+                                </span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($pt->shift_name)
+                                @if(str_contains(strtolower($pt->shift_name), 'morning'))
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-0.5 small">
+                                        <i class="bi bi-sun me-1"></i>Morning Shift
+                                    </span>
+                                @else
+                                    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-0.5 small">
+                                        <i class="bi bi-moon-stars me-1"></i>Evening Shift
+                                    </span>
+                                @endif
+                            @else
+                                <span class="badge bg-light text-secondary border px-2 py-0.5 small">
+                                    <i class="bi bi-dash me-1"></i>Direct (Non-Shift)
+                                </span>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="text-dark small fw-semibold">
+                                <i class="bi bi-wallet2 text-muted me-1"></i>{{ $pt->channel }}
+                            </span>
+                        </td>
+                        <td class="small text-muted">
+                            {{ $pt->details }}
+                        </td>
+                        <td class="text-end font-monospace fw-bold fs-6 {{ $pt->type === 'payment_in' ? 'text-success' : 'text-danger' }}">
+                            {{ $pt->type === 'payment_in' ? '+' : '-' }}Rs. {{ number_format($pt->amount, 2) }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted small">
+                            <i class="bi bi-person-x fs-3 d-block text-secondary opacity-50 mb-1"></i>
+                            No party or supplier payments recorded for this date.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+            @if($partyTransactions->isNotEmpty())
+                <tfoot class="table-light border-top-2">
+                    <tr class="fw-bold">
+                        <td colspan="4" class="text-dark">Total Party Transactions ({{ $partyTransactions->count() }}):</td>
+                        <td class="text-end small text-muted">In: +Rs. {{ number_format($totalPartyInflow, 2) }} &bull; Out: -Rs. {{ number_format($totalPartyOutflow, 2) }}</td>
+                        <td class="text-end font-monospace fs-6 {{ $netPartyMovement >= 0 ? 'text-success' : 'text-danger' }}">
+                            {{ $netPartyMovement >= 0 ? '+' : '-' }}Rs. {{ number_format(abs($netPartyMovement), 2) }}
+                        </td>
+                    </tr>
+                </tfoot>
+            @endif
+        </table>
+    </div>
+</div>
+
 <!-- ==================== SHIFT MERGING CARDS (MORNING & EVENING) ==================== -->
 <div class="row g-2 g-md-3 mb-3">
     <!-- Morning Shift -->

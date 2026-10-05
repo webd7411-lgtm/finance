@@ -144,7 +144,9 @@
                                 <td class="text-muted">(-) Sales Returns:</td>
                                 <td class="text-end font-monospace text-danger">
                                     - Rs. {{ number_format($shiftClosing->returns_amount, 2) }}
-                                    @if($shiftClosing->return_invoice_number)
+                                    @if($shiftClosing->return_invoice_start && $shiftClosing->return_invoice_end)
+                                        <small class="d-block text-muted">Invoices #{{ $shiftClosing->return_invoice_start }} - #{{ $shiftClosing->return_invoice_end }} ({{ $shiftClosing->total_return_invoices }} bills)</small>
+                                    @elseif($shiftClosing->return_invoice_number)
                                         <small class="d-block text-muted">Invoice: {{ $shiftClosing->return_invoice_number }}</small>
                                     @endif
                                 </td>
