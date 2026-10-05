@@ -47,7 +47,15 @@ class ShiftClosingController extends Controller
     {
         $parties = Party::orderBy('name')->get();
         $accounts = Account::orderBy('type')->orderBy('name')->get();
-        return view('shift_closings.create', compact('parties', 'accounts'));
+
+        $lastShift = ShiftClosing::whereNotNull('invoice_end')
+            ->where('invoice_end', '>', 0)
+            ->orderByDesc('id')
+            ->first();
+
+        $suggestedInvoiceStart = $lastShift ? ((int) $lastShift->invoice_end + 1) : null;
+
+        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart'));
     }
 
     public function store(Request $request)

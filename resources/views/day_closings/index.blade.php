@@ -32,83 +32,235 @@
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .kpi-formula-value {
-        font-size: clamp(1.05rem, 3.5vw, 1.35rem);
+        font-size: clamp(1.15rem, 3.5vw, 1.45rem);
         line-height: 1.25;
         word-break: break-word;
-    }
-    @media (max-width: 575.98px) {
-        .card-custom {
-            border-radius: 10px;
-        }
     }
 </style>
 @endpush
 
 @section('content')
 <!-- Date Selector Bar -->
-<div class="card-custom p-3 mb-3 bg-white">
+<div class="card-custom p-3 mb-3 bg-white border">
     <form method="GET" action="{{ route('day-closings.index') }}" class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-md-auto">
             <span class="small fw-bold text-secondary text-uppercase" style="font-size: 0.75rem;">Select Closing Date:</span>
             <input type="date" name="date" class="form-control form-control-sm" value="{{ $selectedDate }}" style="max-width: 170px;">
-            <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap"><i class="bi bi-arrow-repeat"></i> Load Summary</button>
+            <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">
+                <i class="bi bi-arrow-repeat me-1"></i> Load Summary
+            </button>
         </div>
         <div class="small text-muted" style="font-size: 0.75rem;">
-            <i class="bi bi-info-circle me-1 text-primary"></i> 
-            Auto Opening Cash is fetched from previous day's finalized closing.
+            <i class="bi bi-shield-check text-success me-1"></i> 
+            Opening Cash is automatically carried forward from previous finalized day closing.
         </div>
     </form>
 </div>
 
-<!-- ==================== AUTOMATED CORE FORMULA BANNER ==================== -->
-<div class="card-custom p-3 p-md-4 mb-3 mb-md-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border-radius: 14px;">
-    <div class="text-secondary small fw-bold text-uppercase mb-2.5" style="font-size: 0.72rem; letter-spacing: 0.05em; color: #94a3b8 !important;">
-        Automated Daily Equation: Opening Cash + Total Cash In - Total Payments = Closing Cash
+<!-- ==================== AUTOMATED PHYSICAL CASH EQUATION (STEP-BY-STEP MATH) ==================== -->
+<div class="card-custom p-3 p-md-4 mb-3 bg-white border shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+        <div>
+            <h6 class="fw-bold text-dark m-0">
+                <i class="bi bi-calculator text-primary me-1"></i> Physical Drawer Cash Flow Equation
+            </h6>
+            <small class="text-muted" style="font-size: 0.76rem;">Reconciliation of physical register cash: Opening Balance (+) Cash Inflows (-) Cash Outflows = Closing Cash</small>
+        </div>
+        <span class="badge bg-light text-secondary border font-monospace">
+            {{ Carbon\Carbon::parse($selectedDate)->format('l, d F Y') }}
+        </span>
     </div>
-    
-    <div class="row g-3 align-items-center text-start">
+
+    <div class="row g-3">
         <!-- 1. Opening Cash -->
-        <div class="col-6 col-md-3">
-            <div class="text-white-50 small" style="font-size: 0.75rem;">1. Opening Cash</div>
-            <div class="fw-bold font-monospace text-white mt-1 kpi-formula-value">Rs. {{ number_format($autoOpeningCash, 2) }}</div>
-            <small class="text-white-50 d-block" style="font-size: 0.7rem;">Previous Day Balance</small>
+        <div class="col-12 col-md-3">
+            <div class="p-3 rounded-3 bg-light border h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem;">Step 1 &bull; Base</span>
+                    <span class="badge bg-secondary text-white small px-2 py-0.5">Starting Balance</span>
+                </div>
+                <div class="text-secondary small fw-semibold">Opening Cash Balance</div>
+                <div class="fs-4 fw-bold font-monospace text-dark mt-1">Rs. {{ number_format($autoOpeningCash, 2) }}</div>
+                <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">Brought forward from yesterday</small>
+            </div>
         </div>
 
-        <!-- 2. Cash In -->
-        <div class="col-6 col-md-3">
-            <div class="text-success small fw-semibold" style="font-size: 0.75rem;">+ 2. Today's Cash In</div>
-            <div class="fw-bold font-monospace text-success mt-1 kpi-formula-value">+Rs. {{ number_format($totalCashIn, 2) }}</div>
-            <small class="text-white-50 d-block" style="font-size: 0.7rem;">Shifts Cash + Receipts</small>
+        <!-- 2. Cash Inflows (+) -->
+        <div class="col-12 col-md-3">
+            <div class="p-3 rounded-3 bg-success-subtle border border-success h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-success small fw-bold text-uppercase" style="font-size: 0.7rem;">Step 2 &bull; Inflow</span>
+                    <span class="badge bg-success text-white small px-2 py-0.5"><i class="bi bi-plus-lg me-1"></i>PLUS</span>
+                </div>
+                <div class="text-success fw-bold small">Total Cash Received</div>
+                <div class="fs-4 fw-bold font-monospace text-success mt-1">+Rs. {{ number_format($totalCashIn, 2) }}</div>
+                <div class="mt-2 pt-1 border-top border-success-subtle small text-dark" style="font-size: 0.72rem;">
+                    <div class="d-flex justify-content-between">
+                        <span>Morning Shift Cash:</span>
+                        <span class="font-monospace fw-semibold">+Rs. {{ number_format($morningCountedCash, 2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Evening Shift Cash:</span>
+                        <span class="font-monospace fw-semibold">+Rs. {{ number_format($eveningCountedCash, 2) }}</span>
+                    </div>
+                    @if($directCashIn > 0)
+                        <div class="d-flex justify-content-between">
+                            <span>Direct Cash Receipts:</span>
+                            <span class="font-monospace fw-semibold">+Rs. {{ number_format($directCashIn, 2) }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
 
-        <!-- 3. Payments Out -->
-        <div class="col-6 col-md-3">
-            <div class="text-danger small fw-semibold" style="font-size: 0.75rem;">- 3. Total Payments Out</div>
-            <div class="fw-bold font-monospace text-danger mt-1 kpi-formula-value">-Rs. {{ number_format($totalPaymentsOut, 2) }}</div>
-            <small class="text-white-50 d-block" style="font-size: 0.7rem;">Expenses + Supplier Pay</small>
+        <!-- 3. Direct Cash Outflows (-) -->
+        <div class="col-12 col-md-3">
+            <div class="p-3 rounded-3 bg-danger-subtle border border-danger h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-danger small fw-bold text-uppercase" style="font-size: 0.7rem;">Step 3 &bull; Outflow</span>
+                    <span class="badge bg-danger text-white small px-2 py-0.5"><i class="bi bi-dash-lg me-1"></i>MINUS</span>
+                </div>
+                <div class="text-danger fw-bold small">Direct Voucher Payments</div>
+                <div class="fs-4 fw-bold font-monospace text-danger mt-1">-Rs. {{ number_format($directPaymentsOut, 2) }}</div>
+                <div class="mt-2 pt-1 border-top border-danger-subtle small text-dark" style="font-size: 0.72rem;">
+                    <div class="d-flex justify-content-between">
+                        <span>Direct Vouchers Paid:</span>
+                        <span class="font-monospace fw-semibold">-Rs. {{ number_format($directPaymentsOut, 2) }}</span>
+                    </div>
+                    <small class="text-muted d-block mt-1">Shift expenses settled directly from shift cash</small>
+                </div>
+            </div>
         </div>
 
-        <!-- 4. Calculated Closing Cash -->
-        <div class="col-6 col-md-3 text-start text-md-end border-start-md border-secondary border-opacity-50">
-            <div class="text-info small fw-bold" style="font-size: 0.75rem;">= 4. Final Closing Cash</div>
-            <div class="fw-bold font-monospace text-info mt-1 kpi-formula-value">Rs. {{ number_format($calculatedClosingCash, 2) }}</div>
-            <small class="text-white-50 d-block" style="font-size: 0.7rem;">Tomorrow's Opening Cash</small>
+        <!-- 4. Final Calculated Closing Cash (=) -->
+        <div class="col-12 col-md-3">
+            <div class="p-3 rounded-3 bg-primary text-white border border-primary h-100 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-white-50 small fw-bold text-uppercase" style="font-size: 0.7rem;">Step 4 &bull; Result</span>
+                    <span class="badge bg-white text-primary small px-2 py-0.5 fw-bold">= EQUALS</span>
+                </div>
+                <div class="text-white fw-bold small">Final Physical Closing Cash</div>
+                <div class="fs-4 fw-bold font-monospace text-white mt-1">Rs. {{ number_format($calculatedClosingCash, 2) }}</div>
+                <div class="mt-2 pt-1 border-top border-white-50 small text-white-50" style="font-size: 0.72rem;">
+                    <span>Remaining cash in drawer &bull; Automatically becomes tomorrow's Opening Cash</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- ==================== NEW SECTION: DAILY BANK & DIGITAL ACCOUNTS POSITION ==================== -->
+<div class="card-custom p-3 p-md-4 mb-3 bg-white border shadow-sm">
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-info text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.85rem;">
+                <i class="bi bi-bank"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold text-dark m-0">Daily Bank & Digital Collections Breakdown</h6>
+                <small class="text-muted" style="font-size: 0.76rem;">Activity recorded across bank accounts, mobile wallets (JazzCash), and digital payment channels</small>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-1.5 small">
+                <i class="bi bi-phone me-1"></i> Today's Digital Collections: <strong class="font-monospace ms-1">Rs. {{ number_format($totalDigitalIn, 2) }}</strong>
+            </span>
+            <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 small">
+                <i class="bi bi-cash-stack me-1"></i> Total Combined Collections (Cash + Digital): <strong class="font-monospace ms-1">Rs. {{ number_format($totalCombinedInflow, 2) }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Account Wise Breakdown Table -->
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%;">Account / Wallet Name</th>
+                    <th style="width: 15%;">Account Type</th>
+                    <th style="width: 15%;" class="text-end">Today's Inflow (+)</th>
+                    <th style="width: 15%;" class="text-end">Today's Outflow (-)</th>
+                    <th style="width: 15%;" class="text-end">Net Daily Movement</th>
+                    <th style="width: 15%;" class="text-end">Current Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($accountSummaries as $acc)
+                    <tr>
+                        <td class="fw-bold text-dark">
+                            <i class="bi bi-{{ $acc->type === 'bank' ? 'building' : ($acc->type === 'jazzcash' ? 'phone' : 'wallet2') }} text-secondary me-1"></i>
+                            {{ $acc->name }}
+                            @if($acc->account_number)
+                                <small class="text-muted d-block font-monospace" style="font-size: 0.72rem;">Acc: {{ $acc->account_number }}</small>
+                            @endif
+                        </td>
+                        <td>
+                            @if($acc->type === 'bank')
+                                <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-0.5 small">Bank Account</span>
+                            @elseif($acc->type === 'jazzcash')
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-0.5 small">JazzCash</span>
+                            @else
+                                <span class="badge bg-success-subtle text-success border border-success px-2 py-0.5 small">Cash Register</span>
+                            @endif
+                        </td>
+                        <td class="text-end font-monospace fw-semibold {{ $acc->inflow > 0 ? 'text-success' : 'text-muted' }}">
+                            {{ $acc->inflow > 0 ? '+Rs. ' . number_format($acc->inflow, 2) : '-' }}
+                        </td>
+                        <td class="text-end font-monospace fw-semibold {{ $acc->outflow > 0 ? 'text-danger' : 'text-muted' }}">
+                            {{ $acc->outflow > 0 ? '-Rs. ' . number_format($acc->outflow, 2) : '-' }}
+                        </td>
+                        <td class="text-end font-monospace fw-bold {{ $acc->net > 0 ? 'text-success' : ($acc->net < 0 ? 'text-danger' : 'text-muted') }}">
+                            @if($acc->net > 0)
+                                +Rs. {{ number_format($acc->net, 2) }}
+                            @elseif($acc->net < 0)
+                                -Rs. {{ number_format(abs($acc->net), 2) }}
+                            @else
+                                Rs. 0.00
+                            @endif
+                        </td>
+                        <td class="text-end font-monospace fw-bold fs-6 text-dark">
+                            Rs. {{ number_format($acc->current_balance, 2) }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center py-3 text-muted small">No accounts configured yet.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+            <tfoot class="table-light border-top-2">
+                <tr class="fw-bold">
+                    <td colspan="2" class="text-dark">Total Accounts Turnover:</td>
+                    <td class="text-end font-monospace text-success">+Rs. {{ number_format($accountSummaries->sum('inflow'), 2) }}</td>
+                    <td class="text-end font-monospace text-danger">-Rs. {{ number_format($accountSummaries->sum('outflow'), 2) }}</td>
+                    <td class="text-end font-monospace text-primary">
+                        Rs. {{ number_format($accountSummaries->sum('inflow') - $accountSummaries->sum('outflow'), 2) }}
+                    </td>
+                    <td class="text-end font-monospace text-dark fs-6">
+                        Rs. {{ number_format($accountSummaries->sum('current_balance'), 2) }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
 <!-- ==================== SHIFT MERGING CARDS (MORNING & EVENING) ==================== -->
-<div class="row g-2 g-md-3 mb-3 mb-md-4">
+<div class="row g-2 g-md-3 mb-3">
     <!-- Morning Shift -->
     <div class="col-12 col-md-6">
-        <div class="card-custom p-3 h-100 shadow-xs">
+        <div class="card-custom p-3 h-100 shadow-xs bg-white border">
             <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1"><i class="bi bi-sun me-1"></i>Morning Shift</span>
-                    <span class="fw-bold text-dark small">Morning Summary</span>
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1">
+                        <i class="bi bi-sun me-1"></i> Morning Shift
+                    </span>
+                    <span class="fw-bold text-dark small">Performance Summary</span>
                 </div>
                 @if($morningShift)
-                    <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.7rem;"><i class="bi bi-check-circle me-1"></i>Recorded</span>
+                    <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.7rem;">
+                        <i class="bi bi-check-circle me-1"></i> Recorded
+                    </span>
                 @else
                     <span class="badge bg-light text-muted border" style="font-size: 0.7rem;">Not Submitted Yet</span>
                 @endif
@@ -116,26 +268,25 @@
 
             @if($morningShift)
                 <div class="row g-2 small text-secondary">
-                    <div class="col-6">Total Sales: <strong class="text-dark font-monospace">Rs. {{ number_format($morningShift->total_sale, 2) }}</strong></div>
-                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ $morningShift->total_invoices }}</strong>
+                    <div class="col-6">Cashier Incharge: <strong class="text-dark">{{ $morningShift->cashier->name ?? 'N/A' }}</strong></div>
+                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ $morningShift->total_invoices }} Bills</strong>
                         @if($morningShift->invoice_start && $morningShift->invoice_end)
-                            <small class="d-block text-muted font-monospace">#{{ $morningShift->invoice_start }}-#{{ $morningShift->invoice_end }}</small>
+                            <small class="d-block text-muted font-monospace">#{{ $morningShift->invoice_start }} to #{{ $morningShift->invoice_end }}</small>
                         @endif
                     </div>
-                    <div class="col-6">Cash Counted: <strong class="text-success fw-semibold font-monospace">Rs. {{ number_format($morningShift->total_counted_cash, 2) }}</strong></div>
-                    <div class="col-6 text-end">JazzCash/Bank: <strong class="text-primary fw-semibold font-monospace">Rs. {{ number_format($morningShift->jazzcash_amount + $morningShift->bank_amount, 2) }}</strong></div>
-                    <div class="col-6">Shift Expenses: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($morningShift->expenses_amount, 2) }}</strong></div>
-                    <div class="col-6 text-end">Shift Variance: {!! $morningShift->difference_badge !!}</div>
+                    <div class="col-6">Gross Sales Billing: <strong class="text-dark font-monospace">Rs. {{ number_format($morningShift->total_sale, 2) }}</strong></div>
+                    <div class="col-6 text-end">Physical Counted Cash: <strong class="text-success fw-bold font-monospace">Rs. {{ number_format($morningShift->total_counted_cash, 2) }}</strong></div>
+                    <div class="col-6">Bank / Digital Transfer: <strong class="text-primary fw-semibold font-monospace">Rs. {{ number_format($morningShift->jazzcash_amount + $morningShift->bank_amount, 2) }}</strong></div>
+                    <div class="col-6 text-end">Shift Operating Expenses: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($morningShift->expenses_amount, 2) }}</strong></div>
+                    <div class="col-6">Party / Supplier Payouts: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($morningShift->partyPayments->sum('amount'), 2) }}</strong></div>
+                    <div class="col-6 text-end">Shift Audit Status: {!! $morningShift->difference_badge !!}</div>
                     @if($morningShift->return_invoice_number || $morningShift->returns_amount > 0)
-                        <div class="col-6">Return Invoice: <strong class="text-dark">{{ $morningShift->return_invoice_number ? '#' . $morningShift->return_invoice_number : '-' }}</strong></div>
-                        <div class="col-6 text-end">Return Amount: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($morningShift->returns_amount, 2) }}</strong></div>
+                        <div class="col-6">Sales Return Bill: <strong class="text-dark">{{ $morningShift->return_invoice_number ? '#' . $morningShift->return_invoice_number : '-' }}</strong></div>
+                        <div class="col-6 text-end">Returned Amount: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($morningShift->returns_amount, 2) }}</strong></div>
                     @endif
                     @if($morningShift->expenses_details)
-                        <div class="col-12">Expense Details: <strong class="text-dark">{{ $morningShift->expenses_details }}</strong></div>
+                        <div class="col-12 text-muted">Expense Note: {{ $morningShift->expenses_details }}</div>
                     @endif
-                    @foreach($morningShift->partyPayments as $payment)
-                        <div class="col-12">Cash Paid to {{ $payment->party->name ?? 'Party' }}: <strong class="text-danger font-monospace">Rs. {{ number_format($payment->amount, 2) }}</strong> <span class="text-muted">{{ $payment->details }}</span></div>
-                    @endforeach
                 </div>
             @else
                 <div class="text-center py-4 text-muted small">
@@ -147,14 +298,18 @@
 
     <!-- Evening Shift -->
     <div class="col-12 col-md-6">
-        <div class="card-custom p-3 h-100 shadow-xs">
+        <div class="card-custom p-3 h-100 shadow-xs bg-white border">
             <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1"><i class="bi bi-moon-stars me-1"></i>Evening Shift</span>
-                    <span class="fw-bold text-dark small">Evening Summary</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1">
+                        <i class="bi bi-moon-stars me-1"></i> Evening Shift
+                    </span>
+                    <span class="fw-bold text-dark small">Performance Summary</span>
                 </div>
                 @if($eveningShift)
-                    <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.7rem;"><i class="bi bi-check-circle me-1"></i>Recorded</span>
+                    <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.7rem;">
+                        <i class="bi bi-check-circle me-1"></i> Recorded
+                    </span>
                 @else
                     <span class="badge bg-light text-muted border" style="font-size: 0.7rem;">Not Submitted Yet</span>
                 @endif
@@ -162,26 +317,25 @@
 
             @if($eveningShift)
                 <div class="row g-2 small text-secondary">
-                    <div class="col-6">Total Sales: <strong class="text-dark font-monospace">Rs. {{ number_format($eveningShift->total_sale, 2) }}</strong></div>
-                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ $eveningShift->total_invoices }}</strong>
+                    <div class="col-6">Cashier Incharge: <strong class="text-dark">{{ $eveningShift->cashier->name ?? 'N/A' }}</strong></div>
+                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ $eveningShift->total_invoices }} Bills</strong>
                         @if($eveningShift->invoice_start && $eveningShift->invoice_end)
-                            <small class="d-block text-muted font-monospace">#{{ $eveningShift->invoice_start }}-#{{ $eveningShift->invoice_end }}</small>
+                            <small class="d-block text-muted font-monospace">#{{ $eveningShift->invoice_start }} to #{{ $eveningShift->invoice_end }}</small>
                         @endif
                     </div>
-                    <div class="col-6">Cash Counted: <strong class="text-success fw-semibold font-monospace">Rs. {{ number_format($eveningShift->total_counted_cash, 2) }}</strong></div>
-                    <div class="col-6 text-end">JazzCash/Bank: <strong class="text-primary fw-semibold font-monospace">Rs. {{ number_format($eveningShift->jazzcash_amount + $eveningShift->bank_amount, 2) }}</strong></div>
-                    <div class="col-6">Shift Expenses: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($eveningShift->expenses_amount, 2) }}</strong></div>
-                    <div class="col-6 text-end">Shift Variance: {!! $eveningShift->difference_badge !!}</div>
+                    <div class="col-6">Gross Sales Billing: <strong class="text-dark font-monospace">Rs. {{ number_format($eveningShift->total_sale, 2) }}</strong></div>
+                    <div class="col-6 text-end">Physical Counted Cash: <strong class="text-success fw-bold font-monospace">Rs. {{ number_format($eveningShift->total_counted_cash, 2) }}</strong></div>
+                    <div class="col-6">Bank / Digital Transfer: <strong class="text-primary fw-semibold font-monospace">Rs. {{ number_format($eveningShift->jazzcash_amount + $eveningShift->bank_amount, 2) }}</strong></div>
+                    <div class="col-6 text-end">Shift Operating Expenses: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($eveningShift->expenses_amount, 2) }}</strong></div>
+                    <div class="col-6">Party / Supplier Payouts: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($eveningShift->partyPayments->sum('amount'), 2) }}</strong></div>
+                    <div class="col-6 text-end">Shift Audit Status: {!! $eveningShift->difference_badge !!}</div>
                     @if($eveningShift->return_invoice_number || $eveningShift->returns_amount > 0)
-                        <div class="col-6">Return Invoice: <strong class="text-dark">{{ $eveningShift->return_invoice_number ? '#' . $eveningShift->return_invoice_number : '-' }}</strong></div>
-                        <div class="col-6 text-end">Return Amount: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($eveningShift->returns_amount, 2) }}</strong></div>
+                        <div class="col-6">Sales Return Bill: <strong class="text-dark">{{ $eveningShift->return_invoice_number ? '#' . $eveningShift->return_invoice_number : '-' }}</strong></div>
+                        <div class="col-6 text-end">Returned Amount: <strong class="text-danger fw-semibold font-monospace">Rs. {{ number_format($eveningShift->returns_amount, 2) }}</strong></div>
                     @endif
                     @if($eveningShift->expenses_details)
-                        <div class="col-12">Expense Details: <strong class="text-dark">{{ $eveningShift->expenses_details }}</strong></div>
+                        <div class="col-12 text-muted">Expense Note: {{ $eveningShift->expenses_details }}</div>
                     @endif
-                    @foreach($eveningShift->partyPayments as $payment)
-                        <div class="col-12">Cash Paid to {{ $payment->party->name ?? 'Party' }}: <strong class="text-danger font-monospace">Rs. {{ number_format($payment->amount, 2) }}</strong> <span class="text-muted">{{ $payment->details }}</span></div>
-                    @endforeach
                 </div>
             @else
                 <div class="text-center py-4 text-muted small">
@@ -193,11 +347,11 @@
 </div>
 
 <!-- ==================== DAY CLOSINGS HISTORY TABLE ==================== -->
-<div class="card-custom overflow-hidden">
+<div class="card-custom overflow-hidden bg-white border shadow-sm">
     <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
         <div>
             <h6 class="fw-bold text-dark m-0">Finalized Day Closings Register</h6>
-            <small class="text-muted" style="font-size: 0.78rem;">Permanent record of daily opening, cash in, payments, and closing balances</small>
+            <small class="text-muted" style="font-size: 0.78rem;">Permanent financial log of opening cash, collections, payouts, and verified closing cash</small>
         </div>
     </div>
 
@@ -226,14 +380,14 @@
                         <td class="text-end small font-monospace">Rs. {{ number_format($day->opening_cash, 2) }}</td>
                         <td class="text-end small font-monospace text-success">+Rs. {{ number_format($day->total_cash_in, 2) }}</td>
                         <td class="text-end small font-monospace text-danger">-Rs. {{ number_format($day->total_payments_out, 2) }}</td>
-                        <td class="text-end fw-bold fs-6 font-monospace text-info">Rs. {{ number_format($day->closing_cash, 2) }}</td>
+                        <td class="text-end fw-bold fs-6 font-monospace text-primary">Rs. {{ number_format($day->closing_cash, 2) }}</td>
                         <td class="text-center">
                             @if($day->total_difference == 0)
                                 <span class="badge bg-success-subtle text-success border border-success" style="font-size: 0.72rem;">Balanced</span>
                             @elseif($day->total_difference > 0)
-                                <span class="badge bg-info-subtle text-info border border-info" style="font-size: 0.72rem;">+Rs. {{ number_format($day->total_difference, 2) }}</span>
+                                <span class="badge bg-info-subtle text-info border border-info" style="font-size: 0.72rem;">+Rs. {{ number_format($day->total_difference, 2) }} (Surplus)</span>
                             @else
-                                <span class="badge bg-danger-subtle text-danger border border-danger" style="font-size: 0.72rem;">-Rs. {{ number_format(abs($day->total_difference), 2) }}</span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger" style="font-size: 0.72rem;">-Rs. {{ number_format(abs($day->total_difference), 2) }} (Shortage)</span>
                             @endif
                         </td>
                         <td class="text-center">{!! $day->status_badge !!}</td>
@@ -252,7 +406,7 @@
                                             </button>
                                         </form>
                                     @endif
-                                    <form action="{{ route('day-closings.destroy', $day->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this day closing?');">
+                                    <form action="{{ route('day-closings.destroy', $day->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this day closing record?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete">
@@ -267,7 +421,7 @@
                     <tr>
                         <td colspan="10" class="text-center py-5 text-muted small">
                             <i class="bi bi-calendar-x fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                            No finalized day closings found. Click <strong>"Finalize Day Closing"</strong> above to close today's balance.
+                            No finalized day closings found. Click <strong>"Finalize Day Closing"</strong> above to close today's register balance.
                         </td>
                     </tr>
                 @endforelse
@@ -275,12 +429,11 @@
         </table>
     </div>
 
-    <!-- Mobile View: Clean Responsive Cards (Zero Horizontal Scroll) -->
+    <!-- Mobile View: Clean Responsive Cards -->
     <div class="d-block d-md-none p-2 p-sm-3">
         <div class="d-flex flex-column gap-2">
             @forelse($history as $day)
                 <div class="p-3 rounded-3 border bg-white shadow-xs">
-                    <!-- Top Row: Date, Status Badge & Variance -->
                     <div class="d-flex align-items-center justify-content-between gap-1 mb-2">
                         <div class="fw-bold text-dark" style="font-size: 0.95rem;">
                             <i class="bi bi-calendar-check text-primary me-1"></i>{{ $day->date->format('d M Y') }}
@@ -297,44 +450,36 @@
                         </div>
                     </div>
 
-                    <!-- Financial Movement Box -->
-                    <div class="p-2.5 rounded-2 bg-light border mb-2">
-                        <div class="row g-2" style="font-size: 0.78rem;">
-                            <div class="col-6">
-                                <span class="text-muted d-block" style="font-size: 0.68rem;">Opening Cash</span>
-                                <span class="font-monospace text-secondary">Rs. {{ number_format($day->opening_cash, 2) }}</span>
-                            </div>
-                            <div class="col-6 text-end">
-                                <span class="text-muted d-block" style="font-size: 0.68rem;">Total Cash In</span>
-                                <strong class="text-success font-monospace">+Rs. {{ number_format($day->total_cash_in, 2) }}</strong>
-                            </div>
-                            <div class="col-6">
-                                <span class="text-muted d-block" style="font-size: 0.68rem;">Total Payments</span>
-                                <span class="text-danger font-monospace fw-semibold">-Rs. {{ number_format($day->total_payments_out, 2) }}</span>
-                            </div>
-                            <div class="col-6 text-end">
-                                <span class="text-muted d-block" style="font-size: 0.68rem;">Closing Cash</span>
-                                <strong class="text-info font-monospace fs-6">Rs. {{ number_format($day->closing_cash, 2) }}</strong>
-                            </div>
+                    <div class="p-2 rounded bg-light border small font-monospace mb-2">
+                        <div class="d-flex justify-content-between text-secondary">
+                            <span>Opening Cash:</span>
+                            <span>Rs. {{ number_format($day->opening_cash, 2) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-success">
+                            <span>(+) Cash In:</span>
+                            <span>+Rs. {{ number_format($day->total_cash_in, 2) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-danger">
+                            <span>(-) Payments:</span>
+                            <span>-Rs. {{ number_format($day->total_payments_out, 2) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-primary fw-bold border-top pt-1 mt-1">
+                            <span>(=) Closing Cash:</span>
+                            <span>Rs. {{ number_format($day->closing_cash, 2) }}</span>
                         </div>
                     </div>
 
-                    <!-- Closer Info & Actions Row -->
                     <div class="d-flex justify-content-between align-items-center pt-1">
-                        <div class="small text-muted text-truncate me-2" style="font-size: 0.74rem;">
-                            <i class="bi bi-person me-1 text-secondary"></i>{{ $day->closer->name ?? 'User #' . $day->closed_by }}
-                        </div>
-
-                        <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-                            <a href="{{ route('day-closings.show', $day->id) }}" class="btn btn-outline-primary btn-sm py-1.5 px-2.5 rounded-2 fw-semibold" style="font-size: 0.76rem;">
+                        <small class="text-secondary"><i class="bi bi-person me-1"></i>{{ $day->closer->name ?? 'User' }}</small>
+                        <div class="d-flex gap-1">
+                            <a href="{{ route('day-closings.show', $day->id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size: 0.76rem;">
                                 <i class="bi bi-printer me-1"></i> Statement
                             </a>
-
                             @if(auth()->user()->isOwner())
                                 @if($day->status === 'closed')
                                     <form action="{{ route('day-closings.reopen', $day->id) }}" method="POST" class="m-0" onsubmit="return confirm('Reopen this day closing for revisions?');">
                                         @csrf
-                                        <button type="submit" class="btn btn-outline-warning btn-sm py-1.5 px-2 rounded-2" style="font-size: 0.76rem;" title="Reopen Day">
+                                        <button type="submit" class="btn btn-outline-warning btn-sm py-1 px-2" style="font-size: 0.76rem;">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     </form>
@@ -342,7 +487,7 @@
                                 <form action="{{ route('day-closings.destroy', $day->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this day closing?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2 rounded-2" style="font-size: 0.76rem;" title="Delete">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.76rem;">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -375,7 +520,7 @@
                     <i class="bi bi-calendar2-check-fill fs-5 text-primary"></i>
                     <div>
                         <h6 class="modal-title fw-bold text-white mb-0" id="finDayLabel">Finalize Day Closing: {{ Carbon\Carbon::parse($selectedDate)->format('d M Y') }}</h6>
-                        <small class="text-white-50" style="font-size: 0.75rem;">Consolidate shifts & lock opening balance for tomorrow</small>
+                        <small class="text-white-50" style="font-size: 0.75rem;">Consolidate shift records & lock physical opening cash for tomorrow</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -386,23 +531,30 @@
                 <input type="hidden" name="date" value="{{ $selectedDate }}">
 
                 <div class="modal-body p-3 p-sm-4 text-start">
+                    <!-- Step-by-Step Math Box -->
                     <div class="p-3 bg-light rounded-3 mb-3 border">
                         <div class="d-flex justify-content-between py-1 small">
-                            <span class="text-muted">Opening Cash:</span>
+                            <span class="text-secondary fw-semibold">Step 1 &bull; Opening Cash Balance:</span>
                             <span class="fw-bold text-dark font-monospace">Rs. {{ number_format($autoOpeningCash, 2) }}</span>
                         </div>
-                        <div class="d-flex justify-content-between py-1 small">
-                            <span class="text-success fw-semibold">(+) Total Today's Cash In:</span>
-                            <span class="fw-bold text-success font-monospace">+Rs. {{ number_format($totalCashIn, 2) }}</span>
+                        <div class="d-flex justify-content-between py-1 small text-success">
+                            <span class="fw-semibold">(+) Step 2 &bull; Total Physical Cash Inflow:</span>
+                            <span class="fw-bold font-monospace">+Rs. {{ number_format($totalCashIn, 2) }}</span>
                         </div>
-                        <div class="d-flex justify-content-between py-1 small">
-                            <span class="text-danger fw-semibold">(-) Direct Voucher Payments Out:</span>
-                            <span class="fw-bold text-danger font-monospace">-Rs. {{ number_format($directPaymentsOut, 2) }}</span>
+                        <div class="d-flex justify-content-between py-1 small text-danger">
+                            <span class="fw-semibold">(-) Step 3 &bull; Direct Voucher Payments Out:</span>
+                            <span class="fw-bold font-monospace">-Rs. {{ number_format($directPaymentsOut, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between py-2 border-top mt-2 align-items-center">
-                            <span class="fw-bold text-dark">Calculated Final Closing Cash:</span>
+                            <span class="fw-bold text-dark">(=) Step 4 &bull; Final Verified Closing Cash:</span>
                             <span class="fw-bold fs-5 text-primary font-monospace">Rs. {{ number_format($calculatedClosingCash, 2) }}</span>
                         </div>
+                    </div>
+
+                    <!-- Digital Collections Notice -->
+                    <div class="p-2 rounded bg-info-subtle border border-info small text-dark mb-3">
+                        <i class="bi bi-info-circle text-primary me-1"></i>
+                        Total Digital & Bank Collections for today: <strong class="font-monospace text-primary">Rs. {{ number_format($totalDigitalIn, 2) }}</strong>
                     </div>
 
                     <input type="hidden" name="opening_cash" value="{{ $autoOpeningCash }}">
@@ -412,7 +564,7 @@
                     <input type="hidden" name="total_difference" value="{{ $totalDifference }}">
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Consolidated Variance (Shift Differences):</label>
+                        <label class="form-label small fw-semibold text-secondary">Consolidated Shift Audit Status:</label>
                         <div class="p-2 rounded bg-light border fw-semibold small font-monospace {{ $totalDifference < 0 ? 'text-danger' : ($totalDifference > 0 ? 'text-primary' : 'text-success') }}">
                             {{ $totalDifference >= 0 ? '+' : '' }}Rs. {{ number_format($totalDifference, 2) }} 
                             <span class="fw-normal text-muted">({{ $totalDifference == 0 ? 'Balanced' : ($totalDifference > 0 ? 'Cash Surplus' : 'Cash Shortage') }})</span>
@@ -421,7 +573,7 @@
 
                     <div class="mb-2">
                         <label class="form-label small fw-semibold text-secondary">Closing Remarks / Audit Notes</label>
-                        <textarea name="remarks" class="form-control form-control-sm py-2" rows="3" placeholder="Notes for today's closing summary, verification notes..."></textarea>
+                        <textarea name="remarks" class="form-control form-control-sm py-2" rows="3" placeholder="Optional audit handover notes or remarks..."></textarea>
                     </div>
 
                     <div class="small text-muted mt-2" style="font-size: 0.74rem;">

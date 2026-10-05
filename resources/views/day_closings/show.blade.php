@@ -51,26 +51,42 @@
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-3">
                     <div class="p-3 bg-light rounded-3 border">
-                        <span class="text-muted small d-block mb-1">Opening Cash (Carried Over)</span>
-                        <h5 class="fw-bold text-dark font-monospace m-0">Rs. {{ number_format($dayClosing->opening_cash, 2) }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem;">Step 1 &bull; Base</span>
+                            <span class="badge bg-secondary text-white small">Starting</span>
+                        </div>
+                        <span class="text-secondary small d-block">Opening Cash (Carried Over)</span>
+                        <h5 class="fw-bold text-dark font-monospace m-0 mt-1">Rs. {{ number_format($dayClosing->opening_cash, 2) }}</h5>
                     </div>
                 </div>
                 <div class="col-12 col-md-3">
                     <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle">
-                        <span class="text-success small fw-semibold d-block mb-1">(+) Total Collections (In)</span>
-                        <h5 class="fw-bold text-success font-monospace m-0">+ Rs. {{ number_format($dayClosing->total_cash_in, 2) }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-success small fw-semibold text-uppercase" style="font-size: 0.7rem;">Step 2 &bull; Inflow</span>
+                            <span class="badge bg-success text-white small">+ PLUS</span>
+                        </div>
+                        <span class="text-success small fw-semibold d-block">(+) Total Physical Cash In</span>
+                        <h5 class="fw-bold text-success font-monospace m-0 mt-1">+ Rs. {{ number_format($dayClosing->total_cash_in, 2) }}</h5>
                     </div>
                 </div>
                 <div class="col-12 col-md-3">
                     <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle">
-                        <span class="text-danger small fw-semibold d-block mb-1">(-) Total Payments (Out)</span>
-                        <h5 class="fw-bold text-danger font-monospace m-0">- Rs. {{ number_format($dayClosing->total_payments_out, 2) }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-danger small fw-semibold text-uppercase" style="font-size: 0.7rem;">Step 3 &bull; Outflow</span>
+                            <span class="badge bg-danger text-white small">- MINUS</span>
+                        </div>
+                        <span class="text-danger small fw-semibold d-block">(-) Direct Voucher Payments</span>
+                        <h5 class="fw-bold text-danger font-monospace m-0 mt-1">- Rs. {{ number_format($dayClosing->total_payments_out, 2) }}</h5>
                     </div>
                 </div>
                 <div class="col-12 col-md-3">
                     <div class="p-3 bg-primary text-white rounded-3 shadow-sm">
-                        <span class="text-white-50 small fw-semibold d-block mb-1">(=) Final Closing Cash</span>
-                        <h5 class="fw-bold text-white font-monospace m-0">Rs. {{ number_format($dayClosing->closing_cash, 2) }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-white-50 small fw-semibold text-uppercase" style="font-size: 0.7rem;">Step 4 &bull; Result</span>
+                            <span class="badge bg-white text-primary small fw-bold">= EQUALS</span>
+                        </div>
+                        <span class="text-white-50 small fw-semibold d-block">(=) Final Verified Closing Cash</span>
+                        <h5 class="fw-bold text-white font-monospace m-0 mt-1">Rs. {{ number_format($dayClosing->closing_cash, 2) }}</h5>
                     </div>
                 </div>
             </div>
@@ -170,6 +186,82 @@
                                 <td class="text-end font-monospace">Rs. {{ number_format($totOnline, 2) }}</td>
                                 <td class="text-end font-monospace {{ $dayClosing->total_difference < 0 ? 'text-danger' : ($dayClosing->total_difference > 0 ? 'text-primary' : 'text-success') }}">
                                     Rs. {{ number_format($dayClosing->total_difference, 2) }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bank & Digital Accounts Position Table -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-1 border-bottom">
+                    <h6 class="fw-bold text-dark m-0">
+                        <i class="bi bi-bank text-primary me-1"></i> Bank & Digital Accounts Daily Summary
+                    </h6>
+                    <span class="badge bg-light text-secondary border small">
+                        Total Digital Collections: <strong class="font-monospace ms-1 text-primary">Rs. {{ number_format($totalDigitalIn, 2) }}</strong>
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Account / Channel</th>
+                                <th>Type</th>
+                                <th class="text-end">Today's Inflow (+)</th>
+                                <th class="text-end">Today's Outflow (-)</th>
+                                <th class="text-end">Net Movement</th>
+                                <th class="text-end">Closing Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($accountSummaries as $acc)
+                                <tr>
+                                    <td class="fw-bold text-dark">
+                                        {{ $acc->name }}
+                                        @if($acc->account_number)
+                                            <small class="text-muted d-block font-monospace">Acc: {{ $acc->account_number }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ ucfirst($acc->type) }}</span>
+                                    </td>
+                                    <td class="text-end font-monospace {{ $acc->inflow > 0 ? 'text-success fw-bold' : 'text-muted' }}">
+                                        {{ $acc->inflow > 0 ? '+Rs. ' . number_format($acc->inflow, 2) : '-' }}
+                                    </td>
+                                    <td class="text-end font-monospace {{ $acc->outflow > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                        {{ $acc->outflow > 0 ? '-Rs. ' . number_format($acc->outflow, 2) : '-' }}
+                                    </td>
+                                    <td class="text-end font-monospace fw-bold {{ $acc->net > 0 ? 'text-success' : ($acc->net < 0 ? 'text-danger' : 'text-muted') }}">
+                                        @if($acc->net > 0)
+                                            +Rs. {{ number_format($acc->net, 2) }}
+                                        @elseif($acc->net < 0)
+                                            -Rs. {{ number_format(abs($acc->net), 2) }}
+                                        @else
+                                            Rs. 0.00
+                                        @endif
+                                    </td>
+                                    <td class="text-end font-monospace fw-bold text-dark">
+                                        Rs. {{ number_format($acc->current_balance, 2) }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-2 text-muted small">No account activity recorded for this date.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr class="fw-bold">
+                                <td colspan="2">Total Accounts Position:</td>
+                                <td class="text-end font-monospace text-success">+Rs. {{ number_format($accountSummaries->sum('inflow'), 2) }}</td>
+                                <td class="text-end font-monospace text-danger">-Rs. {{ number_format($accountSummaries->sum('outflow'), 2) }}</td>
+                                <td class="text-end font-monospace text-primary">
+                                    Rs. {{ number_format($accountSummaries->sum('inflow') - $accountSummaries->sum('outflow'), 2) }}
+                                </td>
+                                <td class="text-end font-monospace text-dark">
+                                    Rs. {{ number_format($accountSummaries->sum('current_balance'), 2) }}
                                 </td>
                             </tr>
                         </tfoot>

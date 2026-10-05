@@ -122,15 +122,21 @@
                 <label class="form-label small fw-semibold text-secondary">Invoice Start No.</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-light text-muted">#</span>
-                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm" placeholder="e.g. 1201" oninput="calculateInvoiceCount()">
+                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()">
                 </div>
+                @if(!empty($suggestedInvoiceStart))
+                    <small class="text-success d-block" style="font-size: 0.68rem;">
+                        <i class="bi bi-magic me-1"></i>Auto (Prev #{{ $suggestedInvoiceStart - 1 }})
+                    </small>
+                @endif
             </div>
             <div class="col-6 col-sm-4 col-lg-2">
                 <label class="form-label small fw-semibold text-secondary">Invoice End No.</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-light text-muted">#</span>
-                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm" placeholder="e.g. 1250" oninput="calculateInvoiceCount()">
+                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()">
                 </div>
+                <small class="text-muted d-block" style="font-size: 0.68rem;">Enter ending bill #</small>
             </div>
             <div class="col-6 col-sm-4 col-lg-2">
                 <label class="form-label small fw-semibold text-secondary">Total Invoices</label>
