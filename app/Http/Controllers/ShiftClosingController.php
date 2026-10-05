@@ -60,23 +60,39 @@ class ShiftClosingController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Clean and filter party payments: only keep rows with valid party_id and amount > 0
         $paymentRows = collect($request->input('party_payments', []))
-            ->filter(fn ($payment) => collect($payment)->filter(fn ($value) => filled($value))->isNotEmpty())
+            ->filter(function ($payment) {
+                return !empty($payment['party_id']) && !empty($payment['amount']) && (float)$payment['amount'] > 0;
+            })
+            ->map(function ($payment) {
+                return [
+                    'party_id' => (int) $payment['party_id'],
+                    'amount' => (float) $payment['amount'],
+                    'details' => filled($payment['details'] ?? null) ? $payment['details'] : 'Shift cash payout',
+                ];
+            })
             ->values()
             ->all();
         $request->merge(['party_payments' => $paymentRows]);
 
+        // 2. Clean and filter digital account payments
         $accountRows = collect($request->input('account_payments', []))
             ->filter(fn ($acc) => !empty($acc['account_id']) && !empty($acc['amount']) && (float)$acc['amount'] > 0)
             ->values()
             ->all();
         $request->merge(['account_payments' => $accountRows]);
 
+        // 3. Invoice range handling: If invoice_end was left empty, clear invoice_start so it doesn't fail required_with
+        if (!$request->filled('invoice_end')) {
+            $request->merge(['invoice_start' => null, 'invoice_end' => null]);
+        }
+
         $validated = $request->validate([
             'date' => ['required', 'date'],
             'shift_type' => ['required', Rule::in(['morning', 'evening'])],
-            'invoice_start' => ['nullable', 'required_with:invoice_end', 'integer', 'min:1'],
-            'invoice_end' => ['nullable', 'required_with:invoice_start', 'integer', 'gte:invoice_start'],
+            'invoice_start' => ['nullable', 'integer', 'min:1'],
+            'invoice_end' => ['nullable', 'integer', 'gte:invoice_start'],
             'total_sale' => ['required', 'numeric', 'min:0'],
             'returns_amount' => ['nullable', 'numeric', 'min:0'],
             'return_invoice_number' => ['nullable', 'string', 'max:100'],
@@ -85,7 +101,7 @@ class ShiftClosingController extends Controller
             'party_payments' => ['nullable', 'array', 'max:20'],
             'party_payments.*.party_id' => ['required', 'integer', 'exists:parties,id'],
             'party_payments.*.amount' => ['required', 'numeric', 'gt:0'],
-            'party_payments.*.details' => ['required', 'string', 'max:1000'],
+            'party_payments.*.details' => ['nullable', 'string', 'max:1000'],
             'account_payments' => ['nullable', 'array', 'max:20'],
             'account_payments.*.account_id' => ['required', 'integer', 'exists:accounts,id'],
             'account_payments.*.amount' => ['required', 'numeric', 'gt:0'],
@@ -101,6 +117,8 @@ class ShiftClosingController extends Controller
             'jazzcash_amount' => ['nullable', 'numeric', 'min:0'],
             'bank_amount' => ['nullable', 'numeric', 'min:0'],
             'remarks' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'invoice_end.gte' => 'Invoice End number must be greater than or equal to Invoice Start number.',
         ]);
 
         // Default zero values

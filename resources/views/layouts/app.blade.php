@@ -612,6 +612,21 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 py-2 px-3 mb-3 small" role="alert">
+                <div class="d-flex align-items-center mb-1">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-6 text-danger"></i>
+                    <div class="fw-bold">Form Submission Error:</div>
+                </div>
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         @yield('content')
     </main>
 

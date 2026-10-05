@@ -108,14 +108,14 @@
                 <label class="form-label small fw-semibold text-secondary">Closing Date <span class="text-danger">*</span></label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
-                    <input type="date" name="date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" required>
+                    <input type="date" name="date" class="form-control form-control-sm" value="{{ old('date', date('Y-m-d')) }}" required>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-lg-2">
                 <label class="form-label small fw-semibold text-secondary">Shift Cycle <span class="text-danger">*</span></label>
                 <select name="shift_type" class="form-select form-select-sm fw-semibold" required>
-                    <option value="morning">☀️ Morning Shift</option>
-                    <option value="evening" selected>🌙 Evening Shift</option>
+                    <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
+                    <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
                 </select>
             </div>
             <div class="col-6 col-sm-4 col-lg-2">
@@ -172,7 +172,7 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light fw-bold text-dark">Rs.</span>
-                            <input type="number" step="0.01" min="0" class="form-control fw-bold fs-5 text-dark" id="total_sale" name="total_sale" value="0" required oninput="calculateClosing()" placeholder="0.00">
+                            <input type="number" step="0.01" min="0" class="form-control fw-bold fs-5 text-dark" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required oninput="calculateClosing()" placeholder="0.00">
                         </div>
                         <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
                     </div>
@@ -181,19 +181,19 @@
                         <div class="row g-2">
                             <div class="col-12 col-sm-5">
                                 <label class="form-label small fw-semibold text-danger">(-) Sale Returns (Rs.)</label>
-                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="returns_amount" name="returns_amount" value="0" oninput="calculateClosing()">
+                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="returns_amount" name="returns_amount" value="{{ old('returns_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
                             </div>
                             <div class="col-12 col-sm-7">
                                 <label class="form-label small fw-semibold text-secondary">Return Invoice Number</label>
-                                <input type="text" class="form-control form-control-sm" name="return_invoice_number" maxlength="100" placeholder="e.g. RET-1250">
+                                <input type="text" class="form-control form-control-sm" name="return_invoice_number" value="{{ old('return_invoice_number', '') }}" maxlength="100" placeholder="e.g. RET-1250">
                             </div>
                             <div class="col-12 col-sm-5">
                                 <label class="form-label small fw-semibold text-danger">(-) Shift Expenses (Rs.)</label>
-                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="expenses_amount" name="expenses_amount" value="0" oninput="calculateClosing()">
+                                <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="expenses_amount" name="expenses_amount" value="{{ old('expenses_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
                             </div>
                             <div class="col-12 col-sm-7">
                                 <label class="form-label small fw-semibold text-secondary">Expense Reason / Details</label>
-                                <input type="text" class="form-control form-control-sm" name="expenses_details" maxlength="2000" placeholder="e.g. Shop supplies, fuel, tea">
+                                <input type="text" class="form-control form-control-sm" name="expenses_details" value="{{ old('expenses_details', '') }}" maxlength="2000" placeholder="e.g. Shop supplies, fuel, tea">
                             </div>
                         </div>
                     </div>
@@ -351,7 +351,7 @@
                                         <span class="badge px-2 py-1" style="background:#e0e7ff; color:#3730a3; font-weight:700;">Rs. 5,000</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_5000" name="note_5000" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_5000" name="note_5000" value="{{ old('note_5000', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_5000">0.00</td>
                                 </tr>
@@ -360,7 +360,7 @@
                                         <span class="badge px-2 py-1" style="background:#f1f5f9; color:#0f172a; font-weight:700; border: 1px solid #cbd5e1;">Rs. 1,000</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_1000" name="note_1000" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_1000" name="note_1000" value="{{ old('note_1000', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_1000">0.00</td>
                                 </tr>
@@ -369,7 +369,7 @@
                                         <span class="badge px-2 py-1" style="background:#dcfce7; color:#166534; font-weight:700;">Rs. 500</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_500" name="note_500" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_500" name="note_500" value="{{ old('note_500', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_500">0.00</td>
                                 </tr>
@@ -378,7 +378,7 @@
                                         <span class="badge px-2 py-1" style="background:#e0f2fe; color:#075985; font-weight:700;">Rs. 100</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_100" name="note_100" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_100" name="note_100" value="{{ old('note_100', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_100">0.00</td>
                                 </tr>
@@ -387,7 +387,7 @@
                                         <span class="badge px-2 py-1" style="background:#ffedd5; color:#9a3412; font-weight:700;">Rs. 50</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_50" name="note_50" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_50" name="note_50" value="{{ old('note_50', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_50">0.00</td>
                                 </tr>
@@ -396,7 +396,7 @@
                                         <span class="badge px-2 py-1" style="background:#ccfbf1; color:#115e59; font-weight:700;">Rs. 20</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_20" name="note_20" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_20" name="note_20" value="{{ old('note_20', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_20">0.00</td>
                                 </tr>
@@ -405,7 +405,7 @@
                                         <span class="badge px-2 py-1" style="background:#f3e8ff; color:#6b21a8; font-weight:700;">Rs. 10</span>
                                     </td>
                                     <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_10" name="note_10" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_10" name="note_10" value="{{ old('note_10', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_10">0.00</td>
                                 </tr>
@@ -414,7 +414,7 @@
                                         <span class="badge px-2 py-1" style="background:#fef3c7; color:#92400e; font-weight:700;">Coins & Change</span>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="coins" name="coins" value="0" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="number" step="0.01" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="coins" name="coins" value="{{ old('coins', '') }}" placeholder="0.00" oninput="calculateClosing()" onfocus="this.select()">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_coins">0.00</td>
                                 </tr>
@@ -472,7 +472,7 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Closing Remarks / Handover Notes</label>
-                        <textarea name="remarks" class="form-control form-control-sm" rows="2" placeholder="Optional cashier handover remarks or explanation for any variance..."></textarea>
+                        <textarea name="remarks" class="form-control form-control-sm" rows="2" placeholder="Optional cashier handover remarks or explanation for any variance...">{{ old('remarks', '') }}</textarea>
                     </div>
 
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 pt-2 border-top">
@@ -494,7 +494,20 @@
 function calculateInvoiceCount() {
     const start = parseInt(document.getElementById('invoice_start').value) || 0;
     const end = parseInt(document.getElementById('invoice_end').value) || 0;
-    document.getElementById('invoice_count_display').value = start > 0 && end >= start ? end - start + 1 : 0;
+    const display = document.getElementById('invoice_count_display');
+    if (start > 0 && end >= start) {
+        display.value = end - start + 1;
+        display.classList.remove('text-danger');
+        display.classList.add('text-primary');
+    } else if (start > 0 && end > 0 && end < start) {
+        display.value = 0;
+        display.classList.remove('text-primary');
+        display.classList.add('text-danger');
+    } else {
+        display.value = 0;
+        display.classList.remove('text-danger');
+        display.classList.add('text-primary');
+    }
 }
 
 let partyPaymentIndex = 1;
