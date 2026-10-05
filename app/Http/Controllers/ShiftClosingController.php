@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ShiftClosing;
+use App\Models\User;
 use App\Models\Party;
 use App\Models\Account;
 use App\Models\Transaction;
