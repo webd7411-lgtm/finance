@@ -65,8 +65,26 @@ class ShiftClosingController extends Controller
 
     public function store(Request $request)
     {
+        $stripCommas = function ($val) {
+            if (is_null($val) || $val === '') return $val;
+            return is_string($val) ? str_replace(',', '', $val) : $val;
+        };
+
+        $request->merge([
+            'total_sale' => $stripCommas($request->input('total_sale')),
+            'returns_amount' => $stripCommas($request->input('returns_amount')),
+            'expenses_amount' => $stripCommas($request->input('expenses_amount')),
+            'coins' => $stripCommas($request->input('coins')),
+        ]);
+
         // 1. Clean and filter party payments: only keep rows with valid party_id and amount > 0
         $paymentRows = collect($request->input('party_payments', []))
+            ->map(function ($payment) use ($stripCommas) {
+                if (isset($payment['amount'])) {
+                    $payment['amount'] = $stripCommas($payment['amount']);
+                }
+                return $payment;
+            })
             ->filter(function ($payment) {
                 return !empty($payment['party_id']) && !empty($payment['amount']) && (float)$payment['amount'] > 0;
             })
@@ -83,7 +101,20 @@ class ShiftClosingController extends Controller
 
         // 2. Clean and filter digital account payments
         $accountRows = collect($request->input('account_payments', []))
+            ->map(function ($acc) use ($stripCommas) {
+                if (isset($acc['amount'])) {
+                    $acc['amount'] = $stripCommas($acc['amount']);
+                }
+                return $acc;
+            })
             ->filter(fn ($acc) => !empty($acc['account_id']) && !empty($acc['amount']) && (float)$acc['amount'] > 0)
+            ->map(function ($acc) {
+                return [
+                    'account_id' => (int) $acc['account_id'],
+                    'amount' => (float) $acc['amount'],
+                    'description' => $acc['description'] ?? null,
+                ];
+            })
             ->values()
             ->all();
         $request->merge(['account_payments' => $accountRows]);

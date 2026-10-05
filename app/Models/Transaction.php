@@ -50,9 +50,10 @@ class Transaction extends Model
     public function getTypeBadgeAttribute(): string
     {
         return match($this->type) {
-            'payment_in'  => '<span class="badge bg-success-subtle text-success border border-success fw-bold"><i class="bi bi-arrow-down-left me-1"></i>Payment In</span>',
-            'payment_out' => '<span class="badge bg-danger-subtle text-danger border border-danger fw-bold"><i class="bi bi-arrow-up-right me-1"></i>Payment Out</span>',
-            default       => '<span class="badge bg-secondary">' . ucfirst($this->type) . '</span>',
+            'payment_in'    => '<span class="badge bg-success-subtle text-success border border-success fw-bold"><i class="bi bi-arrow-down-left me-1"></i>Payment In</span>',
+            'payment_out'   => '<span class="badge bg-danger-subtle text-danger border border-danger fw-bold"><i class="bi bi-arrow-up-right me-1"></i>Payment Out</span>',
+            'purchase_bill' => '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning fw-bold"><i class="bi bi-receipt me-1"></i>Purchase Bill</span>',
+            default         => '<span class="badge bg-secondary">' . ucfirst($this->type) . '</span>',
         };
     }
 }

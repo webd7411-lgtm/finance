@@ -11,6 +11,10 @@
 
 @section('page_actions')
     <div class="d-flex flex-wrap gap-1 gap-sm-2 w-100 justify-content-start justify-content-sm-end">
+        <button type="button" class="btn btn-warning btn-sm rounded-3 fw-semibold px-2.5 px-sm-3 shadow-sm flex-fill flex-sm-grow-0 text-nowrap text-dark" data-bs-toggle="modal" data-bs-target="#purchaseBillModal">
+            <i class="bi bi-file-earmark-plus me-1"></i> Add Purchase Bill
+        </button>
+
         <button type="button" class="btn btn-primary btn-sm rounded-3 fw-semibold px-2.5 px-sm-3 shadow-sm flex-fill flex-sm-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#transferModal">
             <i class="bi bi-arrow-left-right me-1"></i> Transfer Funds
         </button>
@@ -96,6 +100,7 @@
                 <option value="">All Types</option>
                 <option value="payment_in" {{ request('type') == 'payment_in' ? 'selected' : '' }}>Payment In</option>
                 <option value="payment_out" {{ request('type') == 'payment_out' ? 'selected' : '' }}>Payment Out</option>
+                <option value="purchase_bill" {{ request('type') == 'purchase_bill' ? 'selected' : '' }}>Purchase Bill</option>
             </select>
 
             <select name="account_id" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 120px; max-width: 150px;">
@@ -148,8 +153,12 @@
                             @endif
                         </td>
                         <td>
-                            <div class="small fw-semibold text-dark">{{ $trx->account->name }}</div>
-                            <small class="text-muted">{!! $trx->account->type_badge !!}</small>
+                            @if($trx->account)
+                                <div class="small fw-semibold text-dark">{{ $trx->account->name }}</div>
+                                <small class="text-muted">{!! $trx->account->type_badge !!}</small>
+                            @else
+                                <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-clock-history me-1"></i>Credit Purchase</span>
+                            @endif
                         </td>
                         <td class="small font-monospace text-secondary">
                             {{ $trx->bill_no ?? '-' }}
@@ -157,8 +166,8 @@
                         <td class="small text-muted text-truncate" style="max-width: 220px;" title="{{ $trx->description }}">
                             {{ $trx->description ?? '-' }}
                         </td>
-                        <td class="text-end font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : 'text-danger' }}">
-                            {{ $trx->type == 'payment_in' ? '+' : '-' }}Rs. {{ number_format($trx->amount, 2) }}
+                        <td class="text-end font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : ($trx->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}">
+                            {{ $trx->type == 'payment_in' ? '+' : ($trx->type == 'purchase_bill' ? '•' : '-') }}Rs. {{ number_format($trx->amount, 2) }}
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
@@ -219,9 +228,15 @@
                                 @endif
                             </div>
                             <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
-                                <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
-                                    <i class="bi bi-wallet2 me-1"></i>{{ $trx->account->name }}
-                                </span>
+                                @if($trx->account)
+                                    <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
+                                        <i class="bi bi-wallet2 me-1"></i>{{ $trx->account->name }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
+                                        <i class="bi bi-clock-history me-1"></i>Credit Purchase
+                                    </span>
+                                @endif
                                 @if($trx->party)
                                     {!! $trx->party->type_badge !!}
                                 @endif
@@ -231,8 +246,8 @@
                             </div>
                         </div>
                         <div class="text-end flex-shrink-0">
-                            <div class="font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : 'text-danger' }}" style="font-size: 0.95rem;">
-                                {{ $trx->type == 'payment_in' ? '+' : '-' }}Rs. {{ number_format($trx->amount, 2) }}
+                            <div class="font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : ($trx->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}" style="font-size: 0.95rem;">
+                                {{ $trx->type == 'payment_in' ? '+' : ($trx->type == 'purchase_bill' ? '•' : '-') }}Rs. {{ number_format($trx->amount, 2) }}
                             </div>
                         </div>
                     </div>
@@ -475,7 +490,7 @@
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
-                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Is account se raqam nikal jayegi.</div>
+                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Funds will be deducted from this account.</div>
                         </div>
 
                         <div class="col-12 col-sm-6">
@@ -486,7 +501,7 @@
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
-                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Is account me raqam shamil hogi.</div>
+                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Funds will be added to this account.</div>
                         </div>
                     </div>
 
@@ -513,6 +528,92 @@
                     <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm">
                         <i class="bi bi-arrow-left-right me-1"></i> Transfer Funds Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== PURCHASE BILL (CREDIT) MODAL ==================== -->
+<div class="modal fade" id="purchaseBillModal" tabindex="-1" aria-labelledby="purchaseBillModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg text-start">
+            <div class="modal-header border-bottom py-3 bg-warning text-dark">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-plus fs-5"></i>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0" id="purchaseBillModalLabel">Record Purchase Bill (Credit)</h6>
+                        <small class="text-dark-50" style="font-size: 0.75rem;">Credit supplies & stock received without immediate cash payment</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form action="{{ route('transactions.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="type" value="purchase_bill">
+
+                <div class="modal-body p-3 p-sm-4 text-start">
+                    <div class="alert alert-warning py-2 px-3 small border-0 d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-info-circle-fill text-warning fs-6"></i>
+                        <div>
+                            <strong>Credit Purchase:</strong> No cash or bank balance will be deducted now. The bill amount will be added to the supplier's payable ledger balance.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Bill Date <span class="text-danger">*</span></label>
+                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Supplier / Vendor <span class="text-danger">*</span></label>
+                        <select name="party_id" class="form-select form-select-sm py-2" required>
+                            <option value="" disabled selected>-- Select Supplier / Trader --</option>
+                            @foreach($parties as $p)
+                                <option value="{{ $p->id }}">
+                                    {{ $p->name }} [{{ strtoupper($p->type) }}] - Current Balance: Rs. {{ number_format($p->current_balance, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text small text-muted" style="font-size: 0.72rem;">The bill amount will be credited to this party's ledger.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Bill Total Amount (Rs.) <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light fw-bold text-dark">PKR</span>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-dark" placeholder="0.00" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Purchase Category</label>
+                            <select name="category_id" class="form-select form-select-sm py-2">
+                                <option value="">-- Select Category --</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Supplier Bill / Invoice #</label>
+                            <input type="text" name="bill_no" class="form-control form-control-sm py-2" placeholder="e.g. BILL-4509 / Bilty #">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-secondary">Description / Item Details</label>
+                        <textarea name="description" class="form-control form-control-sm py-2" rows="2" placeholder="e.g. 50 cartons of inventory stock received on 30-day credit..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-2 bg-light">
+                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm px-4 fw-semibold text-dark shadow-sm">
+                        <i class="bi bi-check-circle me-1"></i> Save Purchase Bill
                     </button>
                 </div>
             </form>

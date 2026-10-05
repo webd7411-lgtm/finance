@@ -117,4 +117,59 @@ class ShiftClosingTest extends TestCase
             'shift_closing_id' => $closing->id,
         ]);
     }
+
+    public function test_shift_closing_accepts_comma_formatted_amounts(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('test-password')]);
+        $party = Party::create([
+            'name' => 'Supplier XYZ',
+            'type' => 'supplier',
+            'opening_balance' => 10000,
+            'current_balance' => 10000,
+        ]);
+        $account = \App\Models\Account::create([
+            'name' => 'JazzCash Shop',
+            'type' => 'jazzcash',
+            'opening_balance' => 0,
+            'current_balance' => 0,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('shift-closings.store'), [
+            'date' => '2026-10-04',
+            'shift_type' => 'evening',
+            'invoice_start' => 2001,
+            'invoice_end' => 2050,
+            'total_sale' => '50,000.00',
+            'returns_amount' => '1,500.00',
+            'expenses_amount' => '500.00',
+            'coins' => '250.00',
+            'note_5000' => 8, // 40,000
+            'note_1000' => 4, // 4,000
+            'party_payments' => [
+                [
+                    'party_id' => $party->id,
+                    'amount' => '3,000.00',
+                    'details' => 'Supplier invoice payment',
+                ],
+            ],
+            'account_payments' => [
+                [
+                    'account_id' => $account->id,
+                    'amount' => '1,000.00',
+                    'description' => 'Direct Jazzcash receipt',
+                ],
+            ],
+        ]);
+
+        $closing = ShiftClosing::firstOrFail();
+        $response->assertRedirect(route('shift-closings.show', $closing));
+
+        $this->assertSame('50000.00', $closing->total_sale);
+        $this->assertSame('1500.00', $closing->returns_amount);
+        $this->assertSame('500.00', $closing->expenses_amount);
+        // expected cash = 50000 - 1500 - 500 - 3000 = 45000
+        $this->assertSame('45000.00', $closing->expected_cash);
+        $this->assertSame('7000.00', $party->fresh()->current_balance);
+        $this->assertSame('1000.00', $account->fresh()->current_balance);
+    }
 }

@@ -42,9 +42,15 @@
             </div>
 
             <!-- Voucher Title -->
-            <div class="text-center py-2 mb-3 rounded-2 {{ $transaction->type == 'payment_in' ? 'bg-success bg-opacity-10 text-success border border-success' : 'bg-danger bg-opacity-10 text-danger border border-danger' }}">
+            <div class="text-center py-2 mb-3 rounded-2 {{ $transaction->type == 'payment_in' ? 'bg-success bg-opacity-10 text-success border border-success' : ($transaction->type == 'purchase_bill' ? 'bg-warning bg-opacity-10 text-warning-emphasis border border-warning' : 'bg-danger bg-opacity-10 text-danger border border-danger') }}">
                 <h6 class="fw-bold m-0 text-uppercase">
-                    {{ $transaction->type == 'payment_in' ? 'Receipt Voucher (Payment In)' : 'Payment Voucher (Payment Out)' }}
+                    @if($transaction->type == 'payment_in')
+                        Receipt Voucher (Payment In)
+                    @elseif($transaction->type == 'purchase_bill')
+                        Purchase Bill (Credit Voucher)
+                    @else
+                        Payment Voucher (Payment Out)
+                    @endif
                 </h6>
             </div>
 
@@ -57,11 +63,17 @@
                     </tr>
                     <tr>
                         <td class="text-muted">Payment Channel:</td>
-                        <td class="fw-semibold text-dark">{{ $transaction->account->name }} ({!! $transaction->account->type_badge !!})</td>
+                        <td class="fw-semibold text-dark">
+                            @if($transaction->account)
+                                {{ $transaction->account->name }} ({!! $transaction->account->type_badge !!})
+                            @else
+                                <span class="badge bg-secondary-subtle text-secondary border">Credit Purchase (No Cash Deduction)</span>
+                            @endif
+                        </td>
                     </tr>
                     @if($transaction->party)
                         <tr>
-                            <td class="text-muted">{{ $transaction->type == 'payment_in' ? 'Received From:' : 'Paid To:' }}</td>
+                            <td class="text-muted">{{ $transaction->type == 'payment_in' ? 'Received From:' : ($transaction->type == 'purchase_bill' ? 'Supplier / Vendor:' : 'Paid To:') }}</td>
                             <td class="fw-bold text-dark">
                                 {{ $transaction->party->name }} 
                                 <span class="badge bg-light text-secondary border ms-1">{{ strtoupper($transaction->party->type) }}</span>
@@ -88,7 +100,7 @@
                     @endif
                     <tr class="table-light">
                         <td class="fw-bold fs-6 text-dark">Total Amount:</td>
-                        <td class="fw-bold fs-5 font-monospace {{ $transaction->type == 'payment_in' ? 'text-success' : 'text-danger' }}">
+                        <td class="fw-bold fs-5 font-monospace {{ $transaction->type == 'payment_in' ? 'text-success' : ($transaction->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}">
                             Rs. {{ number_format($transaction->amount, 2) }}
                         </td>
                     </tr>

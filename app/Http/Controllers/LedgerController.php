@@ -148,7 +148,7 @@ class LedgerController extends Controller
                     'bill_no' => $isShiftPayment ? 'Shift #' . $record->shift_closing_id : $record->bill_no,
                     'type' => $type,
                     'description' => $isShiftPayment ? $record->details : $record->description,
-                    'account_name' => $isShiftPayment ? 'Shift Closing Cash' : ($record->account->name ?? 'Cash/Bank'),
+                    'account_name' => $isShiftPayment ? 'Shift Closing Cash' : (($record->type ?? '') === 'purchase_bill' ? 'Credit Purchase (No Cash)' : ($record->account->name ?? 'Direct Counter')),
                     'debit' => $debit,
                     'credit' => $credit,
                     'running_balance' => $currentRunning,

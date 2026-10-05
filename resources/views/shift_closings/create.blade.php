@@ -197,7 +197,7 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light fw-bold text-dark">Rs.</span>
-                            <input type="number" step="0.01" min="0" class="form-control fw-bold fs-5 text-dark" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required oninput="calculateClosing()" placeholder="0.00">
+                            <input type="text" inputmode="decimal" class="form-control fw-bold fs-5 text-dark amount-format" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required placeholder="0.00" autocomplete="off">
                         </div>
                         <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
                     </div>
@@ -215,7 +215,7 @@
                                 <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Return Amount (Rs.)</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text bg-white text-muted">Rs.</span>
-                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm text-danger fw-bold" id="returns_amount" name="returns_amount" value="{{ old('returns_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
+                                    <input type="text" inputmode="decimal" class="form-control form-control-sm text-danger fw-bold amount-format" id="returns_amount" name="returns_amount" value="{{ old('returns_amount', '') }}" placeholder="0.00" autocomplete="off">
                                 </div>
                             </div>
                             <div class="col-6 col-sm-6 col-md-3">
@@ -255,7 +255,7 @@
                                 <label class="form-label small fw-semibold text-secondary mb-1 text-truncate w-100">Expense Amount (Rs.)</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text bg-white text-muted">Rs.</span>
-                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm text-danger fw-bold" id="expenses_amount" name="expenses_amount" value="{{ old('expenses_amount', '') }}" placeholder="0.00" oninput="calculateClosing()">
+                                    <input type="text" inputmode="decimal" class="form-control form-control-sm text-danger fw-bold amount-format" id="expenses_amount" name="expenses_amount" value="{{ old('expenses_amount', '') }}" placeholder="0.00" autocomplete="off">
                                 </div>
                             </div>
                             <div class="col-12 col-sm-7">
@@ -296,7 +296,7 @@
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                                    <input type="number" step="0.01" min="0.01" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger" name="party_payments[0][amount]" placeholder="0.00" oninput="calculateClosing()">
+                                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[0][amount]" placeholder="0.00" autocomplete="off">
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
@@ -358,7 +358,7 @@
                                     <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white text-muted">Rs.</span>
-                                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary" name="account_payments[0][amount]" placeholder="0.00" oninput="calculateClosing()">
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary amount-format" name="account_payments[0][amount]" placeholder="0.00" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="col-6 col-md-3">
@@ -481,7 +481,7 @@
                                         <span class="badge px-2 py-1" style="background:#fef3c7; color:#92400e; font-weight:700;">Coins & Change</span>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="coins" name="coins" value="{{ old('coins', '') }}" placeholder="0.00" oninput="calculateClosing()" onfocus="this.select()">
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm text-center fw-bold note-input amount-format" id="coins" name="coins" value="{{ old('coins', '') }}" placeholder="0.00" onfocus="this.select()" autocomplete="off">
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_coins">0.00</td>
                                 </tr>
@@ -620,12 +620,17 @@ const partyOptions = Array.from(document.querySelectorAll('#shiftClosingPartyLis
 function bindPartyPaymentRow(row) {
     const partyInput = row.querySelector('[data-party-search]');
     const partyIdInput = row.querySelector('[data-party-id]');
+    const amtInput = row.querySelector('.shift-party-payment-amount');
 
     partyInput.addEventListener('input', function () {
         const matchedParty = partyOptions.find(function (option) { return option.value === partyInput.value; });
         partyIdInput.value = matchedParty ? matchedParty.dataset.partyId : '';
         calculateClosing();
     });
+
+    if (amtInput) {
+        attachAmountFormatListeners(amtInput);
+    }
 
     row.querySelector('[data-remove-party-payment]').addEventListener('click', function () {
         if (partyPaymentRows.querySelectorAll('[data-party-payment-row]').length > 1) {
@@ -657,7 +662,7 @@ document.getElementById('addPartyPayment').addEventListener('click', function ()
                 <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white text-muted">Rs.</span>
-                    <input type="number" step="0.01" min="0.01" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger" name="party_payments[${partyPaymentIndex}][amount]" placeholder="0.00" oninput="calculateClosing()">
+                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[${partyPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
                 </div>
             </div>
             <div class="col-6 col-md-3">
@@ -680,7 +685,10 @@ const accountPaymentRows = document.getElementById('accountPaymentRows');
 
 function bindAccountPaymentRow(row) {
     row.querySelector('.shift-account-select')?.addEventListener('change', calculateClosing);
-    row.querySelector('.shift-account-payment-amount')?.addEventListener('input', calculateClosing);
+    const amtInput = row.querySelector('.shift-account-payment-amount');
+    if (amtInput) {
+        attachAmountFormatListeners(amtInput);
+    }
     row.querySelector('[data-remove-account-payment]')?.addEventListener('click', function () {
         if (accountPaymentRows.querySelectorAll('[data-account-payment-row]').length > 1) {
             row.remove();
@@ -717,7 +725,7 @@ document.getElementById('addAccountPayment').addEventListener('click', function 
                 <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white text-muted">Rs.</span>
-                    <input type="number" step="0.01" min="0.01" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary" name="account_payments[${accountPaymentIndex}][amount]" placeholder="0.00" oninput="calculateClosing()">
+                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary amount-format" name="account_payments[${accountPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
                 </div>
             </div>
             <div class="col-6 col-md-3">
@@ -745,6 +753,104 @@ function formatRs(num) {
     return 'Rs. ' + Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatWithCommas(raw) {
+    if (raw === null || raw === undefined) return '';
+    let str = String(raw).trim();
+    if (!str) return '';
+    
+    // Only allow digits and at most one decimal point
+    let clean = str.replace(/[^\d.]/g, '');
+    const parts = clean.split('.');
+    let integerPart = parts[0] || '';
+    let decimalPart = parts.length > 1 ? parts.slice(1).join('') : null;
+
+    if (integerPart.length > 1) {
+        integerPart = integerPart.replace(/^0+(?=\d)/, '');
+    }
+
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    if (decimalPart !== null) {
+        return integerPart + '.' + decimalPart;
+    }
+    return integerPart;
+}
+
+function parseAmount(val) {
+    if (val === null || val === undefined) return 0;
+    const clean = String(val).replace(/,/g, '').trim();
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : num;
+}
+
+function handleAmountInput(e) {
+    const input = e.target;
+    const initialVal = input.value;
+    const cursorPosition = input.selectionStart || 0;
+
+    const rawBefore = initialVal.slice(0, cursorPosition).replace(/,/g, '');
+    const charsBeforeCursor = rawBefore.length;
+
+    const formatted = formatWithCommas(initialVal);
+    input.value = formatted;
+
+    let newCursorPos = 0;
+    let count = 0;
+    for (let i = 0; i < formatted.length; i++) {
+        if (formatted[i] !== ',') {
+            count++;
+        }
+        if (count === charsBeforeCursor) {
+            newCursorPos = i + 1;
+            break;
+        }
+    }
+    if (charsBeforeCursor === 0) {
+        newCursorPos = 0;
+    } else if (count < charsBeforeCursor) {
+        newCursorPos = formatted.length;
+    }
+
+    try {
+        input.setSelectionRange(newCursorPos, newCursorPos);
+    } catch (err) {}
+
+    calculateClosing();
+}
+
+function handleAmountKeydown(e) {
+    const input = e.target;
+    if (e.key === 'Backspace') {
+        const pos = input.selectionStart;
+        if (pos === input.selectionEnd && pos > 0 && input.value[pos - 1] === ',') {
+            e.preventDefault();
+            const val = input.value;
+            const newVal = val.slice(0, pos - 2) + val.slice(pos - 1);
+            input.value = formatWithCommas(newVal);
+            const rawBefore = val.slice(0, pos - 2).replace(/,/g, '').length;
+            let newPos = 0;
+            let count = 0;
+            for (let i = 0; i < input.value.length; i++) {
+                if (input.value[i] !== ',') count++;
+                if (count === rawBefore) {
+                    newPos = i + 1;
+                    break;
+                }
+            }
+            if (rawBefore === 0) newPos = 0;
+            input.setSelectionRange(newPos, newPos);
+            calculateClosing();
+        }
+    }
+}
+
+function attachAmountFormatListeners(input) {
+    if (!input || input.dataset.formatAttached) return;
+    input.dataset.formatAttached = 'true';
+    input.addEventListener('input', handleAmountInput);
+    input.addEventListener('keydown', handleAmountKeydown);
+}
+
 function calculateClosing() {
     // 1. Note Calculations
     const n5000 = (parseInt(document.getElementById('note_5000').value) || 0);
@@ -754,7 +860,7 @@ function calculateClosing() {
     const n50   = (parseInt(document.getElementById('note_50').value) || 0);
     const n20   = (parseInt(document.getElementById('note_20').value) || 0);
     const n10   = (parseInt(document.getElementById('note_10').value) || 0);
-    const coins = (parseFloat(document.getElementById('coins').value) || 0);
+    const coins = parseAmount(document.getElementById('coins').value);
 
     const sub5000 = n5000 * 5000;
     const sub1000 = n1000 * 1000;
@@ -777,14 +883,14 @@ function calculateClosing() {
     document.getElementById('display_total_cash').innerText = formatRs(totalCashCounted);
 
     // 2. Sales, Returns & Expenses
-    const totalSale = parseFloat(document.getElementById('total_sale').value) || 0;
-    const returns   = parseFloat(document.getElementById('returns_amount').value) || 0;
-    const expenses  = parseFloat(document.getElementById('expenses_amount').value) || 0;
+    const totalSale = parseAmount(document.getElementById('total_sale').value);
+    const returns   = parseAmount(document.getElementById('returns_amount').value);
+    const expenses  = parseAmount(document.getElementById('expenses_amount').value);
 
     // 3. Party Payments
     let totalPartyPayments = 0;
     document.querySelectorAll('[data-party-payment-row]').forEach(function(row) {
-        const amt = parseFloat(row.querySelector('.shift-party-payment-amount').value) || 0;
+        const amt = parseAmount(row.querySelector('.shift-party-payment-amount')?.value);
         totalPartyPayments += amt;
     });
     document.getElementById('display_party_total').innerText = formatRs(totalPartyPayments);
@@ -800,7 +906,7 @@ function calculateClosing() {
 
     document.querySelectorAll('[data-account-payment-row]').forEach(function(row) {
         const select = row.querySelector('.shift-account-select');
-        const amt = parseFloat(row.querySelector('.shift-account-payment-amount').value) || 0;
+        const amt = parseAmount(row.querySelector('.shift-account-payment-amount')?.value);
         if (select && select.value && amt > 0) {
             totalDigitalCollections += amt;
             const selectedOpt = select.options[select.selectedIndex];
@@ -892,6 +998,21 @@ noteInputs.forEach(function(input, index) {
             }
         }
     });
+});
+
+// Strip commas before submitting form
+document.getElementById('shiftClosingForm')?.addEventListener('submit', function() {
+    document.querySelectorAll('.amount-format').forEach(function(input) {
+        input.value = input.value.replace(/,/g, '');
+    });
+});
+
+// Initialize amount formatting for all existing inputs
+document.querySelectorAll('.amount-format').forEach(function(input) {
+    if (input.value) {
+        input.value = formatWithCommas(input.value);
+    }
+    attachAmountFormatListeners(input);
 });
 
 calculateInvoiceCount();

@@ -63,10 +63,10 @@ class TransactionController extends Controller
     {
         $validated = $request->validate([
             'date' => ['required', 'date'],
-            'type' => ['required', Rule::in(['payment_in', 'payment_out'])],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'type' => ['required', Rule::in(['payment_in', 'payment_out', 'purchase_bill'])],
+            'account_id' => [Rule::requiredIf(fn() => $request->type !== 'purchase_bill'), 'nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'party_id' => ['nullable', 'exists:parties,id'],
+            'party_id' => [Rule::requiredIf(fn() => $request->type === 'purchase_bill'), 'nullable', 'exists:parties,id'],
             'category_id' => ['nullable', 'exists:expense_categories,id'],
             'bill_no' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
@@ -76,24 +76,28 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($validated) {
             $transaction = Transaction::create($validated);
-
-            $account = Account::findOrFail($validated['account_id']);
             $amount = $validated['amount'];
 
-            // Adjust Account Balance
-            if ($validated['type'] === 'payment_in') {
-                $account->current_balance += $amount;
-            } else {
-                $account->current_balance -= $amount;
+            // Adjust Account Balance only for cash/bank payments
+            if ($validated['type'] !== 'purchase_bill' && !empty($validated['account_id'])) {
+                $account = Account::findOrFail($validated['account_id']);
+                if ($validated['type'] === 'payment_in') {
+                    $account->current_balance += $amount;
+                } else {
+                    $account->current_balance -= $amount;
+                }
+                $account->save();
             }
-            $account->save();
 
             // Adjust Party Balance if party attached
             if (!empty($validated['party_id'])) {
                 $party = Party::findOrFail($validated['party_id']);
                 if ($validated['type'] === 'payment_in') {
-                    // Wasooli reduces party receivables
+                    // Receipt reduces customer receivable
                     $party->current_balance -= $amount;
+                } elseif ($validated['type'] === 'purchase_bill') {
+                    // Credit purchase increases supplier payable (we owe more)
+                    $party->current_balance += $amount;
                 } else {
                     // Payment Out: for suppliers reduces payable; for staff advance adds to their balance
                     if ($party->type === 'staff') {
@@ -105,18 +109,25 @@ class TransactionController extends Controller
                 $party->save();
             }
 
-            $mod = ($validated['type'] === 'payment_in') ? 'Payment In' : 'Payment Out';
+            $mod = match($validated['type']) {
+                'payment_in' => 'Payment In',
+                'purchase_bill' => 'Purchase Bill',
+                default => 'Payment Out',
+            };
             $partyName = !empty($validated['party_id']) ? Party::find($validated['party_id'])?->name : 'Direct Counter';
+            $channelInfo = !empty($validated['account_id']) ? Account::find($validated['account_id'])?->name : 'Credit (No Cash)';
             ActivityLog::log(
                 'Created',
                 $mod,
-                "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$account->name}, Party: {$partyName})"
+                "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$channelInfo}, Party: {$partyName})"
             );
         });
 
-        $msg = ($validated['type'] === 'payment_in') 
-            ? 'Payment In recorded and account balance credited successfully.'
-            : 'Payment Out recorded and account balance debited successfully.';
+        $msg = match($validated['type']) {
+            'payment_in' => 'Payment In recorded and account balance credited successfully.',
+            'purchase_bill' => 'Purchase Bill recorded and supplier ledger credited successfully.',
+            default => 'Payment Out recorded and account balance debited successfully.',
+        };
 
         return redirect()->route('transactions.index')->with('success', $msg);
     }
@@ -131,7 +142,7 @@ class TransactionController extends Controller
             'reference' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
         ], [
-            'to_account_id.different' => 'Transfer From aur Transfer To accounts mukhtalif hone chahiye.',
+            'to_account_id.different' => 'Transfer From and Transfer To accounts must be different.',
         ]);
 
         $fromAccount = Account::findOrFail($validated['from_account_id']);
@@ -179,7 +190,7 @@ class TransactionController extends Controller
             );
         });
 
-        return back()->with('success', "Rs. " . number_format($amount, 2) . " kamyabi se {$fromAccount->name} se {$toAccount->name} me transfer ho gaye hain.");
+        return back()->with('success', "Rs. " . number_format($amount, 2) . " transferred successfully from {$fromAccount->name} to {$toAccount->name}.");
     }
 
     public function show(Transaction $transaction)
@@ -195,20 +206,24 @@ class TransactionController extends Controller
         }
 
         DB::transaction(function () use ($transaction) {
-            // Revert Account Balance
-            $account = $transaction->account;
-            if ($transaction->type === 'payment_in') {
-                $account->current_balance -= $transaction->amount;
-            } else {
-                $account->current_balance += $transaction->amount;
+            // Revert Account Balance if it was a cash/bank transaction
+            if ($transaction->type !== 'purchase_bill' && $transaction->account) {
+                $account = $transaction->account;
+                if ($transaction->type === 'payment_in') {
+                    $account->current_balance -= $transaction->amount;
+                } else {
+                    $account->current_balance += $transaction->amount;
+                }
+                $account->save();
             }
-            $account->save();
 
             // Revert Party Balance
             if ($transaction->party) {
                 $party = $transaction->party;
                 if ($transaction->type === 'payment_in') {
                     $party->current_balance += $transaction->amount;
+                } elseif ($transaction->type === 'purchase_bill') {
+                    $party->current_balance -= $transaction->amount;
                 } else {
                     if ($party->type === 'staff') {
                         $party->current_balance -= $transaction->amount;
@@ -221,14 +236,18 @@ class TransactionController extends Controller
 
             $txId = $transaction->id;
             $txAmount = $transaction->amount;
-            $txType = ($transaction->type === 'payment_in') ? 'Payment In' : 'Payment Out';
+            $txType = match($transaction->type) {
+                'payment_in' => 'Payment In',
+                'purchase_bill' => 'Purchase Bill',
+                default => 'Payment Out',
+            };
 
             $transaction->delete();
 
             ActivityLog::log(
                 'Deleted',
                 $txType,
-                "Deleted {$txType} voucher #{$txId} of Rs. " . number_format($txAmount, 2) . " and reversed account balances"
+                "Deleted {$txType} voucher #{$txId} of Rs. " . number_format($txAmount, 2) . " and reversed balances"
             );
         });
 
