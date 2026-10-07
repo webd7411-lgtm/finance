@@ -57,7 +57,7 @@
                         <label for="opening_balance" class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                            <input type="number" step="0.01" class="form-control @error('opening_balance') is-invalid @enderror" id="opening_balance" name="opening_balance" value="{{ old('opening_balance', $account->opening_balance) }}">
+                            <input type="text" inputmode="decimal" class="form-control amount-format @error('opening_balance') is-invalid @enderror" id="opening_balance" name="opening_balance" value="{{ old('opening_balance', $account->opening_balance) }}" placeholder="0.00" autocomplete="off">
                         </div>
                         @error('opening_balance')
                             <div class="text-danger small mt-1">{{ $message }}</div>

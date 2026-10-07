@@ -111,7 +111,7 @@
                 - Rs. {{ number_format($todayOutflow, 2) }}
             </div>
             <div class="text-muted small text-truncate" style="font-size: 0.74rem;">
-                <i class="bi bi-dash-circle-fill text-danger me-1"></i>Shift expenses + supplier & staff payments
+                <i class="bi bi-dash-circle-fill text-danger me-1"></i>Shift expenses, returns + supplier & staff payments
             </div>
         </div>
     </div>

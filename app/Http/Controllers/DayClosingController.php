@@ -34,48 +34,130 @@ class DayClosingController extends Controller
                                      ->orderBy('date', 'desc')
                                      ->first();
 
-        $autoOpeningCash = $previousClosing ? (float)$previousClosing->closing_cash : 0.00;
+        // ----------------------------------------------------
+        // 1. ALL-ACCOUNTS OPENING BALANCES
+        // ----------------------------------------------------
+        if ($previousClosing) {
+            $cashOpening = (float) $previousClosing->closing_cash;
+        } else {
+            $cashOpening = (float) \App\Models\Account::where('type', 'cash')->sum('opening_balance');
+        }
 
+        // Bank and JazzCash Opening: Base opening balance + all transactions in prior to selected date - all transactions out prior to selected date
+        $bankOpening = (float) \App\Models\Account::where('type', 'bank')->sum('opening_balance')
+            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
+            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
+
+        $jazzcashOpening = (float) \App\Models\Account::where('type', 'jazzcash')->sum('opening_balance')
+            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
+            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
+
+        $totalOpeningAllAccounts = $cashOpening + $bankOpening + $jazzcashOpening;
+        $autoOpeningCash = $cashOpening; // For backwards-compatibility in form post
+
+        // ----------------------------------------------------
+        // 2. ALL-ACCOUNTS INFLOWS (+)
+        // ----------------------------------------------------
         // Shift Counted Cash (Morning + Evening)
         $morningCountedCash = $morningShift ? (float)$morningShift->total_counted_cash : 0.00;
         $eveningCountedCash = $eveningShift ? (float)$eveningShift->total_counted_cash : 0.00;
         $shiftCashIn = $morningCountedCash + $eveningCountedCash;
 
-        // Direct Payment In (Non-shift direct vouchers)
+        // Direct Cash In
         $directCashIn = (float) Transaction::whereDate('date', $selectedDate)
                                            ->whereNull('shift_closing_id')
                                            ->where('type', 'payment_in')
+                                           ->where(function($q) {
+                                               $q->whereNull('account_id')
+                                                 ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
+                                           })
                                            ->sum('amount');
+        $cashIn = $shiftCashIn + $directCashIn;
+        $totalCashIn = $cashIn;
 
-        $totalCashIn = $shiftCashIn + $directCashIn;
+        // Shift Digital Collections
+        $morningBankIn = $morningShift ? (float)$morningShift->bank_amount : 0.00;
+        $eveningBankIn = $eveningShift ? (float)$eveningShift->bank_amount : 0.00;
+        $directBankIn = (float) Transaction::whereDate('date', $selectedDate)
+                                           ->whereNull('shift_closing_id')
+                                           ->where('type', 'payment_in')
+                                           ->whereHas('account', fn($q) => $q->where('type', 'bank'))
+                                           ->sum('amount');
+        $bankIn = $morningBankIn + $eveningBankIn + $directBankIn;
 
-        // Shift Expenses + Party Payments + Direct Payments Out
+        $morningJazzIn = $morningShift ? (float)$morningShift->jazzcash_amount : 0.00;
+        $eveningJazzIn = $eveningShift ? (float)$eveningShift->jazzcash_amount : 0.00;
+        $directJazzIn = (float) Transaction::whereDate('date', $selectedDate)
+                                           ->whereNull('shift_closing_id')
+                                           ->where('type', 'payment_in')
+                                           ->whereHas('account', fn($q) => $q->where('type', 'jazzcash'))
+                                           ->sum('amount');
+        $jazzcashIn = $morningJazzIn + $eveningJazzIn + $directJazzIn;
+
+        $morningDigitalIn = $morningBankIn + $morningJazzIn;
+        $eveningDigitalIn = $eveningBankIn + $eveningJazzIn;
+        $totalDigitalIn = $bankIn + $jazzcashIn;
+        $totalInAllAccounts = $cashIn + $bankIn + $jazzcashIn;
+        $totalCombinedInflow = $totalInAllAccounts;
+
+        // ----------------------------------------------------
+        // 3. ALL-ACCOUNTS OUTFLOWS (-)
+        // ----------------------------------------------------
         $shiftExpenses = ($morningShift ? (float)$morningShift->expenses_amount : 0) +
                          ($eveningShift ? (float)$eveningShift->expenses_amount : 0);
 
         $shiftPartyPayments = (float) ShiftClosingPartyPayment::whereHas('shiftClosing', fn ($query) => $query->whereDate('date', $selectedDate))
             ->sum('amount');
 
-        $directPaymentsOut = (float) Transaction::whereDate('date', $selectedDate)
-                                                ->where('type', 'payment_out')
-                                                ->sum('amount');
+        // Direct cash payment vouchers from register (outside shift closings)
+        $directCashOut = (float) Transaction::whereDate('date', $selectedDate)
+                                            ->whereNull('shift_closing_id')
+                                            ->where('type', 'payment_out')
+                                            ->where(function($q) {
+                                                $q->whereNull('account_id')
+                                                  ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
+                                            })
+                                            ->sum('amount');
 
-        $totalPaymentsOut = $shiftExpenses + $shiftPartyPayments + $directPaymentsOut;
+        // Physical cash disbursements from cash register (shift expenses & shift party payments
+        // are already deducted from the cashiers' physical counted drawer cash at shift end)
+        $cashOut = $directCashOut;
+        $directPaymentsOut = $directCashOut;
+        $totalPaymentsOut = $directCashOut;
+
+        $bankOut = (float) Transaction::whereDate('date', $selectedDate)
+                                      ->whereNull('shift_closing_id')
+                                      ->where('type', 'payment_out')
+                                      ->whereHas('account', fn($q) => $q->where('type', 'bank'))
+                                      ->sum('amount');
+
+        $jazzcashOut = (float) Transaction::whereDate('date', $selectedDate)
+                                          ->whereNull('shift_closing_id')
+                                          ->where('type', 'payment_out')
+                                          ->whereHas('account', fn($q) => $q->where('type', 'jazzcash'))
+                                          ->sum('amount');
+
+        $totalOutAllAccounts = $cashOut + $bankOut + $jazzcashOut;
+
+        // ----------------------------------------------------
+        // 4. ALL-ACCOUNTS CLOSING BALANCES (=)
+        // ----------------------------------------------------
+        $cashClosing = $cashOpening + $cashIn - $cashOut;
+        $bankClosing = $bankOpening + $bankIn - $bankOut;
+        $jazzcashClosing = $jazzcashOpening + $jazzcashIn - $jazzcashOut;
+        $totalClosingAllAccounts = $cashClosing + $bankClosing + $jazzcashClosing;
+        $calculatedClosingCash = $cashClosing; // For DayClosing table
 
         // Cumulative Differences from shifts
         $totalDifference = ($morningShift ? (float)$morningShift->difference : 0) +
                            ($eveningShift ? (float)$eveningShift->difference : 0);
-
-        // Core Cash Equation:
-        // Opening Cash (+) + Total Physical Cash In (+) - Direct Voucher Payments Out (-) = Calculated Closing Cash (=)
-        $calculatedClosingCash = $autoOpeningCash + $totalCashIn - $directPaymentsOut;
 
         // ----------------------------------------------------
         // BANK & DIGITAL ACCOUNTS POSITION (Today's Activity)
         // ----------------------------------------------------
         $allAccounts = \App\Models\Account::orderBy('type')->orderBy('name')->get();
 
-        $accountSummaries = $allAccounts->map(function ($account) use ($selectedDate) {
+        $accountSummaries = $allAccounts->map(function ($account) use ($selectedDate, $cashOpening, $cashClosing) {
             $inflow = (float) Transaction::whereDate('date', $selectedDate)
                                          ->where('account_id', $account->id)
                                          ->where('type', 'payment_in')
@@ -86,33 +168,31 @@ class DayClosingController extends Controller
                                           ->where('type', 'payment_out')
                                           ->sum('amount');
 
+            if ($account->type === 'cash') {
+                $openingAtDate = $cashOpening;
+                $balanceAtDate = $cashClosing;
+            } else {
+                $priorIn = (float) Transaction::where('account_id', $account->id)->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount');
+                $priorOut = (float) Transaction::where('account_id', $account->id)->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
+                $openingAtDate = (float) $account->opening_balance + $priorIn - $priorOut;
+                $balanceAtDate = $openingAtDate + $inflow - $outflow;
+            }
+
             return (object) [
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $account->type,
                 'account_number' => $account->account_number,
-                'current_balance' => (float) $account->current_balance,
+                'opening_balance' => $openingAtDate,
+                'current_balance' => $balanceAtDate,
                 'inflow' => $inflow,
                 'outflow' => $outflow,
                 'net' => $inflow - $outflow,
             ];
         });
 
-        // Shift Digital Collections (Morning + Evening)
-        $morningDigitalIn = $morningShift ? (float)($morningShift->jazzcash_amount + $morningShift->bank_amount) : 0.00;
-        $eveningDigitalIn = $eveningShift ? (float)($eveningShift->jazzcash_amount + $eveningShift->bank_amount) : 0.00;
-        $shiftDigitalIn = $morningDigitalIn + $eveningDigitalIn;
-
-        $digitalTransactionsIn = (float) Transaction::whereDate('date', $selectedDate)
-                                                    ->where('type', 'payment_in')
-                                                    ->whereHas('account', fn($q) => $q->whereIn('type', ['bank', 'jazzcash']))
-                                                    ->sum('amount');
-
-        $totalDigitalIn = max($shiftDigitalIn, $digitalTransactionsIn);
-        $totalCombinedInflow = $totalCashIn + $totalDigitalIn;
-
         // ----------------------------------------------------
-        // PARTY & KHATA TRANSACTIONS (Shift Payments + Direct Vouchers)
+        // 5. DAILY TRANSACTIONS REGISTER (All Payments In & Out)
         // ----------------------------------------------------
         $partyTransactions = collect();
 
@@ -125,12 +205,13 @@ class DayClosingController extends Controller
             $shiftLabel = $sp->shiftClosing && $sp->shiftClosing->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
             $partyTransactions->push((object)[
                 'id' => 'shift-' . $sp->id,
-                'party_name' => $sp->party->name ?? 'Unknown Party',
+                'party_name' => $sp->party->name ?? 'Direct Payee',
                 'party_type' => $sp->party->type ?? 'Party',
                 'party_phone' => $sp->party->phone ?? null,
                 'type' => 'payment_out',
                 'shift_name' => $shiftLabel,
                 'channel' => 'Cash Drawer',
+                'channel_type' => 'cash',
                 'details' => $sp->details ?? 'Shift Cash Payout',
                 'inflow' => 0.00,
                 'outflow' => (float) $sp->amount,
@@ -139,24 +220,54 @@ class DayClosingController extends Controller
             ]);
         }
 
-        // 2. Direct Party Transactions (Non-Shift Vouchers)
+        // 2. Shift Sale Returns (Refund Outflow from Cash Drawer)
+        $shiftsWithReturns = ShiftClosing::whereDate('date', $selectedDate)
+            ->where('returns_amount', '>', 0)
+            ->get();
+
+        foreach ($shiftsWithReturns as $sr) {
+            $shiftLabel = $sr->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
+            $retCount = $sr->total_return_invoices > 0 ? " ({$sr->total_return_invoices} bills)" : "";
+            $retDetails = ($sr->return_invoice_start && $sr->return_invoice_end)
+                ? "Invoices #{$sr->return_invoice_start} - #{$sr->return_invoice_end}{$retCount}"
+                : ($sr->return_invoice_number ? "Invoice #{$sr->return_invoice_number}" : "Sales Return Refund");
+
+            $partyTransactions->push((object)[
+                'id' => 'return-shift-' . $sr->id,
+                'party_name' => 'Sales Return / Customer Refund',
+                'party_type' => 'Sale Return',
+                'party_phone' => null,
+                'type' => 'payment_out',
+                'shift_name' => $shiftLabel,
+                'channel' => 'Cash Drawer',
+                'channel_type' => 'cash',
+                'details' => $retDetails,
+                'inflow' => 0.00,
+                'outflow' => (float) $sr->returns_amount,
+                'amount' => (float) $sr->returns_amount,
+                'created_at' => $sr->created_at,
+            ]);
+        }
+
+        // 3. All Direct Transactions (Payments In & Out across Cash, Bank, JazzCash)
         $directPartyTxns = Transaction::whereDate('date', $selectedDate)
-            ->whereNotNull('party_id')
             ->whereNull('shift_closing_id')
-            ->with(['party', 'account'])
+            ->whereIn('type', ['payment_in', 'payment_out'])
+            ->with(['party', 'account', 'category'])
             ->get();
 
         foreach ($directPartyTxns as $tx) {
             $isIn = $tx->type === 'payment_in';
             $partyTransactions->push((object)[
                 'id' => 'tx-' . $tx->id,
-                'party_name' => $tx->party->name ?? 'Unknown Party',
-                'party_type' => $tx->party->type ?? 'Party',
+                'party_name' => $tx->party->name ?? ($tx->category->name ?? 'General Transaction'),
+                'party_type' => $tx->party->type ?? 'Direct Voucher',
                 'party_phone' => $tx->party->phone ?? null,
                 'type' => $tx->type,
-                'shift_name' => null, // Non-shift transaction -> displayed without shift name!
-                'channel' => $tx->account->name ?? 'Direct Voucher',
-                'details' => $tx->description ?? $tx->bill_no ?? 'Direct Transaction',
+                'shift_name' => null,
+                'channel' => $tx->account->name ?? 'Cash Drawer',
+                'channel_type' => $tx->account->type ?? 'cash',
+                'details' => $tx->description ?? ($tx->bill_no ? 'Voucher #' . $tx->bill_no : ($tx->category->name ?? 'Direct Transaction')),
                 'inflow' => $isIn ? (float) $tx->amount : 0.00,
                 'outflow' => !$isIn ? (float) $tx->amount : 0.00,
                 'amount' => (float) $tx->amount,
@@ -201,7 +312,23 @@ class DayClosingController extends Controller
             'totalPartyOutflow',
             'netPartyMovement',
             'existingDayClosing',
-            'history'
+            'history',
+            'cashOpening',
+            'bankOpening',
+            'jazzcashOpening',
+            'totalOpeningAllAccounts',
+            'cashIn',
+            'bankIn',
+            'jazzcashIn',
+            'totalInAllAccounts',
+            'cashOut',
+            'bankOut',
+            'jazzcashOut',
+            'totalOutAllAccounts',
+            'cashClosing',
+            'bankClosing',
+            'jazzcashClosing',
+            'totalClosingAllAccounts'
         ));
     }
 
@@ -209,18 +336,139 @@ class DayClosingController extends Controller
     {
         $validated = $request->validate([
             'date' => ['required', 'date', 'unique:day_closings,date'],
-            'opening_cash' => ['required', 'numeric', 'min:0'],
-            'total_cash_in' => ['required', 'numeric', 'min:0'],
-            'total_payments_out' => ['required', 'numeric', 'min:0'],
-            'closing_cash' => ['required', 'numeric'],
+            'opening_cash' => ['nullable', 'numeric'],
+            'total_cash_in' => ['nullable', 'numeric'],
+            'total_payments_out' => ['nullable', 'numeric'],
+            'closing_cash' => ['nullable', 'numeric'],
             'total_difference' => ['nullable', 'numeric'],
             'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $selectedDate = $validated['date'];
+
+        // Automated Opening Cash: Previous Day's Closing Cash or initial Cash Account opening balance
+        $previousClosing = DayClosing::where('date', '<', $selectedDate)
+                                     ->where('status', 'closed')
+                                     ->orderBy('date', 'desc')
+                                     ->first();
+
+        if ($previousClosing) {
+            $openingCash = (float) $previousClosing->closing_cash;
+        } else {
+            $openingCash = (float) \App\Models\Account::where('type', 'cash')->sum('opening_balance');
+        }
+
+        // Bank and JazzCash Opening Balances
+        $bankOpening = (float) \App\Models\Account::where('type', 'bank')->sum('opening_balance')
+            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
+            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
+
+        $jazzcashOpening = (float) \App\Models\Account::where('type', 'jazzcash')->sum('opening_balance')
+            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
+            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
+
+        $totalOpeningAllAccounts = $openingCash + $bankOpening + $jazzcashOpening;
+
+        // Shift Counted Cash (Morning + Evening)
+        $morningShift = ShiftClosing::whereDate('date', $selectedDate)->where('shift_type', 'morning')->first();
+        $eveningShift = ShiftClosing::whereDate('date', $selectedDate)->where('shift_type', 'evening')->first();
+        $morningCountedCash = $morningShift ? (float)$morningShift->total_counted_cash : 0.00;
+        $eveningCountedCash = $eveningShift ? (float)$eveningShift->total_counted_cash : 0.00;
+        $shiftCashIn = $morningCountedCash + $eveningCountedCash;
+
+        $directCashIn = (float) Transaction::whereDate('date', $selectedDate)
+                                           ->whereNull('shift_closing_id')
+                                           ->where('type', 'payment_in')
+                                           ->where(function($q) {
+                                               $q->whereNull('account_id')
+                                                 ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
+                                           })
+                                           ->sum('amount');
+        $totalCashIn = $shiftCashIn + $directCashIn;
+
+        // Bank & JazzCash Inflows
+        $morningBankIn = $morningShift ? (float)$morningShift->bank_amount : 0.00;
+        $eveningBankIn = $eveningShift ? (float)$eveningShift->bank_amount : 0.00;
+        $directBankIn = (float) Transaction::whereDate('date', $selectedDate)
+                                           ->whereNull('shift_closing_id')
+                                           ->where('type', 'payment_in')
+                                           ->whereHas('account', fn($q) => $q->where('type', 'bank'))
+                                           ->sum('amount');
+        $bankIn = $morningBankIn + $eveningBankIn + $directBankIn;
+
+        $morningJazzIn = $morningShift ? (float)$morningShift->jazzcash_amount : 0.00;
+        $eveningJazzIn = $eveningShift ? (float)$eveningShift->jazzcash_amount : 0.00;
+        $directJazzIn = (float) Transaction::whereDate('date', $selectedDate)
+                                           ->whereNull('shift_closing_id')
+                                           ->where('type', 'payment_in')
+                                           ->whereHas('account', fn($q) => $q->where('type', 'jazzcash'))
+                                           ->sum('amount');
+        $jazzcashIn = $morningJazzIn + $eveningJazzIn + $directJazzIn;
+        $totalInAllAccounts = $totalCashIn + $bankIn + $jazzcashIn;
+
+        // Outflows
+        $directCashOut = (float) Transaction::whereDate('date', $selectedDate)
+                                            ->whereNull('shift_closing_id')
+                                            ->where('type', 'payment_out')
+                                            ->where(function($q) {
+                                                $q->whereNull('account_id')
+                                                  ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
+                                            })
+                                            ->sum('amount');
+        $totalPaymentsOut = $directCashOut;
+
+        $bankOut = (float) Transaction::whereDate('date', $selectedDate)
+                                      ->whereNull('shift_closing_id')
+                                      ->where('type', 'payment_out')
+                                      ->whereHas('account', fn($q) => $q->where('type', 'bank'))
+                                      ->sum('amount');
+
+        $jazzcashOut = (float) Transaction::whereDate('date', $selectedDate)
+                                          ->whereNull('shift_closing_id')
+                                          ->where('type', 'payment_out')
+                                          ->whereHas('account', fn($q) => $q->where('type', 'jazzcash'))
+                                          ->sum('amount');
+        $totalOutAllAccounts = $totalPaymentsOut + $bankOut + $jazzcashOut;
+
+        $closingCash = $openingCash + $totalCashIn - $totalPaymentsOut;
+        $bankClosing = $bankOpening + $bankIn - $bankOut;
+        $jazzcashClosing = $jazzcashOpening + $jazzcashIn - $jazzcashOut;
+        $totalClosingAllAccounts = $closingCash + $bankClosing + $jazzcashClosing;
+
+        $totalDiff = ($morningShift ? (float)$morningShift->difference : 0) +
+                     ($eveningShift ? (float)$eveningShift->difference : 0);
+
+        $validated['opening_cash'] = $openingCash;
+        $validated['bank_opening'] = $bankOpening;
+        $validated['jazzcash_opening'] = $jazzcashOpening;
+        $validated['total_opening_all_accounts'] = $totalOpeningAllAccounts;
+
+        $validated['total_cash_in'] = $totalCashIn;
+        $validated['bank_in'] = $bankIn;
+        $validated['jazzcash_in'] = $jazzcashIn;
+        $validated['total_in_all_accounts'] = $totalInAllAccounts;
+
+        $validated['total_payments_out'] = $totalPaymentsOut;
+        $validated['bank_out'] = $bankOut;
+        $validated['jazzcash_out'] = $jazzcashOut;
+        $validated['total_out_all_accounts'] = $totalOutAllAccounts;
+
+        $validated['closing_cash'] = $closingCash;
+        $validated['bank_closing'] = $bankClosing;
+        $validated['jazzcash_closing'] = $jazzcashClosing;
+        $validated['total_closing_all_accounts'] = $totalClosingAllAccounts;
+
+        $validated['total_difference'] = $totalDiff;
         $validated['closed_by'] = auth()->id();
         $validated['status'] = 'closed';
 
         $dayClosing = DayClosing::create($validated);
+
+        $cashAccount = \App\Models\Account::where('type', 'cash')->first();
+        if ($cashAccount) {
+            $cashAccount->current_balance = $dayClosing->closing_cash;
+            $cashAccount->save();
+        }
 
         ActivityLog::log(
             'Finalized',
@@ -244,7 +492,7 @@ class DayClosingController extends Controller
         $transactions = Transaction::whereDate('date', $date)->with(['account', 'party'])->get();
 
         $allAccounts = \App\Models\Account::orderBy('type')->orderBy('name')->get();
-        $accountSummaries = $allAccounts->map(function ($account) use ($date) {
+        $accountSummaries = $allAccounts->map(function ($account) use ($date, $dayClosing) {
             $inflow = (float) Transaction::whereDate('date', $date)
                                          ->where('account_id', $account->id)
                                          ->where('type', 'payment_in')
@@ -255,12 +503,23 @@ class DayClosingController extends Controller
                                           ->where('type', 'payment_out')
                                           ->sum('amount');
 
+            if ($account->type === 'cash') {
+                $openingAtDate = (float) $dayClosing->opening_cash;
+                $balanceAtDate = (float) $dayClosing->closing_cash;
+            } else {
+                $priorIn = (float) Transaction::where('account_id', $account->id)->whereDate('date', '<', $date)->where('type', 'payment_in')->sum('amount');
+                $priorOut = (float) Transaction::where('account_id', $account->id)->whereDate('date', '<', $date)->where('type', 'payment_out')->sum('amount');
+                $openingAtDate = (float) $account->opening_balance + $priorIn - $priorOut;
+                $balanceAtDate = $openingAtDate + $inflow - $outflow;
+            }
+
             return (object) [
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $account->type,
                 'account_number' => $account->account_number,
-                'current_balance' => (float) $account->current_balance,
+                'opening_balance' => $openingAtDate,
+                'current_balance' => $balanceAtDate,
                 'inflow' => $inflow,
                 'outflow' => $outflow,
                 'net' => $inflow - $outflow,
@@ -295,11 +554,41 @@ class DayClosingController extends Controller
                 'type' => 'payment_out',
                 'shift_name' => $shiftLabel,
                 'channel' => 'Cash Drawer',
+                'channel_type' => 'cash',
                 'details' => $sp->details ?? 'Shift Cash Payout',
                 'inflow' => 0.00,
                 'outflow' => (float) $sp->amount,
                 'amount' => (float) $sp->amount,
                 'created_at' => $sp->created_at,
+            ]);
+        }
+
+        // Shift Sale Returns (Refund Outflow from Cash Drawer)
+        $shiftsWithReturns = ShiftClosing::whereDate('date', $date)
+            ->where('returns_amount', '>', 0)
+            ->get();
+
+        foreach ($shiftsWithReturns as $sr) {
+            $shiftLabel = $sr->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
+            $retCount = $sr->total_return_invoices > 0 ? " ({$sr->total_return_invoices} bills)" : "";
+            $retDetails = ($sr->return_invoice_start && $sr->return_invoice_end)
+                ? "Invoices #{$sr->return_invoice_start} - #{$sr->return_invoice_end}{$retCount}"
+                : ($sr->return_invoice_number ? "Invoice #{$sr->return_invoice_number}" : "Sales Return Refund");
+
+            $partyTransactions->push((object)[
+                'id' => 'return-shift-' . $sr->id,
+                'party_name' => 'Sales Return / Customer Refund',
+                'party_type' => 'Sale Return',
+                'party_phone' => null,
+                'type' => 'payment_out',
+                'shift_name' => $shiftLabel,
+                'channel' => 'Cash Drawer',
+                'channel_type' => 'cash',
+                'details' => $retDetails,
+                'inflow' => 0.00,
+                'outflow' => (float) $sr->returns_amount,
+                'amount' => (float) $sr->returns_amount,
+                'created_at' => $sr->created_at,
             ]);
         }
 
@@ -332,6 +621,26 @@ class DayClosingController extends Controller
         $totalPartyOutflow = (float) $partyTransactions->sum('outflow');
         $netPartyMovement = $totalPartyInflow - $totalPartyOutflow;
 
+        $cashOpening = (float) $dayClosing->opening_cash;
+        $bankOpening = (float) ($dayClosing->bank_opening > 0 ? $dayClosing->bank_opening : $accountSummaries->where('type', 'bank')->sum('opening_balance'));
+        $jazzcashOpening = (float) ($dayClosing->jazzcash_opening > 0 ? $dayClosing->jazzcash_opening : $accountSummaries->where('type', 'jazzcash')->sum('opening_balance'));
+        $totalOpeningAllAccounts = (float) ($dayClosing->total_opening_all_accounts > 0 ? $dayClosing->total_opening_all_accounts : ($cashOpening + $bankOpening + $jazzcashOpening));
+
+        $cashIn = (float) $dayClosing->total_cash_in;
+        $bankIn = (float) ($dayClosing->bank_in > 0 ? $dayClosing->bank_in : $accountSummaries->where('type', 'bank')->sum('inflow'));
+        $jazzcashIn = (float) ($dayClosing->jazzcash_in > 0 ? $dayClosing->jazzcash_in : $accountSummaries->where('type', 'jazzcash')->sum('inflow'));
+        $totalInAllAccounts = (float) ($dayClosing->total_in_all_accounts > 0 ? $dayClosing->total_in_all_accounts : ($cashIn + $bankIn + $jazzcashIn));
+
+        $cashOut = (float) $dayClosing->total_payments_out;
+        $bankOut = (float) ($dayClosing->bank_out > 0 ? $dayClosing->bank_out : $accountSummaries->where('type', 'bank')->sum('outflow'));
+        $jazzcashOut = (float) ($dayClosing->jazzcash_out > 0 ? $dayClosing->jazzcash_out : $accountSummaries->where('type', 'jazzcash')->sum('outflow'));
+        $totalOutAllAccounts = (float) ($dayClosing->total_out_all_accounts > 0 ? $dayClosing->total_out_all_accounts : ($cashOut + $bankOut + $jazzcashOut));
+
+        $cashClosing = (float) $dayClosing->closing_cash;
+        $bankClosing = (float) ($dayClosing->bank_closing > 0 ? $dayClosing->bank_closing : $accountSummaries->where('type', 'bank')->sum('current_balance'));
+        $jazzcashClosing = (float) ($dayClosing->jazzcash_closing > 0 ? $dayClosing->jazzcash_closing : $accountSummaries->where('type', 'jazzcash')->sum('current_balance'));
+        $totalClosingAllAccounts = (float) ($dayClosing->total_closing_all_accounts > 0 ? $dayClosing->total_closing_all_accounts : ($cashClosing + $bankClosing + $jazzcashClosing));
+
         return view('day_closings.show', compact(
             'dayClosing',
             'morningShift',
@@ -343,7 +652,23 @@ class DayClosingController extends Controller
             'partyTransactions',
             'totalPartyInflow',
             'totalPartyOutflow',
-            'netPartyMovement'
+            'netPartyMovement',
+            'cashOpening',
+            'bankOpening',
+            'jazzcashOpening',
+            'totalOpeningAllAccounts',
+            'cashIn',
+            'bankIn',
+            'jazzcashIn',
+            'totalInAllAccounts',
+            'cashOut',
+            'bankOut',
+            'jazzcashOut',
+            'totalOutAllAccounts',
+            'cashClosing',
+            'bankClosing',
+            'jazzcashClosing',
+            'totalClosingAllAccounts'
         ));
     }
 
@@ -355,6 +680,13 @@ class DayClosingController extends Controller
 
         $dayClosing->status = 'open';
         $dayClosing->save();
+
+        $cashAccount = \App\Models\Account::where('type', 'cash')->first();
+        if ($cashAccount) {
+            $prevClosing = DayClosing::where('id', '!=', $dayClosing->id)->where('status', 'closed')->orderBy('date', 'desc')->first();
+            $cashAccount->current_balance = $prevClosing ? $prevClosing->closing_cash : $cashAccount->opening_balance;
+            $cashAccount->save();
+        }
 
         ActivityLog::log(
             'Reopened',

@@ -69,7 +69,7 @@
                         </label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                            <input type="number" step="0.01" class="form-control @error('opening_balance') is-invalid @enderror" id="opening_balance" name="opening_balance" value="{{ old('opening_balance', '0.00') }}" placeholder="0.00">
+                            <input type="text" inputmode="decimal" class="form-control amount-format @error('opening_balance') is-invalid @enderror" id="opening_balance" name="opening_balance" value="{{ old('opening_balance', '0.00') }}" placeholder="0.00" autocomplete="off">
                         </div>
                         <div class="form-text small text-muted" style="font-size: 0.75rem;">
                             Enter positive amount if party has outstanding balance, or 0 if starting fresh.

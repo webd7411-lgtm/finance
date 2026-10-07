@@ -290,7 +290,7 @@
                             <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                                <input type="number" step="0.01" class="form-control" name="opening_balance" value="{{ $party->opening_balance }}">
+                                <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="{{ $party->opening_balance }}" placeholder="0.00" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -348,7 +348,7 @@
                         <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                            <input type="number" step="0.01" class="form-control" name="opening_balance" value="0.00" placeholder="0.00">
+                            <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="0.00" placeholder="0.00" autocomplete="off">
                         </div>
                     </div>
                 </div>

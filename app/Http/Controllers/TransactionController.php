@@ -61,6 +61,11 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->has('amount')) {
+            $val = $request->input('amount');
+            $request->merge(['amount' => is_string($val) ? str_replace(',', '', $val) : $val]);
+        }
+
         $validated = $request->validate([
             'date' => ['required', 'date'],
             'type' => ['required', Rule::in(['payment_in', 'payment_out', 'purchase_bill'])],
@@ -134,6 +139,11 @@ class TransactionController extends Controller
 
     public function transfer(Request $request)
     {
+        if ($request->has('amount')) {
+            $val = $request->input('amount');
+            $request->merge(['amount' => is_string($val) ? str_replace(',', '', $val) : $val]);
+        }
+
         $validated = $request->validate([
             'date' => ['required', 'date'],
             'from_account_id' => ['required', 'exists:accounts,id'],

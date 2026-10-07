@@ -300,7 +300,7 @@
                             <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                                <input type="number" step="0.01" class="form-control" name="opening_balance" value="{{ $acc->opening_balance }}">
+                                <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="{{ $acc->opening_balance }}" placeholder="0.00" autocomplete="off">
                             </div>
                         </div>
                     </div>
@@ -353,7 +353,7 @@
                         <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                            <input type="number" step="0.01" class="form-control" name="opening_balance" value="0.00" placeholder="0.00">
+                            <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="0.00" placeholder="0.00" autocomplete="off">
                         </div>
                     </div>
                 </div>
@@ -419,7 +419,7 @@
                         <label class="form-label small fw-semibold text-secondary">Transfer Amount (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-primary">PKR</span>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-primary" placeholder="e.g. 5000.00" required>
+                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-primary amount-format" placeholder="e.g. 5,000.00" autocomplete="off" required>
                         </div>
                     </div>
 

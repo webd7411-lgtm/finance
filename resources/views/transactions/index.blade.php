@@ -330,7 +330,7 @@
                         <label class="form-label small fw-semibold text-secondary">Amount Received (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-success">PKR</span>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-success" placeholder="0.00" required>
+                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-success amount-format" placeholder="0.00" autocomplete="off" required>
                         </div>
                     </div>
 
@@ -408,7 +408,7 @@
                         <label class="form-label small fw-semibold text-secondary">Amount Paid (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-danger">PKR</span>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger" placeholder="0.00" required>
+                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
                         </div>
                     </div>
 
@@ -509,7 +509,7 @@
                         <label class="form-label small fw-semibold text-secondary">Transfer Amount (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-primary">PKR</span>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-primary" placeholder="e.g. 5000.00" required>
+                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-primary amount-format" placeholder="e.g. 5,000.00" autocomplete="off" required>
                         </div>
                     </div>
 
@@ -584,7 +584,7 @@
                         <label class="form-label small fw-semibold text-secondary">Bill Total Amount (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-dark">PKR</span>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-dark" placeholder="0.00" required>
+                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-dark amount-format" placeholder="0.00" autocomplete="off" required>
                         </div>
                     </div>
 

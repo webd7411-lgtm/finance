@@ -33,8 +33,9 @@
         }
         html, body {
             overflow-x: hidden !important;
-            max-width: 100vw !important;
+            max-width: 100% !important;
             width: 100%;
+            position: relative;
         }
         body {
             background-color: var(--page-bg);
@@ -53,6 +54,8 @@
             z-index: 1050;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
             width: 100%;
+            max-width: 100%;
+            overflow-x: clip;
         }
         .vip-brand {
             font-weight: 700;
@@ -69,8 +72,8 @@
             color: #ffffff;
         }
         .vip-brand-icon {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
             border-radius: 9px;
             display: flex;
@@ -88,7 +91,7 @@
             line-height: 1.12;
         }
         .vip-company-name {
-            font-size: 1.02rem;
+            font-size: 0.95rem;
             font-weight: 800;
             letter-spacing: 0.4px;
             color: #ffffff;
@@ -97,7 +100,7 @@
             white-space: nowrap;
         }
         .vip-brand-date {
-            font-size: 0.68rem;
+            font-size: 0.65rem;
             font-weight: 600;
             color: #38bdf8;
             letter-spacing: 0.2px;
@@ -107,7 +110,7 @@
             align-items: center;
         }
         .vip-product-name {
-            font-size: 0.88rem;
+            font-size: 0.82rem;
             font-weight: 700;
             color: #f1f5f9;
             letter-spacing: 0.2px;
@@ -121,26 +124,26 @@
                 gap: 6px;
             }
             .vip-brand-icon {
-                width: 34px;
-                height: 34px;
-                font-size: 1.05rem;
-                border-radius: 8px;
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+                border-radius: 7px;
             }
             .vip-company-name {
-                font-size: 0.88rem;
+                font-size: 0.82rem;
             }
             .vip-brand-date {
-                font-size: 0.64rem;
+                font-size: 0.6rem;
             }
             .vip-product-name {
-                font-size: 0.78rem;
+                font-size: 0.74rem;
             }
         }
         .vip-nav-link {
             color: #cbd5e1;
             font-size: 0.78rem;
             font-weight: 600;
-            padding: 0.35rem 0.52rem;
+            padding: 0.35rem 0.5rem;
             border-radius: 6px;
             text-decoration: none;
             display: inline-flex;
@@ -155,8 +158,8 @@
         }
         @media (min-width: 1440px) {
             .vip-nav-link {
-                font-size: 0.84rem;
-                padding: 0.42rem 0.68rem;
+                font-size: 0.82rem;
+                padding: 0.38rem 0.6rem;
                 gap: 5px;
             }
         }
@@ -287,11 +290,15 @@
             border-radius: 6px;
         }
         @media print {
-            .vip-navbar, .sub-header, .no-print, .btn {
+            .vip-navbar, .sub-header, .no-print, .btn, .alert, footer, nav, header, .modal, .modal-backdrop, .btn-close {
                 display: none !important;
             }
             body {
                 background: #ffffff !important;
+            }
+            .table-responsive {
+                overflow: visible !important;
+                display: block !important;
             }
         }
     </style>
@@ -301,10 +308,10 @@
 
     <!-- VIP Executive Top Navbar -->
     <nav class="vip-navbar">
-        <div class="container-fluid px-2 px-md-3 px-xl-4">
-            <div class="d-flex align-items-center justify-content-between w-100 flex-nowrap">
+        <div class="container-fluid px-2 px-sm-3 px-xl-4">
+            <div class="d-flex align-items-center justify-content-between w-100 flex-nowrap" style="min-width: 0;">
                 <!-- Brand & Navigation -->
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 gap-xl-3" style="min-width: 0;">
                     <a href="{{ route('dashboard') }}" class="vip-brand">
                         <div class="vip-brand-icon">
                             <i class="bi bi-wallet2"></i>
@@ -318,8 +325,8 @@
                         </div>
                     </a>
 
-                    <!-- Desktop Nav Links -->
-                    <div class="d-none d-xl-flex align-items-center gap-1">
+                    <!-- Desktop Nav Links (High Resolution Screens >= 1400px) -->
+                    <div class="d-none d-xxl-flex align-items-center gap-1">
                         <a href="{{ route('dashboard') }}" class="vip-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
@@ -330,7 +337,7 @@
                             </a>
                         @endif
 
-                        <!-- Step 2: Master Setup Dropdown -->
+                        <!-- Master Setup Dropdown -->
                         <div class="dropdown">
                             <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-sliders"></i> Master Setup
@@ -353,6 +360,8 @@
                                 </li>
                             </ul>
                         </div>
+
+                        <!-- Operations Links -->
                         <a href="{{ route('shift-closings.index') }}" class="vip-nav-link {{ request()->routeIs('shift-closings.*') ? 'active' : '' }}">
                             <i class="bi bi-clock-history"></i> Shift Closing
                         </a>
@@ -363,9 +372,9 @@
                             <i class="bi bi-calendar2-check"></i> Day Closing
                         </a>
 
-                        <!-- Step 6: Ledgers & Reports Dropdown -->
+                        <!-- Ledgers & Reports Dropdown -->
                         <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('ledgers.*') || request()->routeIs('reports.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('ledgers.*') || request()->routeIs('reports.*') || request()->routeIs('audit-logs.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-journal-text"></i> Ledgers & Reports
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 240px;">
@@ -400,27 +409,138 @@
                                         <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
                                     </a>
                                 </li>
+                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
+                                            <i class="bi bi-shield-check text-info"></i> Audit Trail & Logs
+                                        </a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Medium & Laptop Screen Navigation (1200px - 1399px) -->
+                    <div class="d-none d-xl-flex d-xxl-none align-items-center gap-1">
+                        <a href="{{ route('dashboard') }}" class="vip-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+
+                        <!-- Operations Dropdown for Laptops -->
+                        <div class="dropdown">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('shift-closings.*') || request()->routeIs('transactions.*') || request()->routeIs('day-closings.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-clock-history"></i> Operations
+                            </button>
+                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('shift-closings.index') }}">
+                                        <i class="bi bi-clock-history text-info"></i> Shift Closing
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('transactions.index') }}">
+                                        <i class="bi bi-arrow-left-right text-success"></i> Payments In / Out
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('day-closings.index') }}">
+                                        <i class="bi bi-calendar2-check text-primary"></i> Day Closing
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Master Setup Dropdown -->
+                        <div class="dropdown">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-sliders"></i> Master Setup
+                            </button>
+                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('parties.index') }}">
+                                        <i class="bi bi-person-lines-fill text-primary"></i> Parties & Ledgers
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('accounts.index') }}">
+                                        <i class="bi bi-bank text-success"></i> Payment Accounts
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
+                                        <i class="bi bi-tags text-warning"></i> Expense Categories
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Ledgers & Reports Dropdown -->
+                        <div class="dropdown">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('ledgers.*') || request()->routeIs('reports.*') || request()->routeIs('audit-logs.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-journal-text"></i> Reports
+                            </button>
+                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 240px;">
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.party') }}">
+                                        <i class="bi bi-person-lines-fill text-primary"></i> Party Ledger
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.cash-book') }}">
+                                        <i class="bi bi-cash-stack text-success"></i> Cash Book Register
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.bank-book') }}">
+                                        <i class="bi bi-bank text-info"></i> Bank & Wallet Register
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.daily-closing') }}">
+                                        <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.variance') }}">
+                                        <i class="bi bi-shield-exclamation text-danger"></i> Discrepancy Audit
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.expenses') }}">
+                                        <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
+                                    </a>
+                                </li>
+                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
+                                            <i class="bi bi-shield-check text-info"></i> Audit Trail & Logs
+                                        </a>
+                                    </li>
+                                @endif
                             </ul>
                         </div>
 
                         @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                            <a href="{{ route('audit-logs.index') }}" class="vip-nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}">
-                                <i class="bi bi-shield-check"></i> Audit Trail
+                            <a href="{{ route('users.index') }}" class="vip-nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                                <i class="bi bi-people"></i> Users
                             </a>
                         @endif
                     </div>
                 </div>
 
                 <!-- Right Side Actions & User Profile -->
-                <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0">
+                <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0 ms-2">
                     <!-- User Profile Dropdown -->
                     <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-sm btn-dark d-flex align-items-center gap-1.5 border border-secondary border-opacity-25 rounded-3 px-2 py-1 flex-shrink-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #1e293b;">
+                        <button class="btn btn-sm btn-dark d-flex align-items-center gap-1.5 border border-secondary border-opacity-25 rounded-3 px-2 py-1 flex-shrink-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #1e293b; max-width: 220px;">
                             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 24px; height: 24px; font-size: 0.72rem;">
                                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                             </div>
-                            <span class="text-white small fw-semibold d-none d-sm-inline">{{ auth()->user()->name }}</span>
-                            <span class="d-none d-xxl-inline">
+                            <span class="text-white small fw-semibold d-none d-sm-inline text-truncate" style="max-width: 110px;">{{ auth()->user()->name }}</span>
+                            <span class="d-none d-xxl-inline flex-shrink-0">
                                 @if(auth()->user()->isOwner())
                                     <span class="badge-role-owner">Owner</span>
                                 @elseif(auth()->user()->isIncharge())
@@ -429,12 +549,21 @@
                                     <span class="badge-role-cashier">Cashier</span>
                                 @endif
                             </span>
-                            <i class="bi bi-chevron-down text-secondary" style="font-size: 0.65rem;"></i>
+                            <i class="bi bi-chevron-down text-secondary ms-0.5" style="font-size: 0.65rem;"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end vip-dropdown-menu" style="min-width: 210px;">
+                        <ul class="dropdown-menu dropdown-menu-end vip-dropdown-menu shadow-lg" style="min-width: 210px; margin-top: 6px;">
                             <li class="px-3 py-2 border-bottom border-secondary border-opacity-25 mb-1">
-                                <div class="fw-bold text-white small">{{ auth()->user()->name }}</div>
-                                <div class="text-secondary small" style="font-size: 0.75rem;">{{ auth()->user()->email }}</div>
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <div class="fw-bold text-white small text-truncate">{{ auth()->user()->name }}</div>
+                                    @if(auth()->user()->isOwner())
+                                        <span class="badge-role-owner">Owner</span>
+                                    @elseif(auth()->user()->isIncharge())
+                                        <span class="badge-role-incharge">Incharge</span>
+                                    @else
+                                        <span class="badge-role-cashier">Cashier</span>
+                                    @endif
+                                </div>
+                                <div class="text-secondary small text-truncate" style="font-size: 0.75rem;">{{ auth()->user()->email }}</div>
                             </li>
                             @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
                                 <li>
@@ -460,7 +589,7 @@
                         </ul>
                     </div>
 
-                    <!-- Mobile Menu Drawer Toggle Button -->
+                    <!-- Mobile / Tablet Drawer Toggle Button -->
                     <button class="btn btn-sm btn-dark text-white d-xl-none flex-shrink-0 px-2 py-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNavDrawer" aria-controls="mobileNavDrawer" id="mobileNavToggleBtn" aria-label="Toggle navigation">
                         <i class="bi bi-list fs-5"></i>
                     </button>
@@ -558,9 +687,7 @@
                 <a href="{{ route('reports.expenses') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.expenses') ? 'active' : '' }}">
                     <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
                 </a>
-
                 @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                    <div class="text-secondary small fw-bold text-uppercase px-2 pt-2" style="font-size: 0.68rem; letter-spacing: 0.5px;">Security & Audit</div>
                     <a href="{{ route('audit-logs.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}">
                         <i class="bi bi-shield-check text-info"></i> Audit Trail & Logs
                     </a>
@@ -693,6 +820,138 @@
                     closeDrawer();
                 });
             }
+        });
+
+        // ==========================================
+        // GLOBAL CURRENCY / AMOUNT COMMA FORMATTER
+        // ==========================================
+        window.formatWithCommas = function(raw) {
+            if (raw === null || raw === undefined) return '';
+            let str = String(raw).trim();
+            if (!str) return '';
+            
+            // Only allow digits and at most one decimal point
+            let clean = str.replace(/[^\d.]/g, '');
+            const parts = clean.split('.');
+            let integerPart = parts[0] || '';
+            let decimalPart = parts.length > 1 ? parts.slice(1).join('') : null;
+
+            if (integerPart.length > 1) {
+                integerPart = integerPart.replace(/^0+(?=\d)/, '');
+            }
+
+            integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+            if (decimalPart !== null) {
+                return integerPart + '.' + decimalPart;
+            }
+            return integerPart;
+        };
+
+        window.parseAmount = function(val) {
+            if (val === null || val === undefined) return 0;
+            const clean = String(val).replace(/,/g, '').trim();
+            const num = parseFloat(clean);
+            return isNaN(num) ? 0 : num;
+        };
+
+        function isAmountInput(input) {
+            if (!input || !input.tagName || input.tagName.toLowerCase() !== 'input') return false;
+            if (input.type === 'hidden' || input.type === 'submit' || input.type === 'button') return false;
+            if (input.classList.contains('amount-format')) return true;
+            const name = input.getAttribute('name') || '';
+            if (name === 'amount' || name === 'opening_balance' || name.endsWith('[amount]') || name === 'total_sale' || name === 'returns_amount' || name === 'expenses_amount' || name === 'coins') return true;
+            return false;
+        }
+
+        function handleGlobalAmountInput(e) {
+            const input = e.target;
+            if (!isAmountInput(input)) return;
+
+            const initialVal = input.value;
+            const cursorPosition = input.selectionStart || 0;
+
+            const rawBefore = initialVal.slice(0, cursorPosition).replace(/,/g, '');
+            const charsBeforeCursor = rawBefore.length;
+
+            const formatted = window.formatWithCommas(initialVal);
+            input.value = formatted;
+
+            let newCursorPos = 0;
+            let count = 0;
+            for (let i = 0; i < formatted.length; i++) {
+                if (formatted[i] !== ',') {
+                    count++;
+                }
+                if (count === charsBeforeCursor) {
+                    newCursorPos = i + 1;
+                    break;
+                }
+            }
+            if (charsBeforeCursor === 0) {
+                newCursorPos = 0;
+            } else if (count < charsBeforeCursor) {
+                newCursorPos = formatted.length;
+            }
+
+            try {
+                input.setSelectionRange(newCursorPos, newCursorPos);
+            } catch (err) {}
+
+            if (typeof calculateClosing === 'function') calculateClosing();
+            if (typeof calculateTotals === 'function') calculateTotals();
+        }
+
+        function handleGlobalAmountKeydown(e) {
+            const input = e.target;
+            if (!isAmountInput(input)) return;
+
+            if (e.key === 'Backspace') {
+                const pos = input.selectionStart;
+                if (pos === input.selectionEnd && pos > 0 && input.value[pos - 1] === ',') {
+                    e.preventDefault();
+                    const val = input.value;
+                    const newVal = val.slice(0, pos - 2) + val.slice(pos - 1);
+                    input.value = window.formatWithCommas(newVal);
+                    const rawBefore = val.slice(0, pos - 2).replace(/,/g, '').length;
+                    let newPos = 0;
+                    let count = 0;
+                    for (let i = 0; i < input.value.length; i++) {
+                        if (input.value[i] !== ',') count++;
+                        if (count === rawBefore) {
+                            newPos = i + 1;
+                            break;
+                        }
+                    }
+                    if (rawBefore === 0) newPos = 0;
+                    input.setSelectionRange(newPos, newPos);
+                    if (typeof calculateClosing === 'function') calculateClosing();
+                    if (typeof calculateTotals === 'function') calculateTotals();
+                }
+            }
+        }
+
+        document.addEventListener('input', handleGlobalAmountInput);
+        document.addEventListener('keydown', handleGlobalAmountKeydown);
+
+        // Strip commas automatically upon form submission across all forms
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (!form || !form.querySelectorAll) return;
+            form.querySelectorAll('input').forEach(function(input) {
+                if (isAmountInput(input) && input.value) {
+                    input.value = input.value.replace(/,/g, '');
+                }
+            });
+        }, true);
+
+        // Format all initial amount values on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input').forEach(function(input) {
+                if (isAmountInput(input) && input.value && input.value !== '0' && input.value !== '0.00') {
+                    input.value = window.formatWithCommas(input.value);
+                }
+            });
         });
     </script>
     @stack('scripts')

@@ -60,7 +60,24 @@ class ShiftClosingController extends Controller
 
         $suggestedInvoiceStart = $lastShift ? ((int) $lastShift->invoice_end + 1) : null;
 
-        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'cashiers'));
+        $lastReturnShift = ShiftClosing::where(function ($q) {
+                $q->whereNotNull('return_invoice_end')->where('return_invoice_end', '>', 0);
+            })
+            ->orWhere(function ($q) {
+                $q->whereNotNull('return_invoice_start')->where('return_invoice_start', '>', 0);
+            })
+            ->orderByDesc('id')
+            ->first();
+
+        $suggestedReturnInvoiceStart = null;
+        if ($lastReturnShift) {
+            $lastEnd = $lastReturnShift->return_invoice_end ?: $lastReturnShift->return_invoice_start;
+            if ($lastEnd > 0) {
+                $suggestedReturnInvoiceStart = (int) $lastEnd + 1;
+            }
+        }
+
+        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'suggestedReturnInvoiceStart', 'cashiers'));
     }
 
     public function store(Request $request)
@@ -134,6 +151,7 @@ class ShiftClosingController extends Controller
             'returns_amount' => ['nullable', 'numeric', 'min:0'],
             'return_invoice_start' => ['nullable', 'integer', 'min:1'],
             'return_invoice_end' => ['nullable', 'integer', 'min:1'],
+            'return_invoice_number' => ['nullable', 'string', 'max:255'],
             'expenses_amount' => ['nullable', 'numeric', 'min:0'],
             'expenses_details' => ['nullable', 'string', 'max:2000'],
             'party_payments' => ['nullable', 'array', 'max:20'],
@@ -175,9 +193,13 @@ class ShiftClosingController extends Controller
             : 0;
 
         // Return Invoice Calculation
+        $returns = (float) ($validated['returns_amount'] ?? 0);
         $retStart = $request->filled('return_invoice_start') ? (int) $request->input('return_invoice_start') : null;
         $retEnd = $request->filled('return_invoice_end') ? (int) $request->input('return_invoice_end') : null;
-        if ($retStart !== null && $retEnd === null) {
+
+        if ($returns <= 0 && $retEnd === null) {
+            $retStart = null;
+        } elseif ($retStart !== null && $retEnd === null) {
             $retEnd = $retStart;
         } elseif ($retStart === null && $retEnd !== null) {
             $retStart = $retEnd;
@@ -193,6 +215,8 @@ class ShiftClosingController extends Controller
                 $totalReturnInvoices = 1;
                 $returnInvoiceNumber = "#{$retStart}";
             }
+        } elseif ($returnInvoiceNumber === null && !empty($validated['return_invoice_number'])) {
+            $returnInvoiceNumber = $validated['return_invoice_number'];
         }
 
         // Note Calculation

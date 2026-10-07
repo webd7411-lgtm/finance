@@ -50,6 +50,11 @@ class PartyController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->has('opening_balance')) {
+            $val = $request->input('opening_balance');
+            $request->merge(['opening_balance' => is_string($val) ? str_replace(',', '', $val) : $val]);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in(['supplier', 'trader', 'staff', 'customer'])],
@@ -74,6 +79,11 @@ class PartyController extends Controller
 
     public function update(Request $request, Party $party)
     {
+        if ($request->has('opening_balance')) {
+            $val = $request->input('opening_balance');
+            $request->merge(['opening_balance' => is_string($val) ? str_replace(',', '', $val) : $val]);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in(['supplier', 'trader', 'staff', 'customer'])],
