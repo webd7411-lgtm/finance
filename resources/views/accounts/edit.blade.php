@@ -34,11 +34,18 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="type" class="form-label small fw-semibold text-secondary">Account Type <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm py-2 @error('type') is-invalid @enderror" id="type" name="type" required>
-                                <option value="cash" {{ old('type', $account->type) == 'cash' ? 'selected' : '' }}>Cash in Hand (Counter)</option>
-                                <option value="jazzcash" {{ old('type', $account->type) == 'jazzcash' ? 'selected' : '' }}>JazzCash / Easypaisa</option>
-                                <option value="bank" {{ old('type', $account->type) == 'bank' ? 'selected' : '' }}>Bank Account</option>
-                            </select>
+                            @if($account->type === 'cash')
+                                <input type="hidden" name="type" value="cash">
+                                <input type="text" class="form-control form-control-sm py-2 bg-light text-success fw-semibold" value="Cash in Hand (Auto System Account)" readonly>
+                                <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                                    <i class="bi bi-shield-lock me-1"></i>System auto cash account type cannot be changed.
+                                </div>
+                            @else
+                                <select class="form-select form-select-sm py-2 @error('type') is-invalid @enderror" id="type" name="type" required>
+                                    <option value="bank" {{ old('type', $account->type) == 'bank' ? 'selected' : '' }}>Bank Account</option>
+                                    <option value="jazzcash" {{ old('type', $account->type) == 'jazzcash' ? 'selected' : '' }}>JazzCash / Mobile Wallet</option>
+                                </select>
+                            @endif
                             @error('type')
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                             @enderror

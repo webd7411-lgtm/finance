@@ -42,19 +42,127 @@
             border-radius: 10px;
         }
     }
+    /* =========================================================
+       BANK STATEMENT PRINT & PDF STYLES
+       ========================================================= */
     @media print {
-        .vip-navbar, .no-print, header, nav, .btn, .sub-header {
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm 10mm 12mm;
+        }
+        html, body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-size: 8.8pt !important;
+            line-height: 1.3 !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Hide Web Navigation and UI elements */
+        .vip-navbar, .sub-header, .no-print, .btn, .alert, footer, nav, header, .modal, .modal-backdrop, .btn-close, .dropdown-menu {
             display: none !important;
         }
-        body {
-            background-color: #fff !important;
-            color: #000 !important;
+
+        /* Container Resets */
+        main, .container-fluid, .row, .col-12, .col-xl-12 {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
             padding: 0 !important;
-        }
-        .card-custom {
-            box-shadow: none !important;
             border: none !important;
+            box-shadow: none !important;
+        }
+
+        #expenseReportSheet, .card-custom {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
             padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }
+
+        /* Bank Statement Header */
+        .bank-stmt-header {
+            display: block !important;
+            border-bottom: 2px solid #0f172a !important;
+            padding-bottom: 8px !important;
+            margin-bottom: 12px !important;
+        }
+
+        /* Force Ledger Table Display */
+        .statement-desktop-table {
+            display: block !important;
+            width: 100% !important;
+            overflow: visible !important;
+        }
+        .table-responsive {
+            overflow: visible !important;
+            display: block !important;
+        }
+
+        /* Statement Grid & Tables */
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        thead {
+            display: table-header-group;
+        }
+        tfoot {
+            display: table-footer-group;
+        }
+
+        .table th, .table td,
+        .bank-summary-table th, .bank-summary-table td,
+        .table-custom th, .table-custom td {
+            border: 1px solid #475569 !important;
+            padding: 4px 6px !important;
+            font-size: 8.2pt !important;
+            color: #0f172a !important;
+        }
+
+        .table thead th,
+        .bank-summary-table thead th,
+        .table-custom thead th {
+            background-color: #f1f5f9 !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            color: #0f172a !important;
+        }
+
+        .badge {
+            border: 1px solid #94a3b8 !important;
+            background: transparent !important;
+            color: #0f172a !important;
+            font-size: 7.5pt !important;
+            padding: 1px 3px !important;
+        }
+
+        /* Signatures block */
+        .statement-signatures {
+            page-break-inside: avoid;
+            margin-top: 25px !important;
+            padding-top: 15px !important;
+            border-top: 1px solid #0f172a !important;
+        }
+
+        .statement-sig-line {
+            border-top: 1px dashed #475569;
+            width: 80%;
+            margin: 0 auto;
+            padding-top: 4px;
         }
     }
 </style>
@@ -137,8 +245,56 @@
 
 <!-- Printable Consolidated Expense Sheet -->
 <div class="card-custom p-3 p-md-5 bg-white shadow-sm mb-4" id="expenseReportSheet">
+    <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
+    <div class="bank-stmt-header d-none d-print-block">
+        <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
+            <div>
+                <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 16pt;">FINANCEDESK ENTERPRISE</h3>
+                <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY & COMMERCIAL AUDIT</div>
+                <div class="small text-muted" style="font-size: 8pt;">Proware Technologies &bull; Periodic Expense Audit &bull; Verified Books</div>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-dark text-white text-uppercase px-2 py-1 mb-1" style="font-size: 8.5pt;">Official Statement</div>
+                <div class="fw-bold" style="font-size: 11pt; color: #0f172a;">CONSOLIDATED EXPENSE AUDIT STATEMENT</div>
+                <div class="small text-muted" style="font-size: 8pt;">Statement Date: {{ now()->format('d M, Y h:i A') }}</div>
+            </div>
+        </div>
+
+        <div class="row mt-2 py-1 text-dark" style="font-size: 8.5pt;">
+            <div class="col-7">
+                <div><strong>Statement Period:</strong> {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} &ndash; {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }} ({{ $diffDays }} Days)</div>
+                <div><strong>Scope:</strong> {{ ucfirst($expenseSource) }} &bull; <strong>Category:</strong> {{ $categoryId ? (is_numeric($categoryId) ? ($allCategories->firstWhere('id', $categoryId)->name ?? 'Selected') : ucfirst($categoryId)) : 'All Categories' }}</div>
+                <div><strong>Base Currency:</strong> PKR (Pakistani Rupee)</div>
+            </div>
+            <div class="col-5 text-end">
+                <div><strong>Audited By:</strong> {{ auth()->user()->name }} ({{ ucfirst(auth()->user()->role) }})</div>
+                <div><strong>System Reference:</strong> EXP-{{ date('Ymd') }}-{{ str_pad(auth()->id(), 3, '0', STR_PAD_LEFT) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Statement Summary Table (Print Only) -->
+    <table class="bank-summary-table d-none d-print-table mb-3">
+        <thead>
+            <tr>
+                <th class="text-start" style="width: 25%;">Total Period Expenses</th>
+                <th class="text-end" style="width: 25%;">Voucher Payments Out</th>
+                <th class="text-end" style="width: 25%;">Shift Counter Expenses</th>
+                <th class="text-end" style="width: 25%;">Daily Average Spending</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-start font-monospace text-danger fw-bold">Rs. {{ number_format($grandTotalAmount, 2) }}</td>
+                <td class="text-end font-monospace">Rs. {{ number_format($totalVoucherAmount, 2) }}</td>
+                <td class="text-end font-monospace">Rs. {{ number_format($totalShiftAmount, 2) }}</td>
+                <td class="text-end font-monospace">Rs. {{ number_format($dailyAverage, 2) }}/day</td>
+            </tr>
+        </tbody>
+    </table>
+
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
                 <div class="bg-danger text-white rounded-2 p-1 px-2 fw-bold">
@@ -149,7 +305,7 @@
             <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Consolidated Expense & Disbursement Audit Report</h5>
             <small class="text-muted">Proware Technologies &bull; Detailed Analysis of Daily Expenses, Vouchers & Counter Deductions</small>
         </div>
-        <div class="text-start text-md-end w-100 w-md-auto">
+        <div class="text-start text-md-end">
             <span class="badge bg-light text-dark border px-2 py-1 mb-1 font-monospace d-inline-block">
                 Period: {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }} ({{ $diffDays }} Days)
             </span>
@@ -159,7 +315,7 @@
     </div>
 
     <!-- Executive Metrics Cards -->
-    <div class="row g-2 g-md-3 mb-3 mb-md-4">
+    <div class="row g-2 g-md-3 mb-3 mb-md-4 d-print-none">
         <div class="col-6 col-md-3">
             <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
                 <span class="text-danger small fw-semibold d-block mb-1 kpi-title">Total Period Expenses</span>
@@ -192,7 +348,7 @@
 
     <!-- Category-wise Expense Breakdown Cards -->
     @if(count($categoryBreakdown) > 0)
-        <div class="mb-4">
+        <div class="mb-4 d-print-none">
             <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
                 <h6 class="fw-bold text-dark m-0" style="font-size: 0.92rem;">
                     <i class="bi bi-pie-chart-fill text-danger me-1"></i> Expense Breakdown by Category
@@ -231,7 +387,7 @@
 
     <!-- Payment Account / Channel Distribution (Cash vs Banks) -->
     @if(count($accountBreakdown) > 0)
-        <div class="mb-4">
+        <div class="mb-4 d-print-none">
             <h6 class="fw-bold text-dark mb-2" style="font-size: 0.92rem;">
                 <i class="bi bi-wallet2 text-primary me-1"></i> Spending by Payment Channel (Accounts)
             </h6>
@@ -270,7 +426,7 @@
             </div>
 
             <!-- Desktop View: Table -->
-            <div class="d-none d-md-block table-responsive border rounded-3 mb-4">
+            <div class="d-none d-md-block statement-desktop-table table-responsive border rounded-3 mb-4">
                 <table class="table table-custom table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -362,7 +518,7 @@
             </div>
 
             <!-- Mobile View: Clean Voucher Cards (Zero Horizontal Scroll) -->
-            <div class="d-block d-md-none mb-4">
+            <div class="d-block d-md-none mb-4 d-print-none">
                 <div class="d-flex flex-column gap-2">
                     @forelse($voucherExpenses as $trx)
                         <div class="p-3 rounded-3 border bg-white shadow-xs">
@@ -434,7 +590,7 @@
             </div>
 
             <!-- Desktop View: Table -->
-            <div class="d-none d-md-block table-responsive border rounded-3 mb-4">
+            <div class="d-none d-md-block statement-desktop-table table-responsive border rounded-3 mb-4">
                 <table class="table table-custom table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -504,7 +660,7 @@
             </div>
 
             <!-- Mobile View: Clean Shift Cards (Zero Horizontal Scroll) -->
-            <div class="d-block d-md-none mb-4">
+            <div class="d-block d-md-none mb-4 d-print-none">
                 <div class="d-flex flex-column gap-2">
                     @forelse($shiftExpenses as $shift)
                         <div class="p-3 rounded-3 border bg-white shadow-xs">
@@ -551,7 +707,7 @@
             <h6 class="fw-bold text-dark m-0">Grand Total Net Period Expenses</h6>
             <small class="text-muted">Total of all voucher disbursements and counter shift expenses combined</small>
         </div>
-        <div class="text-start text-md-end w-100 w-md-auto">
+        <div class="text-start text-md-end">
             <h4 class="fw-bold font-monospace text-danger m-0" style="font-size: clamp(1.2rem, 4vw, 1.6rem);">
                 Rs. {{ number_format($grandTotalAmount, 2) }}
             </h4>
@@ -559,21 +715,26 @@
         </div>
     </div>
 
-    <!-- Printable Audit Signatures (visible on print) -->
-    <div class="row pt-5 mt-4 text-center d-none d-print-flex">
-        <div class="col-4">
-            <div class="border-top pt-2 small fw-semibold text-secondary">
-                Prepared By (Accountant)
+    <!-- Official Bank Statement Signatures (Visible on Print) -->
+    <div class="statement-signatures pt-4 mt-4">
+        <div class="row text-center w-100 m-0">
+            <div class="col-4">
+                <div class="statement-sig-line">
+                    <div class="small fw-bold text-dark">Prepared By (Accountant)</div>
+                    <div class="small text-muted" style="font-size: 8pt;">{{ auth()->user()->name }}</div>
+                </div>
             </div>
-        </div>
-        <div class="col-4">
-            <div class="border-top pt-2 small fw-semibold text-secondary">
-                Verified By (Branch Incharge)
+            <div class="col-4">
+                <div class="statement-sig-line">
+                    <div class="small fw-bold text-dark">Supervisor / Audit Verified</div>
+                    <div class="small text-muted" style="font-size: 8pt;">Branch Accounts Incharge</div>
+                </div>
             </div>
-        </div>
-        <div class="col-4">
-            <div class="border-top pt-2 small fw-semibold text-secondary">
-                Approved By (Proprietor / Owner)
+            <div class="col-4">
+                <div class="statement-sig-line">
+                    <div class="small fw-bold text-dark">Managing Approval</div>
+                    <div class="small text-muted" style="font-size: 8pt;">Director / Owner</div>
+                </div>
             </div>
         </div>
     </div>

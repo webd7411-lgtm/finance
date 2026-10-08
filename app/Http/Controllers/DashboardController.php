@@ -57,7 +57,8 @@ class DashboardController extends Controller
 
         // Vault & Accounts Summary
         $accounts = Account::orderBy('id')->get();
-        $bankFunds = (float) $accounts->whereIn('type', ['bank', 'jazzcash'])->sum('current_balance');
+        $bankFunds = (float) $accounts->where('type', 'bank')->sum('current_balance');
+        $jazzFunds = (float) $accounts->where('type', 'jazzcash')->sum('current_balance');
 
         if ($todayClosing && $todayClosing->status === 'closed') {
             $cashInVault = (float) $todayClosing->closing_cash;
@@ -81,7 +82,7 @@ class DashboardController extends Controller
             $cashInVault = $cashOpening + $shiftCashIn + $directCashIn - $directCashOut;
         }
 
-        $totalLiquidFunds = $cashInVault + $bankFunds;
+        $totalLiquidFunds = $cashInVault + $bankFunds + $jazzFunds;
 
         // Party Receivables vs Payables
         $parties = Party::all();
@@ -144,6 +145,7 @@ class DashboardController extends Controller
             'totalLiquidFunds',
             'cashInVault',
             'bankFunds',
+            'jazzFunds',
             'totalReceivables',
             'totalPayables',
             'accounts',

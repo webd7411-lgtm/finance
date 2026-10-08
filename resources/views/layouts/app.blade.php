@@ -395,6 +395,11 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}" href="{{ route('reports.total-sale-summary') }}">
+                                        <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
+                                    </a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.daily-closing') }}">
                                         <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
                                     </a>
@@ -497,6 +502,11 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}" href="{{ route('reports.total-sale-summary') }}">
+                                        <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
+                                    </a>
+                                </li>
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.daily-closing') }}">
                                         <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
@@ -677,6 +687,9 @@
                 </a>
                 <a href="{{ route('ledgers.bank-book') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('ledgers.bank-book') ? 'active' : '' }}">
                     <i class="bi bi-wallet2 text-info"></i> Bank & Wallet Register
+                </a>
+                <a href="{{ route('reports.total-sale-summary') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}">
+                    <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
                 </a>
                 <a href="{{ route('reports.daily-closing') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.daily-closing') ? 'active' : '' }}">
                     <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary

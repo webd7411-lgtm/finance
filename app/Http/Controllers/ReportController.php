@@ -567,4 +567,279 @@ class ReportController extends Controller
             'allParties'
         ));
     }
+
+    /**
+     * Total Sale & Cash Flow Executive Summary Report
+     * Includes Period Sales, Receipts (Cash/Bank/JazzCash), Disbursements to Parties,
+     * Period Net Surplus, and Real-time Available Treasury Balances.
+     */
+    public function totalSaleSummary(Request $request)
+    {
+        $fromDate = $request->input('from_date', Carbon::today()->startOfMonth()->toDateString());
+        $toDate = $request->input('to_date', Carbon::today()->toDateString());
+
+        // 1. Shift Closings in period
+        $shifts = ShiftClosing::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->orderBy('date', 'asc')
+            ->get();
+
+        $grossSales = (float) $shifts->sum('total_sale');
+        $salesReturns = (float) $shifts->sum('returns_amount');
+        $netSales = max(0, $grossSales - $salesReturns);
+        $totalShiftInvoices = (int) $shifts->sum('total_invoices');
+        $shiftExpensesTotal = (float) $shifts->sum('expenses_amount');
+
+        // Shift Collection Channel breakdown
+        $shiftCashIn = (float) $shifts->sum('total_counted_cash');
+        $shiftBankIn = (float) $shifts->sum('bank_amount');
+        $shiftJazzIn = (float) $shifts->sum('jazzcash_amount');
+
+        // 2. Direct Payment In transactions (customer collections/recoveries not part of shifts)
+        $directPaymentsIn = Transaction::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->where('type', 'payment_in')
+            ->whereNull('shift_closing_id')
+            ->with(['party', 'account'])
+            ->orderBy('date', 'asc')
+            ->get();
+
+        $directCashIn = (float) $directPaymentsIn->filter(fn($t) => !$t->account || $t->account->type === 'cash')->sum('amount');
+        $directBankIn = (float) $directPaymentsIn->filter(fn($t) => $t->account && $t->account->type === 'bank')->sum('amount');
+        $directJazzIn = (float) $directPaymentsIn->filter(fn($t) => $t->account && $t->account->type === 'jazzcash')->sum('amount');
+        $totalDirectIn = (float) $directPaymentsIn->sum('amount');
+
+        // Consolidated Inflows in Period
+        $periodCashIn = $shiftCashIn + $directCashIn;
+        $periodBankIn = $shiftBankIn + $directBankIn;
+        $periodJazzIn = $shiftJazzIn + $directJazzIn;
+        $totalPeriodCollections = $periodCashIn + $periodBankIn + $periodJazzIn;
+
+        // 3. Disbursements / Payments Out to Parties & Vendors in this period
+        // A) Direct Vouchers
+        $voucherPaymentsOut = Transaction::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->where('type', 'payment_out')
+            ->with(['party', 'account', 'category'])
+            ->orderBy('date', 'asc')
+            ->get();
+
+        // B) Shift Drawer Party Payments
+        $shiftPartyPayments = \App\Models\ShiftClosingPartyPayment::whereHas('shiftClosing', function($q) use ($fromDate, $toDate) {
+                $q->whereDate('date', '>=', $fromDate)->whereDate('date', '<=', $toDate);
+            })
+            ->with(['party', 'shiftClosing'])
+            ->get();
+
+        // Group disbursements by party
+        $partyDisbursements = [];
+
+        // Process Direct Voucher Payments Out
+        foreach ($voucherPaymentsOut as $v) {
+            $partyId = $v->party_id ?: 0;
+            $partyName = $v->party ? $v->party->name : ($v->category ? $v->category->name : 'Operational Expense');
+            $partyType = $v->party ? $v->party->type : 'expense';
+            $partyPhone = $v->party ? $v->party->phone : null;
+            $currentBal = $v->party ? (float) $v->party->current_balance : null;
+
+            $isCash = !$v->account || $v->account->type === 'cash';
+            $amt = (float) $v->amount;
+
+            $key = $partyId > 0 ? ('p_' . $partyId) : ('cat_' . ($v->category_id ?: 'other'));
+
+            if (!isset($partyDisbursements[$key])) {
+                $partyDisbursements[$key] = [
+                    'party_id' => $partyId,
+                    'name' => $partyName,
+                    'type' => $partyType,
+                    'phone' => $partyPhone,
+                    'cash_paid' => 0.0,
+                    'bank_paid' => 0.0,
+                    'total_paid' => 0.0,
+                    'tx_count' => 0,
+                    'current_balance' => $currentBal,
+                ];
+            }
+
+            if ($isCash) {
+                $partyDisbursements[$key]['cash_paid'] += $amt;
+            } else {
+                $partyDisbursements[$key]['bank_paid'] += $amt;
+            }
+            $partyDisbursements[$key]['total_paid'] += $amt;
+            $partyDisbursements[$key]['tx_count'] += 1;
+        }
+
+        // Process Shift Drawer Party Payments
+        foreach ($shiftPartyPayments as $sp) {
+            $partyId = $sp->party_id;
+            $partyName = $sp->party ? $sp->party->name : 'Supplier Cash Payout';
+            $partyType = $sp->party ? $sp->party->type : 'supplier';
+            $partyPhone = $sp->party ? $sp->party->phone : null;
+            $currentBal = $sp->party ? (float) $sp->party->current_balance : null;
+            $amt = (float) $sp->amount;
+
+            $key = 'p_' . $partyId;
+
+            if (!isset($partyDisbursements[$key])) {
+                $partyDisbursements[$key] = [
+                    'party_id' => $partyId,
+                    'name' => $partyName,
+                    'type' => $partyType,
+                    'phone' => $partyPhone,
+                    'cash_paid' => 0.0,
+                    'bank_paid' => 0.0,
+                    'total_paid' => 0.0,
+                    'tx_count' => 0,
+                    'current_balance' => $currentBal,
+                ];
+            }
+
+            $partyDisbursements[$key]['cash_paid'] += $amt;
+            $partyDisbursements[$key]['total_paid'] += $amt;
+            $partyDisbursements[$key]['tx_count'] += 1;
+        }
+
+        // Sort parties by total paid descending
+        uasort($partyDisbursements, fn($a, $b) => $b['total_paid'] <=> $a['total_paid']);
+
+        $totalPaidToParties = array_sum(array_column($partyDisbursements, 'total_paid'));
+        $totalCashPaidToParties = array_sum(array_column($partyDisbursements, 'cash_paid'));
+        $totalBankPaidToParties = array_sum(array_column($partyDisbursements, 'bank_paid'));
+
+        // Customer Return Refunds Outflow
+        $totalReturnsRefunded = $salesReturns;
+
+        // General Shift Counter Expenses (not assigned to specific parties)
+        $totalShiftOperatingExpenses = $shiftExpensesTotal;
+
+        // Total Disbursements Out
+        $totalPeriodDisbursements = $totalPaidToParties + $totalShiftOperatingExpenses;
+
+        // 4. Period Net Cash Retention / Surplus
+        $periodNetSurplus = $totalPeriodCollections - $totalPeriodDisbursements;
+
+        // 5. Current Real-time Available Balances (All accounts)
+        $accounts = Account::orderBy('type')->orderBy('name')->get();
+        $liveCashBalance = (float) Account::where('type', 'cash')->sum('current_balance');
+        $liveBankBalance = (float) Account::where('type', 'bank')->sum('current_balance');
+        $liveJazzBalance = (float) Account::where('type', 'jazzcash')->sum('current_balance');
+        $totalLiveLiquidity = $liveCashBalance + $liveBankBalance + $liveJazzBalance;
+
+        // 6. Chronological Statement Line Items (for print/PDF and detailed ledger statement view)
+        $statementRows = collect();
+
+        // Daily shift closings
+        foreach ($shifts as $s) {
+            $shiftLabel = $s->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
+            $statementRows->push((object)[
+                'date' => Carbon::parse($s->date),
+                'reference' => 'SHIFT #' . $s->id . ' (' . $shiftLabel . ')',
+                'description' => "Shift Sales Collection & Counter Register",
+                'channel' => 'Drawer Cash & Digital',
+                'credit' => (float) $s->total_actual_received,
+                'debit' => 0.0,
+                'type' => 'sale',
+            ]);
+        }
+
+        // Direct voucher payments in
+        foreach ($directPaymentsIn as $dpi) {
+            $statementRows->push((object)[
+                'date' => Carbon::parse($dpi->date),
+                'reference' => $dpi->bill_no ?: ('TX-IN-' . $dpi->id),
+                'description' => 'Recovery / Receipt: ' . ($dpi->party ? $dpi->party->name : 'Direct Receipt') . ($dpi->description ? ' (' . $dpi->description . ')' : ''),
+                'channel' => $dpi->account ? $dpi->account->name : 'Cash Drawer',
+                'credit' => (float) $dpi->amount,
+                'debit' => 0.0,
+                'type' => 'payment_in',
+            ]);
+        }
+
+        // Voucher payments out
+        foreach ($voucherPaymentsOut as $vpo) {
+            $statementRows->push((object)[
+                'date' => Carbon::parse($vpo->date),
+                'reference' => $vpo->bill_no ?: ('TX-OUT-' . $vpo->id),
+                'description' => 'Disbursement: ' . ($vpo->party ? $vpo->party->name : ($vpo->category ? $vpo->category->name : 'Expense')) . ($vpo->description ? ' (' . $vpo->description . ')' : ''),
+                'channel' => $vpo->account ? $vpo->account->name : 'Cash Drawer',
+                'credit' => 0.0,
+                'debit' => (float) $vpo->amount,
+                'type' => 'payment_out',
+            ]);
+        }
+
+        // Shift drawer party payouts
+        foreach ($shiftPartyPayments as $spp) {
+            $sDate = $spp->shiftClosing ? Carbon::parse($spp->shiftClosing->date) : Carbon::parse($spp->created_at);
+            $statementRows->push((object)[
+                'date' => $sDate,
+                'reference' => 'SHIFT-PAY #' . $spp->id,
+                'description' => 'Drawer Payout: ' . ($spp->party ? $spp->party->name : 'Supplier') . ($spp->details ? ' (' . $spp->details . ')' : ''),
+                'channel' => 'Cash Drawer',
+                'credit' => 0.0,
+                'debit' => (float) $spp->amount,
+                'type' => 'shift_party_payout',
+            ]);
+        }
+
+        $statementRows = $statementRows->sortBy(function($row) {
+            return $row->date->format('Y-m-d') . '_' . $row->reference;
+        })->values();
+
+        // Bank-wise Inflows for this period
+        $bankAccounts = Account::whereIn('type', ['bank', 'jazzcash'])->orderBy('type')->orderBy('name')->get();
+        $bankWiseBreakdown = [];
+        foreach ($bankAccounts as $acc) {
+            $inflow = (float) Transaction::where('account_id', $acc->id)
+                ->whereDate('date', '>=', $fromDate)
+                ->whereDate('date', '<=', $toDate)
+                ->where('type', 'payment_in')
+                ->sum('amount');
+
+            $bankWiseBreakdown[] = (object) [
+                'name' => $acc->name,
+                'type' => $acc->type,
+                'type_badge' => $acc->type_badge,
+                'account_number' => $acc->account_number,
+                'amount_received' => $inflow,
+                'current_balance' => (float) $acc->current_balance,
+            ];
+        }
+
+        return view('reports.total_sale_summary', compact(
+            'fromDate',
+            'toDate',
+            'grossSales',
+            'salesReturns',
+            'netSales',
+            'totalShiftInvoices',
+            'shiftCashIn',
+            'shiftBankIn',
+            'shiftJazzIn',
+            'directCashIn',
+            'directBankIn',
+            'directJazzIn',
+            'totalDirectIn',
+            'periodCashIn',
+            'periodBankIn',
+            'periodJazzIn',
+            'totalPeriodCollections',
+            'bankWiseBreakdown',
+            'partyDisbursements',
+            'totalPaidToParties',
+            'totalCashPaidToParties',
+            'totalBankPaidToParties',
+            'totalReturnsRefunded',
+            'totalShiftOperatingExpenses',
+            'totalPeriodDisbursements',
+            'periodNetSurplus',
+            'accounts',
+            'liveCashBalance',
+            'liveBankBalance',
+            'liveJazzBalance',
+            'totalLiveLiquidity',
+            'statementRows'
+        ));
+    }
 }

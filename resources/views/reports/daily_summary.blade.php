@@ -214,12 +214,6 @@
         .statement-sig-line small, .statement-sig-line .small {
             font-size: 8pt !important;
         }
-
-        /* Print Footer */
-        .statement-print-footer {
-            display: block !important;
-            page-break-inside: avoid !important;
-        }
     }
 </style>
 @endpush
@@ -265,7 +259,7 @@
 
     <!-- Header Section (Screen Only: Modern Web UI with Branding & Badges) -->
     <div class="border-bottom pb-3 mb-3 d-print-none">
-        <div class="row align-items-center g-2">
+        <div class="row align-items-start g-2">
             <div class="col-12 col-md-7">
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <div class="bg-primary text-white rounded-2 p-1 px-2 fw-bold d-inline-flex align-items-center justify-content-center">
@@ -770,13 +764,7 @@
         </div>
     </div>
 
-    <!-- Statement Print Footer -->
-    <div class="statement-print-footer d-none d-print-block mt-4 pt-2 border-top text-muted" style="font-size: 8pt;">
-        <div class="d-flex justify-content-between align-items-center">
-            <span>Consolidated Daily Closing Statement &bull; FinanceDesk ERP &bull; Official Accounting Record</span>
-            <span>Period: {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} &ndash; {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }} &bull; Printed: {{ now()->format('d M, Y h:i A') }}</span>
-        </div>
-    </div>
+
 
 </div>
 @endsection

@@ -47,7 +47,7 @@ class ShiftClosingController extends Controller
     public function create()
     {
         $parties = Party::orderBy('name')->get();
-        $accounts = Account::orderBy('type')->orderBy('name')->get();
+        $accounts = Account::where('type', '!=', 'cash')->orderBy('type')->orderBy('name')->get();
         $cashiers = User::where('status', 'active')->orderBy('name')->get();
         if ($cashiers->isEmpty()) {
             $cashiers = User::orderBy('name')->get();

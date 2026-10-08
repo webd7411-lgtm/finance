@@ -156,13 +156,19 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#editAccountModal{{ $acc->id }}" title="Edit Account">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <form action="{{ route('accounts.destroy', $acc->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this account?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Account">
-                                        <i class="bi bi-trash"></i>
+                                @if($acc->type === 'cash')
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 disabled" title="Auto Cash Account cannot be deleted" disabled>
+                                        <i class="bi bi-shield-lock"></i>
                                     </button>
-                                </form>
+                                @else
+                                    <form action="{{ route('accounts.destroy', $acc->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this account?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Account">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -244,13 +250,19 @@
                             <i class="bi bi-pencil me-1"></i> Edit
                         </button>
 
-                        <form action="{{ route('accounts.destroy', $acc->id) }}" method="POST" class="flex-shrink-0 m-0" onsubmit="return confirm('Are you sure you want to delete this account?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Account">
-                                <i class="bi bi-trash"></i>
+                        @if($acc->type === 'cash')
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2 disabled flex-shrink-0" title="Auto Cash Account cannot be deleted" disabled>
+                                <i class="bi bi-shield-lock"></i>
                             </button>
-                        </form>
+                        @else
+                            <form action="{{ route('accounts.destroy', $acc->id) }}" method="POST" class="flex-shrink-0 m-0" onsubmit="return confirm('Are you sure you want to delete this account?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Account">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             @empty
@@ -285,11 +297,18 @@
                         <div class="row g-2 mb-3">
                             <div class="col-12 col-sm-6">
                                 <label class="form-label small fw-semibold text-secondary">Type <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm py-2" name="type" required>
-                                    <option value="cash" {{ $acc->type == 'cash' ? 'selected' : '' }}>Cash in Hand</option>
-                                    <option value="jazzcash" {{ $acc->type == 'jazzcash' ? 'selected' : '' }}>JazzCash / Easypaisa</option>
-                                    <option value="bank" {{ $acc->type == 'bank' ? 'selected' : '' }}>Bank Account</option>
-                                </select>
+                                @if($acc->type === 'cash')
+                                    <input type="hidden" name="type" value="cash">
+                                    <input type="text" class="form-control form-control-sm py-2 bg-light text-success fw-semibold" value="Cash in Hand (Auto Account)" readonly>
+                                    <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-shield-lock me-1"></i>System auto cash account
+                                    </div>
+                                @else
+                                    <select class="form-select form-select-sm py-2" name="type" required>
+                                        <option value="bank" {{ $acc->type == 'bank' ? 'selected' : '' }}>Bank Account</option>
+                                        <option value="jazzcash" {{ $acc->type == 'jazzcash' ? 'selected' : '' }}>JazzCash / Mobile Wallet</option>
+                                    </select>
+                                @endif
                             </div>
                             <div class="col-12 col-sm-6">
                                 <label class="form-label small fw-semibold text-secondary">Account / Mobile Number</label>
@@ -323,7 +342,7 @@
             <div class="modal-header border-bottom py-3">
                 <div>
                     <h6 class="modal-title fw-bold text-dark m-0" id="createAccountModalLabel">Create Payment Account</h6>
-                    <small class="text-muted" style="font-size: 0.78rem;">Setup Cash Counters, JazzCash wallets, or Bank accounts</small>
+                    <small class="text-muted" style="font-size: 0.78rem;">Setup Bank accounts or digital wallets (JazzCash / Easypaisa). Cash is automatic.</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -332,17 +351,19 @@
                 <div class="modal-body p-3 p-sm-4 text-start">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Account Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm py-2" name="name" placeholder="e.g. Counter Cash / Meezan Bank / JazzCash Shop" required>
+                        <input type="text" class="form-control form-control-sm py-2" name="name" placeholder="e.g. Meezan Bank / JazzCash Shop" required>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Account Type <span class="text-danger">*</span></label>
                             <select class="form-select form-select-sm py-2" name="type" required>
                                 <option value="" disabled selected>-- Select Type --</option>
-                                <option value="cash">Cash in Hand (Counter)</option>
-                                <option value="jazzcash">JazzCash / Easypaisa</option>
                                 <option value="bank">Bank Account</option>
+                                <option value="jazzcash">JazzCash / Mobile Wallet</option>
                             </select>
+                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                                <i class="bi bi-info-circle me-1"></i>Cash account is automatically maintained as <strong>Cash in Hand</strong>.
+                            </div>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Account / Mobile Number</label>
@@ -400,7 +421,7 @@
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
-                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Is account se raqam nikal jayegi.</div>
+                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Funds will be deducted from this account.</div>
                         </div>
 
                         <div class="col-12 col-sm-6">
@@ -411,7 +432,7 @@
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
-                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Is account me raqam shamil hogi.</div>
+                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Funds will be deposited into this account.</div>
                         </div>
                     </div>
 

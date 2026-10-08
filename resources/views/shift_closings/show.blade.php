@@ -220,16 +220,20 @@
 
             <!-- Final Reconciliation Banner Box -->
             <div class="p-3 rounded-3 mb-4 statement-recon-box {{ $shiftClosing->difference < 0 ? 'bg-danger bg-opacity-10 border border-danger' : ($shiftClosing->difference > 0 ? 'bg-info bg-opacity-10 border border-info' : 'bg-success bg-opacity-10 border border-success') }}">
-                <div class="row align-items-center text-center text-md-start">
-                    <div class="col-12 col-md-4 mb-2 mb-md-0 statement-recon-cell">
+                <div class="row align-items-center text-center text-md-start g-2">
+                    <div class="col-6 col-md-3 mb-2 mb-md-0 statement-recon-cell">
                         <div class="small text-muted fw-semibold recon-label">EXPECTED TO RECEIVE</div>
                         <div class="fs-5 fw-bold text-dark recon-val">Rs. {{ number_format($shiftClosing->expected_cash, 2) }}</div>
                     </div>
-                    <div class="col-12 col-md-4 mb-2 mb-md-0 statement-recon-cell">
+                    <div class="col-6 col-md-3 mb-2 mb-md-0 statement-recon-cell">
+                        <div class="small text-muted fw-semibold recon-label">TOTAL CASH COLLECTED</div>
+                        <div class="fs-5 fw-bold text-dark recon-val">Rs. {{ number_format($shiftClosing->total_counted_cash, 2) }}</div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2 mb-md-0 statement-recon-cell">
                         <div class="small text-muted fw-semibold recon-label">ACTUALLY COLLECTED</div>
                         <div class="fs-5 fw-bold text-dark recon-val">Rs. {{ number_format($shiftClosing->total_actual_received, 2) }}</div>
                     </div>
-                    <div class="col-12 col-md-4 text-md-end statement-recon-cell statement-recon-last">
+                    <div class="col-6 col-md-3 text-center text-md-end statement-recon-cell statement-recon-last">
                         <div class="small text-muted fw-semibold recon-label">SHIFT VARIANCE</div>
                         <div class="fs-5 fw-bold recon-variance {{ $shiftClosing->difference < 0 ? 'text-danger' : ($shiftClosing->difference > 0 ? 'text-info' : 'text-success') }}">
                             {{ $shiftClosing->difference > 0 ? '+' : '' }}Rs. {{ number_format($shiftClosing->difference, 2) }}
@@ -276,13 +280,7 @@
                 </div>
             </div>
 
-            <!-- Statement Print Footer -->
-            <div class="statement-print-footer d-none d-print-block mt-4 pt-2 border-top text-muted" style="font-size: 8pt;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>Official Shift Closing Statement &bull; FinanceDesk Accounting Management System</span>
-                    <span>Generated: {{ now()->format('d M, Y h:i A') }} &bull; Sheet ID: #{{ str_pad($shiftClosing->id, 5, '0', STR_PAD_LEFT) }}</span>
-                </div>
-            </div>
+
 
         </div>
     </div>
@@ -437,8 +435,8 @@
         align-items: center !important;
     }
     .statement-recon-cell {
-        flex: 1 1 33.33% !important;
-        width: 33.33% !important;
+        flex: 1 1 25% !important;
+        width: 25% !important;
         text-align: left !important;
         padding: 0 4px !important;
     }
@@ -500,12 +498,6 @@
     }
     .statement-sig-line small {
         font-size: 8.5pt !important;
-    }
-
-    /* Print Footer */
-    .statement-print-footer {
-        display: block !important;
-        page-break-inside: avoid !important;
     }
 }
 </style>

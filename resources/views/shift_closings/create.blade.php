@@ -533,6 +533,10 @@
                             <span>(=) Expected Register Cash:</span>
                             <span class="font-monospace text-primary text-nowrap" id="audit_expected">Rs. 0.00</span>
                         </div>
+                        <div class="d-flex justify-content-between align-items-center small text-secondary py-1 border-bottom gap-2">
+                            <span>Total Cash Collected (Drawer):</span>
+                            <span class="font-monospace text-success fw-semibold text-nowrap" id="audit_cash">Rs. 0.00</span>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center small text-success fw-bold py-1 border-bottom gap-2">
                             <span>Actual Collected (Physical Cash + Digital):</span>
                             <span class="font-monospace text-nowrap" id="audit_actual">Rs. 0.00</span>
@@ -940,6 +944,10 @@ function calculateClosing() {
     document.getElementById('audit_gross').innerText = formatRs(totalSale);
     document.getElementById('audit_deductions').innerText = '- ' + formatRs(totalDeductions);
     document.getElementById('audit_expected').innerText = formatRs(expectedCash);
+    const auditCashEl = document.getElementById('audit_cash');
+    if (auditCashEl) {
+        auditCashEl.innerText = formatRs(totalCashCounted);
+    }
     document.getElementById('audit_actual').innerText = formatRs(actualCollected);
 
     const diffEl = document.getElementById('display_difference');

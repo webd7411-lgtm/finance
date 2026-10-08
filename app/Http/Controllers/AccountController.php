@@ -39,9 +39,11 @@ class AccountController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', Rule::in(['cash', 'jazzcash', 'bank'])],
+            'type' => ['required', Rule::in(['jazzcash', 'bank'])],
             'account_number' => ['nullable', 'string', 'max:100'],
             'opening_balance' => ['nullable', 'numeric'],
+        ], [
+            'type.in' => 'Cash account is automatically managed by the system. Only Bank and Mobile Wallet accounts can be added.',
         ]);
 
         $opening = $validated['opening_balance'] ?? 0;
@@ -65,11 +67,17 @@ class AccountController extends Controller
             $request->merge(['opening_balance' => is_string($val) ? str_replace(',', '', $val) : $val]);
         }
 
+        if ($account->type === 'cash') {
+            $request->merge(['type' => 'cash']);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', Rule::in(['cash', 'jazzcash', 'bank'])],
+            'type' => ['required', $account->type === 'cash' ? Rule::in(['cash']) : Rule::in(['jazzcash', 'bank'])],
             'account_number' => ['nullable', 'string', 'max:100'],
             'opening_balance' => ['nullable', 'numeric'],
+        ], [
+            'type.in' => 'Invalid account channel selected.',
         ]);
 
         if ($account->current_balance == $account->opening_balance) {
@@ -83,6 +91,10 @@ class AccountController extends Controller
 
     public function destroy(Account $account)
     {
+        if ($account->type === 'cash') {
+            return redirect()->route('accounts.index')->with('error', 'The system Cash in Hand account is automatic and cannot be deleted.');
+        }
+
         $account->delete();
         return redirect()->route('accounts.index')->with('success', 'Account deleted successfully.');
     }

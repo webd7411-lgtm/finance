@@ -35,10 +35,12 @@
                             <label for="type" class="form-label small fw-semibold text-secondary">Account Type <span class="text-danger">*</span></label>
                             <select class="form-select form-select-sm py-2 @error('type') is-invalid @enderror" id="type" name="type" required>
                                 <option value="" disabled selected>-- Select Type --</option>
-                                <option value="cash" {{ old('type') == 'cash' ? 'selected' : '' }}>Cash in Hand (Counter)</option>
-                                <option value="jazzcash" {{ old('type') == 'jazzcash' ? 'selected' : '' }}>JazzCash / Easypaisa</option>
                                 <option value="bank" {{ old('type') == 'bank' ? 'selected' : '' }}>Bank Account</option>
+                                <option value="jazzcash" {{ old('type') == 'jazzcash' ? 'selected' : '' }}>JazzCash / Mobile Wallet</option>
                             </select>
+                            <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                                <i class="bi bi-info-circle me-1"></i>Cash account is automatically maintained as <strong>Cash in Hand</strong>.
+                            </div>
                             @error('type')
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                             @enderror

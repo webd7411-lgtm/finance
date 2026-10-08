@@ -66,7 +66,7 @@
 <!-- Date Selector Bar -->
 <div class="card-custom p-3 mb-3 bg-white border">
     <form method="GET" action="{{ route('day-closings.index') }}" class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-md-auto">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="small fw-bold text-secondary text-uppercase" style="font-size: 0.75rem;">Select Closing Date:</span>
             <input type="date" name="date" class="form-control form-control-sm" value="{{ $selectedDate }}" style="max-width: 170px;">
             <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">

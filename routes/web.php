@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('ledgers/bank-book', [LedgerController::class, 'bankBook'])->name('ledgers.bank-book');
 
     Route::get('reports/daily-closing', [ReportController::class, 'dailyClosingSummary'])->name('reports.daily-closing');
+    Route::get('reports/total-sale-summary', [ReportController::class, 'totalSaleSummary'])->name('reports.total-sale-summary');
     Route::get('reports/variance', [ReportController::class, 'varianceAudit'])->name('reports.variance');
     Route::get('reports/expenses', [ReportController::class, 'expenseReport'])->name('reports.expenses');
 

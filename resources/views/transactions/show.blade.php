@@ -20,6 +20,78 @@
     </div>
 @endsection
 
+@push('styles')
+<style>
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 15mm 20mm;
+        }
+        html, body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-size: 9pt !important;
+            line-height: 1.35 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Hide Web Navigation and UI elements */
+        .vip-navbar, .sub-header, .no-print, .btn, .alert, footer, nav, header {
+            display: none !important;
+        }
+
+        /* Container Resets */
+        main, .container-fluid, .row, .col-12, .col-md-8, .col-lg-6 {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: block !important;
+        }
+
+        #printableVoucher {
+            border: 1.5px solid #0f172a !important;
+            box-shadow: none !important;
+            border-radius: 4px !important;
+            padding: 24px 28px !important;
+            margin: 20px auto !important;
+            max-width: 620px !important;
+            background: #fff !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        .table td, .table th {
+            border: 1px solid #475569 !important;
+            padding: 6px 10px !important;
+            font-size: 8.8pt !important;
+            color: #0f172a !important;
+        }
+        .badge {
+            border: 1px solid #94a3b8 !important;
+            background: transparent !important;
+            color: #0f172a !important;
+        }
+
+        .statement-sig-line {
+            border-top: 1px dashed #475569 !important;
+            width: 80% !important;
+            margin: 0 auto !important;
+            padding-top: 4px !important;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="row justify-content-center">
     <div class="col-12 col-md-8 col-lg-6">

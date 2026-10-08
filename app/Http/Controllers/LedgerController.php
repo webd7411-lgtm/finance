@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Party;
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Models\ShiftClosing;
+use App\Models\DayClosing;
 use App\Models\ShiftClosingPartyPayment;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -181,77 +183,124 @@ class LedgerController extends Controller
      */
     public function cashBook(Request $request)
     {
-        $cashAccounts = Account::where('type', 'cash')->get();
-        $selectedAccountId = $request->input('account_id');
-
-        $accountQuery = Account::where('type', 'cash');
-        if ($selectedAccountId) {
-            $accountQuery->where('id', $selectedAccountId);
-        }
-        $targetAccounts = $accountQuery->get();
-        $targetAccountIds = $targetAccounts->pluck('id')->toArray();
+        $cashAccount = Account::where('type', 'cash')->first() ?? Account::getCashAccount();
 
         $fromDate = $request->input('from_date', Carbon::today()->startOfMonth()->toDateString());
         $toDate = $request->input('to_date', Carbon::today()->toDateString());
 
-        // Opening cash balance before from_date
-        $baseOpening = $targetAccounts->sum('opening_balance');
-        $priorIn = Transaction::whereIn('account_id', $targetAccountIds)
-            ->whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_in')
-            ->sum('amount');
-        $priorOut = Transaction::whereIn('account_id', $targetAccountIds)
-            ->whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_out')
-            ->sum('amount');
+        // 1. Calculate opening cash prior to $fromDate
+        $prevDayClosing = DayClosing::whereDate('date', '<', $fromDate)
+            ->where('status', 'closed')
+            ->orderByDesc('date')
+            ->first();
 
-        $openingBalance = (float) $baseOpening + (float) $priorIn - (float) $priorOut;
+        if ($prevDayClosing) {
+            $openingBalance = (float) $prevDayClosing->closing_cash;
+        } else {
+            $baseOpening = (float) $cashAccount->opening_balance;
+            $priorShiftCash = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash');
+            $priorDirectIn = (float) Transaction::whereDate('date', '<', $fromDate)
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_in')
+                ->where(function ($q) use ($cashAccount) {
+                    $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+                })
+                ->sum('amount');
+            $priorDirectOut = (float) Transaction::whereDate('date', '<', $fromDate)
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_out')
+                ->where(function ($q) use ($cashAccount) {
+                    $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+                })
+                ->sum('amount');
 
-        // Transactions in date range
-        $periodTransactions = Transaction::whereIn('account_id', $targetAccountIds)
-            ->whereDate('date', '>=', $fromDate)
+            $openingBalance = $baseOpening + $priorShiftCash + $priorDirectIn - $priorDirectOut;
+        }
+
+        $items = [];
+
+        // 2. Shift Counter Collections (Morning & Evening Shifts)
+        $shifts = ShiftClosing::whereDate('date', '>=', $fromDate)
             ->whereDate('date', '<=', $toDate)
-            ->with(['party', 'account', 'category', 'creator'])
-            ->orderBy('date', 'asc')
-            ->orderBy('id', 'asc')
+            ->with('cashier')
             ->get();
+
+        foreach ($shifts as $s) {
+            if ((float) $s->total_counted_cash > 0) {
+                $billInfo = $s->invoice_start && $s->invoice_end ? "#{$s->invoice_start} - #{$s->invoice_end}" : ($s->total_invoices ? "{$s->total_invoices} bills" : '-');
+                $items[] = [
+                    'date' => $s->date instanceof Carbon ? $s->date->toDateString() : substr((string) $s->date, 0, 10),
+                    'id' => 'shift-' . $s->id,
+                    'voucher_no' => 'SH-' . str_pad($s->id, 4, '0', STR_PAD_LEFT),
+                    'bill_no' => $billInfo,
+                    'type' => 'shift_closing',
+                    'account' => $cashAccount->name,
+                    'party' => 'Counter Sales (' . ucfirst($s->shift_type) . ')',
+                    'category' => 'Shift Sale Cash',
+                    'description' => ucfirst($s->shift_type) . ' shift cash collected by ' . ($s->cashier->name ?? 'Cashier'),
+                    'in' => (float) $s->total_counted_cash,
+                    'out' => 0.00,
+                    'created_at' => $s->created_at,
+                ];
+            }
+        }
+
+        // 3. Direct Cash Transactions (payment_in & payment_out from cash register)
+        $directTxns = Transaction::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->whereNull('shift_closing_id')
+            ->whereIn('type', ['payment_in', 'payment_out'])
+            ->where(function ($q) use ($cashAccount) {
+                $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+            })
+            ->with(['party', 'account', 'category', 'creator'])
+            ->get();
+
+        foreach ($directTxns as $tx) {
+            $in = ($tx->type === 'payment_in') ? (float) $tx->amount : 0.00;
+            $out = ($tx->type === 'payment_out') ? (float) $tx->amount : 0.00;
+
+            $items[] = [
+                'date' => $tx->date instanceof Carbon ? $tx->date->toDateString() : substr((string) $tx->date, 0, 10),
+                'id' => (string) $tx->id,
+                'voucher_no' => str_pad($tx->id, 5, '0', STR_PAD_LEFT),
+                'bill_no' => $tx->bill_no ?? '-',
+                'type' => $tx->type,
+                'account' => $cashAccount->name,
+                'party' => $tx->party->name ?? 'Direct Counter / General',
+                'category' => $tx->category->name ?? '-',
+                'description' => $tx->description ?: ($tx->type === 'payment_in' ? 'Cash Receipt' : 'Cash Payment'),
+                'in' => $in,
+                'out' => $out,
+                'created_at' => $tx->created_at,
+            ];
+        }
+
+        $sortedItems = collect($items)->sortBy(function ($item) {
+            return $item['date'] . ' ' . ($item['created_at'] ?? '');
+        })->values();
 
         $running = $openingBalance;
         $totalIn = 0.00;
         $totalOut = 0.00;
         $entries = [];
 
-        foreach ($periodTransactions as $tx) {
-            $in = ($tx->type === 'payment_in') ? (float) $tx->amount : 0.00;
-            $out = ($tx->type === 'payment_out') ? (float) $tx->amount : 0.00;
+        foreach ($sortedItems as $item) {
+            $running = $running + $item['in'] - $item['out'];
+            $totalIn += $item['in'];
+            $totalOut += $item['out'];
 
-            $running = $running + $in - $out;
-            $totalIn += $in;
-            $totalOut += $out;
-
-            $entries[] = (object) [
-                'id' => $tx->id,
-                'date' => $tx->date,
-                'voucher_no' => str_pad($tx->id, 5, '0', STR_PAD_LEFT),
-                'bill_no' => $tx->bill_no,
-                'type' => $tx->type,
-                'account' => $tx->account->name ?? 'Cash Account',
-                'party' => $tx->party->name ?? 'Direct Counter / General',
-                'category' => $tx->category->name ?? '-',
-                'description' => $tx->description,
-                'in' => $in,
-                'out' => $out,
+            $entries[] = (object) array_merge($item, [
                 'running_balance' => $running,
-                'creator' => $tx->creator->name ?? 'System',
-            ];
+                'creator' => $item['party'] ?? 'System',
+            ]);
         }
 
         $transactions = collect($entries);
         $closingBalance = $running;
 
         return view('ledgers.cash_book', compact(
-            'cashAccounts',
-            'selectedAccountId',
+            'cashAccount',
             'fromDate',
             'toDate',
             'openingBalance',

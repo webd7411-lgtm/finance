@@ -59,29 +59,111 @@
 @endpush
 
 @section('content')
-<!-- Top VIP Executive KPI Cards -->
+<!-- Row 1: Liquid Funds & Closing Balances -->
+<div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-uppercase text-muted fw-bold" style="letter-spacing: 0.6px; font-size: 0.73rem;">
+            <i class="bi bi-wallet2 text-primary me-1"></i>Liquid Funds & Closing Balances
+        </span>
+    </div>
+</div>
 <div class="row g-2 g-md-3 mb-3 mb-md-4">
-    <!-- Card 1: Total Liquid Assets -->
+    <!-- Card 1: Total Liquid Assets (Overall Closing Balance) -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-primary shadow-sm position-relative overflow-hidden">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Total Liquid Assets</span>
                 <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
-                    <i class="bi bi-bank2 fs-5"></i>
+                    <i class="bi bi-wallet2 fs-5"></i>
                 </div>
             </div>
             <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
                 Rs. {{ number_format($totalLiquidFunds, 2) }}
             </div>
             <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
-                <span>Vault: <strong class="text-dark">Rs. {{ number_format($cashInVault, 0) }}</strong></span>
-                <span>Banks: <strong class="text-dark">Rs. {{ number_format($bankFunds, 0) }}</strong></span>
+                <span>Total: <strong class="text-dark">Cash + Banks + JazzCash</strong></span>
+                <a href="{{ route('accounts.index') }}" class="text-primary text-decoration-none fw-semibold">View All &rarr;</a>
             </div>
         </div>
     </div>
 
-    <!-- Card 2: Today's Total Inflow -->
+    <!-- Card 2: Cash in Vault (Physical Cash Closing Balance) -->
     <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-success shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-success small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Cash In Vault</span>
+                <div class="bg-success text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
+                    <i class="bi bi-cash-stack fs-5"></i>
+                </div>
+            </div>
+            <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
+                Rs. {{ number_format($cashInVault, 2) }}
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+                <span>
+                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>{{ $todayClosing && $todayClosing->status === 'closed' ? 'Finalized Cash' : 'Physical Cash' }}
+                </span>
+                <a href="{{ route('ledgers.cash-book') }}" class="text-success text-decoration-none fw-semibold">Cash Book &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Bank Accounts (Commercial Bank Balances) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-left-color: #0284c7 !important;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-semibold text-uppercase" style="color: #0284c7; letter-spacing: 0.5px; font-size: 0.72rem;">Bank Accounts</span>
+                <div class="text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #0284c7;">
+                    <i class="bi bi-bank2 fs-5"></i>
+                </div>
+            </div>
+            <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
+                Rs. {{ number_format($bankFunds, 2) }}
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+                <span>
+                    <i class="bi bi-building me-1" style="color: #0284c7;"></i><strong class="text-dark">{{ $accounts->where('type', 'bank')->count() }}</strong> {{ Str::plural('Bank', $accounts->where('type', 'bank')->count()) }}
+                </span>
+                <a href="{{ route('ledgers.bank-book') }}" class="text-decoration-none fw-semibold" style="color: #0284c7;">Bank Book &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: JazzCash / Digital Wallet Balance -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-danger shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-danger small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">JazzCash / Digital</span>
+                <div class="bg-danger text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
+                    <i class="bi bi-phone fs-5"></i>
+                </div>
+            </div>
+            <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
+                Rs. {{ number_format($jazzFunds, 2) }}
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+                <span>
+                    <i class="bi bi-phone-vibrate me-1 text-danger"></i><strong class="text-dark">{{ $accounts->where('type', 'jazzcash')->count() }}</strong> {{ Str::plural('Channel', $accounts->where('type', 'jazzcash')->count()) }}
+                </span>
+                @if($jazzAcc = $accounts->where('type', 'jazzcash')->first())
+                    <a href="{{ route('ledgers.bank-book', ['account_id' => $jazzAcc->id]) }}" class="text-danger text-decoration-none fw-semibold">Ledger &rarr;</a>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Today's Shift & Cash Operations -->
+<div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-uppercase text-muted fw-bold" style="letter-spacing: 0.6px; font-size: 0.73rem;">
+            <i class="bi bi-activity text-success me-1"></i>Today's Operations & Shift Activity
+        </span>
+    </div>
+</div>
+<div class="row g-2 g-md-3 mb-3 mb-md-4">
+    <!-- Card 1: Today's Total Inflow -->
+    <div class="col-12 col-md-4">
         <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-success shadow-sm position-relative overflow-hidden">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="text-success small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Collections (In)</span>
@@ -98,8 +180,8 @@
         </div>
     </div>
 
-    <!-- Card 3: Today's Total Outflow -->
-    <div class="col-12 col-sm-6 col-xl-3">
+    <!-- Card 2: Today's Total Outflow -->
+    <div class="col-12 col-md-4">
         <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-danger shadow-sm position-relative overflow-hidden">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="text-danger small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Disbursements (Out)</span>
@@ -116,8 +198,8 @@
         </div>
     </div>
 
-    <!-- Card 4: Shift Reconciliation & Discrepancy -->
-    <div class="col-12 col-sm-6 col-xl-3">
+    <!-- Card 3: Shift Reconciliation & Discrepancy -->
+    <div class="col-12 col-md-4">
         <div class="card-custom dashboard-kpi-card h-100 border-start border-4 {{ $todayVariance < 0 ? 'border-danger' : ($todayVariance > 0 ? 'border-primary' : 'border-indigo') }} shadow-sm position-relative overflow-hidden" style="border-left-color: #6366f1 !important;">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Shift Variance</span>

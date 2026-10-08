@@ -548,13 +548,7 @@
                 </div>
             </div>
 
-            <!-- Statement Print Footer -->
-            <div class="statement-print-footer d-none d-print-block mt-4 pt-2 border-top text-muted" style="font-size: 8pt;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>Official Day Closing Statement &bull; FinanceDesk Accounting Management System</span>
-                    <span>Generated: {{ now()->format('d M, Y h:i A') }} &bull; Sheet ID: #DC-{{ str_pad($dayClosing->id, 5, '0', STR_PAD_LEFT) }}</span>
-                </div>
-            </div>
+
 
         </div>
     </div>
@@ -757,12 +751,6 @@
     }
     .statement-sig-line small, .statement-sig-line .small {
         font-size: 8pt !important;
-    }
-
-    /* Print Footer */
-    .statement-print-footer {
-        display: block !important;
-        page-break-inside: avoid !important;
     }
 }
 </style>
