@@ -400,7 +400,12 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.daily-closing') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-register') ? 'active' : '' }}" href="{{ route('reports.daily-register') }}">
+                                        <i class="bi bi-table text-primary"></i> Daily Register (Sheet)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-closing') ? 'active' : '' }}" href="{{ route('reports.daily-closing') }}">
                                         <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
                                     </a>
                                 </li>
@@ -508,7 +513,12 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.daily-closing') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-register') ? 'active' : '' }}" href="{{ route('reports.daily-register') }}">
+                                        <i class="bi bi-table text-primary"></i> Daily Register (Sheet)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-closing') ? 'active' : '' }}" href="{{ route('reports.daily-closing') }}">
                                         <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
                                     </a>
                                 </li>
@@ -690,6 +700,9 @@
                 </a>
                 <a href="{{ route('reports.total-sale-summary') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}">
                     <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
+                </a>
+                <a href="{{ route('reports.daily-register') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.daily-register') ? 'active' : '' }}">
+                    <i class="bi bi-table text-primary"></i> Daily Register (Sheet)
                 </a>
                 <a href="{{ route('reports.daily-closing') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.daily-closing') ? 'active' : '' }}">
                     <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary

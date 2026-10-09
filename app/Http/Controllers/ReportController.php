@@ -590,16 +590,29 @@ class ReportController extends Controller
         $totalShiftInvoices = (int) $shifts->sum('total_invoices');
         $shiftExpensesTotal = (float) $shifts->sum('expenses_amount');
 
-        // Shift Collection Channel breakdown
-        $shiftCashIn = (float) $shifts->sum('total_counted_cash');
+        // B) Shift Drawer Party Payments (disbursed directly from shift cash register)
+        $shiftPartyPayments = \App\Models\ShiftClosingPartyPayment::whereHas('shiftClosing', function($q) use ($fromDate, $toDate) {
+                $q->whereDate('date', '>=', $fromDate)->whereDate('date', '<=', $toDate);
+            })
+            ->with(['party', 'shiftClosing'])
+            ->get();
+        $shiftPartyPaymentsTotal = (float) $shiftPartyPayments->sum('amount');
+
+        // Shift Collection Channel breakdown:
+        // Cash collected from shift sales equals counted cash in drawer PLUS drawer disbursements (party payouts)
+        $shiftCountedCash = (float) $shifts->sum('total_counted_cash');
+        $shiftCashIn = $shiftCountedCash + $shiftPartyPaymentsTotal;
         $shiftBankIn = (float) $shifts->sum('bank_amount');
         $shiftJazzIn = (float) $shifts->sum('jazzcash_amount');
 
-        // 2. Direct Payment In transactions (customer collections/recoveries not part of shifts)
+        // 2. Direct Payment In transactions (customer collections/recoveries not part of shifts, excluding internal bank transfers)
         $directPaymentsIn = Transaction::whereDate('date', '>=', $fromDate)
             ->whereDate('date', '<=', $toDate)
             ->where('type', 'payment_in')
             ->whereNull('shift_closing_id')
+            ->where(function($q) {
+                $q->whereNull('bill_no')->orWhere('bill_no', '!=', 'Transfer');
+            })
             ->with(['party', 'account'])
             ->orderBy('date', 'asc')
             ->get();
@@ -615,20 +628,16 @@ class ReportController extends Controller
         $periodJazzIn = $shiftJazzIn + $directJazzIn;
         $totalPeriodCollections = $periodCashIn + $periodBankIn + $periodJazzIn;
 
-        // 3. Disbursements / Payments Out to Parties & Vendors in this period
+        // 3. Disbursements / Payments Out to Parties & Vendors in this period (excluding internal transfers)
         // A) Direct Vouchers
         $voucherPaymentsOut = Transaction::whereDate('date', '>=', $fromDate)
             ->whereDate('date', '<=', $toDate)
             ->where('type', 'payment_out')
+            ->where(function($q) {
+                $q->whereNull('bill_no')->orWhere('bill_no', '!=', 'Transfer');
+            })
             ->with(['party', 'account', 'category'])
             ->orderBy('date', 'asc')
-            ->get();
-
-        // B) Shift Drawer Party Payments
-        $shiftPartyPayments = \App\Models\ShiftClosingPartyPayment::whereHas('shiftClosing', function($q) use ($fromDate, $toDate) {
-                $q->whereDate('date', '>=', $fromDate)->whereDate('date', '<=', $toDate);
-            })
-            ->with(['party', 'shiftClosing'])
             ->get();
 
         // Group disbursements by party
@@ -787,15 +796,44 @@ class ReportController extends Controller
             return $row->date->format('Y-m-d') . '_' . $row->reference;
         })->values();
 
-        // Bank-wise Inflows for this period
+        // Bank-wise Inflows for this period (shift closing collections + non-shift direct collections; excluding internal transfers)
         $bankAccounts = Account::whereIn('type', ['bank', 'jazzcash'])->orderBy('type')->orderBy('name')->get();
         $bankWiseBreakdown = [];
         foreach ($bankAccounts as $acc) {
-            $inflow = (float) Transaction::where('account_id', $acc->id)
+            // Non-shift external direct collections
+            $directInflow = (float) Transaction::where('account_id', $acc->id)
                 ->whereDate('date', '>=', $fromDate)
                 ->whereDate('date', '<=', $toDate)
                 ->where('type', 'payment_in')
+                ->whereNull('shift_closing_id')
+                ->where(function($q) {
+                    $q->whereNull('bill_no')
+                      ->orWhere('bill_no', '!=', 'Transfer');
+                })
                 ->sum('amount');
+
+            // Shift collections deposited into this bank account
+            $shiftInflow = (float) Transaction::where('account_id', $acc->id)
+                ->whereDate('date', '>=', $fromDate)
+                ->whereDate('date', '<=', $toDate)
+                ->where('type', 'payment_in')
+                ->whereNotNull('shift_closing_id')
+                ->sum('amount');
+
+            // If shift-level transaction wasn't linked (fallback for older records), sum from ShiftClosing directly
+            if ($shiftInflow == 0) {
+                if ($acc->type === 'bank') {
+                    $shiftInflow = (float) ShiftClosing::whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->sum('bank_amount');
+                } elseif ($acc->type === 'jazzcash') {
+                    $shiftInflow = (float) ShiftClosing::whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->sum('jazzcash_amount');
+                }
+            }
+
+            $inflow = $directInflow + $shiftInflow;
 
             $bankWiseBreakdown[] = (object) [
                 'name' => $acc->name,
@@ -806,6 +844,27 @@ class ReportController extends Controller
                 'current_balance' => (float) $acc->current_balance,
             ];
         }
+
+        // Calculate Period Opening Liquid Balance prior to $fromDate
+        $allAccountsList = Account::orderBy('type')->orderBy('name')->get();
+        $totalOpeningBalance = (float) $allAccountsList->sum('opening_balance');
+
+        $priorTransactionsIn = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_in')
+            ->where(function($q) {
+                $q->whereNull('bill_no')->orWhere('bill_no', '!=', 'Transfer');
+            })
+            ->sum('amount');
+
+        $priorTransactionsOut = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_out')
+            ->where(function($q) {
+                $q->whereNull('bill_no')->orWhere('bill_no', '!=', 'Transfer');
+            })
+            ->sum('amount');
+
+        $periodOpeningLiquid = $totalOpeningBalance + $priorTransactionsIn - $priorTransactionsOut;
+        $periodClosingLiquid = $periodOpeningLiquid + $periodNetSurplus;
 
         return view('reports.total_sale_summary', compact(
             'fromDate',
@@ -839,7 +898,352 @@ class ReportController extends Controller
             'liveBankBalance',
             'liveJazzBalance',
             'totalLiveLiquidity',
-            'statementRows'
+            'statementRows',
+            'periodOpeningLiquid',
+            'periodClosingLiquid'
         ));
+    }
+
+    /**
+     * Build Daily Account & Sales Register Data
+     */
+    protected function buildDailyRegisterData(Request $request): array
+    {
+        $fromDate = $request->input('from_date', Carbon::today()->startOfMonth()->toDateString());
+        $toDate = $request->input('to_date', Carbon::today()->toDateString());
+
+        if ($fromDate > $toDate) {
+            $temp = $fromDate;
+            $fromDate = $toDate;
+            $toDate = $temp;
+        }
+
+        $includeInactive = $request->boolean('include_inactive', true);
+
+        $startDate = Carbon::parse($fromDate);
+        $endDate = Carbon::parse($toDate);
+
+        // 1. Initial Opening Balances before $fromDate for all accounts (Cash, Bank, JazzCash)
+        $baseCashOpening = (float) Account::where('type', 'cash')->sum('opening_balance');
+        $baseBankOpening = (float) Account::where('type', 'bank')->sum('opening_balance');
+        $baseJazzOpening = (float) Account::where('type', 'jazzcash')->sum('opening_balance');
+
+        $priorCashIn = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_in')
+            ->where(function ($q) {
+                $q->whereNull('account_id')
+                  ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
+            })->sum('amount');
+        $priorCashOut = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_out')
+            ->where(function ($q) {
+                $q->whereNull('account_id')
+                  ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
+            })->sum('amount');
+        $priorShiftCashIn = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash');
+
+        $priorBankIn = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_in')
+            ->whereHas('account', fn($a) => $a->where('type', 'bank'))
+            ->sum('amount');
+        $priorBankOut = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_out')
+            ->whereHas('account', fn($a) => $a->where('type', 'bank'))
+            ->sum('amount');
+        $priorShiftBankIn = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('bank_amount');
+
+        $priorJazzIn = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_in')
+            ->whereHas('account', fn($a) => $a->where('type', 'jazzcash'))
+            ->sum('amount');
+        $priorJazzOut = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->where('type', 'payment_out')
+            ->whereHas('account', fn($a) => $a->where('type', 'jazzcash'))
+            ->sum('amount');
+        $priorShiftJazzIn = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('jazzcash_amount');
+
+        $runningCash = $baseCashOpening + $priorCashIn + $priorShiftCashIn - $priorCashOut;
+        $runningBank = $baseBankOpening + $priorBankIn + $priorShiftBankIn - $priorBankOut;
+        $runningJazz = $baseJazzOpening + $priorJazzIn + $priorShiftJazzIn - $priorJazzOut;
+
+        $initialTotalOpening = $runningCash + $runningBank + $runningJazz;
+
+        // Prefetch data in date range
+        $shiftsByDate = ShiftClosing::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->get()
+            ->groupBy(fn($item) => Carbon::parse($item->date)->toDateString());
+
+        $partyPaymentsByDate = \App\Models\ShiftClosingPartyPayment::whereHas('shiftClosing', function ($q) use ($fromDate, $toDate) {
+                $q->whereDate('date', '>=', $fromDate)->whereDate('date', '<=', $toDate);
+            })
+            ->with('shiftClosing')
+            ->get()
+            ->groupBy(fn($item) => Carbon::parse($item->shiftClosing->date)->toDateString());
+
+        $transactionsByDate = Transaction::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->with('account')
+            ->get()
+            ->groupBy(fn($item) => Carbon::parse($item->date)->toDateString());
+
+        $dayClosingsByDate = DayClosing::whereDate('date', '>=', $fromDate)
+            ->whereDate('date', '<=', $toDate)
+            ->get()
+            ->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
+
+        $rows = [];
+        $currentDate = $startDate->copy();
+
+        $totals = [
+            'total_sale' => 0.0,
+            'returns_amount' => 0.0,
+            'net_sale' => 0.0,
+            'cash_received' => 0.0,
+            'cash_payments' => 0.0,
+            'cash_balance' => 0.0,
+            'jazzcash_received' => 0.0,
+            'jazzcash_payments' => 0.0,
+            'jazzcash_balance' => 0.0,
+            'bank_received' => 0.0,
+            'bank_payments' => 0.0,
+            'bank_balance' => 0.0,
+            'initial_opening_cash' => $initialTotalOpening,
+            'final_closing_cash' => $initialTotalOpening,
+            'total_cash_in_hand' => $runningCash,
+        ];
+
+        while ($currentDate->lte($endDate)) {
+            $dateStr = $currentDate->toDateString();
+            $dateFormatted = $currentDate->format('j-M-y');
+
+            $dayShifts = $shiftsByDate->get($dateStr, collect());
+            $dayPartyPayments = $partyPaymentsByDate->get($dateStr, collect());
+            $dayTransactions = $transactionsByDate->get($dateStr, collect());
+            $dayClosing = $dayClosingsByDate->get($dateStr);
+
+            $dayOpeningTotal = $runningCash + $runningBank + $runningJazz;
+            $dayOpeningCash = $runningCash;
+
+            // Sales calculations
+            $totalSale = (float) $dayShifts->sum('total_sale');
+            $returnsAmount = (float) $dayShifts->sum('returns_amount');
+            $netSale = max(0, $totalSale - $returnsAmount);
+
+            // Shift Counted Cash & Direct Vouchers In
+            $shiftCountedCash = (float) $dayShifts->sum('total_counted_cash');
+            $directCashIn = (float) $dayTransactions
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_in')
+                ->filter(fn($t) => !$t->account || $t->account->type === 'cash')
+                ->sum('amount');
+
+            // Shift counter expenses & shift party disbursements
+            $shiftExpenses = (float) $dayShifts->sum('expenses_amount');
+            $shiftPartyPay = (float) $dayPartyPayments->sum('amount');
+            $shiftCounterOutflows = $shiftExpenses + $shiftPartyPay;
+
+            // Direct cash vouchers out from main drawer
+            $directCashOut = (float) $dayTransactions
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_out')
+                ->filter(fn($t) => !$t->account || $t->account->type === 'cash')
+                ->sum('amount');
+
+            // Gross Cash Inflows & Outflows
+            $cashReceived = $shiftCountedCash + $shiftCounterOutflows + $directCashIn;
+            $cashPayments = $shiftCounterOutflows + $directCashOut;
+            $cashBalance = $cashReceived - $cashPayments;
+            $runningCash += $cashBalance;
+
+            // JazzCash Calculations
+            $shiftJazzIn = (float) $dayShifts->sum('jazzcash_amount');
+            $directJazzIn = (float) $dayTransactions
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_in')
+                ->filter(fn($t) => $t->account && $t->account->type === 'jazzcash')
+                ->sum('amount');
+            $jazzReceived = $shiftJazzIn + $directJazzIn;
+
+            $jazzPayments = (float) $dayTransactions
+                ->where('type', 'payment_out')
+                ->filter(fn($t) => $t->account && $t->account->type === 'jazzcash')
+                ->sum('amount');
+            $jazzBalance = $jazzReceived - $jazzPayments;
+            $runningJazz += $jazzBalance;
+
+            // Bank Calculations
+            $shiftBankIn = (float) $dayShifts->sum('bank_amount');
+            $directBankIn = (float) $dayTransactions
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_in')
+                ->filter(fn($t) => $t->account && $t->account->type === 'bank')
+                ->sum('amount');
+            $bankReceived = $shiftBankIn + $directBankIn;
+
+            $bankPayments = (float) $dayTransactions
+                ->where('type', 'payment_out')
+                ->filter(fn($t) => $t->account && $t->account->type === 'bank')
+                ->sum('amount');
+            $bankBalance = $bankReceived - $bankPayments;
+            $runningBank += $bankBalance;
+
+            // Total Closing of All Accounts for today
+            $dayClosingTotal = $runningCash + $runningBank + $runningJazz;
+
+            $hasActivity = ($totalSale > 0 || $returnsAmount > 0 || $cashReceived > 0 || $cashPayments > 0 || 
+                            $jazzReceived > 0 || $jazzPayments > 0 || $bankReceived > 0 || $bankPayments > 0);
+
+            $row = [
+                'raw_date' => $dateStr,
+                'date' => $dateFormatted,
+                'full_date' => $currentDate->format('d M Y'),
+                'day_name' => $currentDate->format('D'),
+                'opening_cash' => $dayOpeningTotal,
+                'cash_opening' => $dayOpeningCash,
+                'total_sale' => $totalSale,
+                'return' => $returnsAmount,
+                'net_sale' => $netSale,
+                'cash_received' => $cashReceived,
+                'cash_payments' => $cashPayments,
+                'cash_balance' => $cashBalance,
+                'jazzcash_received' => $jazzReceived,
+                'jazzcash_payments' => $jazzPayments,
+                'jazzcash_balance' => $jazzBalance,
+                'bank_received' => $bankReceived,
+                'bank_payments' => $bankPayments,
+                'bank_balance' => $bankBalance,
+                'closing_cash' => $dayClosingTotal,
+                'cash_closing' => $runningCash,
+                'bank_closing' => $runningBank,
+                'jazzcash_closing' => $runningJazz,
+                'has_activity' => $hasActivity,
+                'day_status' => $dayClosing ? $dayClosing->status : 'unclosed',
+            ];
+
+            if ($includeInactive || $hasActivity) {
+                $rows[] = $row;
+            }
+
+            // Totals
+            $totals['total_sale'] += $totalSale;
+            $totals['returns_amount'] += $returnsAmount;
+            $totals['net_sale'] += $netSale;
+            $totals['cash_received'] += $cashReceived;
+            $totals['cash_payments'] += $cashPayments;
+            $totals['cash_balance'] += $cashBalance;
+            $totals['jazzcash_received'] += $jazzReceived;
+            $totals['jazzcash_payments'] += $jazzPayments;
+            $totals['jazzcash_balance'] += $jazzBalance;
+            $totals['bank_received'] += $bankReceived;
+            $totals['bank_payments'] += $bankPayments;
+            $totals['bank_balance'] += $bankBalance;
+            $totals['final_closing_cash'] = $dayClosingTotal;
+            $totals['total_cash_in_hand'] = $runningCash;
+
+            $currentDate->addDay();
+        }
+
+        return compact('rows', 'totals', 'fromDate', 'toDate', 'includeInactive');
+    }
+
+    /**
+     * Daily Account & Sales Register View
+     */
+    public function dailyRegister(Request $request)
+    {
+        $data = $this->buildDailyRegisterData($request);
+        return view('reports.daily_register', $data);
+    }
+
+    /**
+     * Export Daily Account & Sales Register to CSV
+     */
+    public function exportDailyRegisterCsv(Request $request)
+    {
+        $data = $this->buildDailyRegisterData($request);
+        $rows = $data['rows'];
+        $totals = $data['totals'];
+        $fromDate = $data['fromDate'];
+        $toDate = $data['toDate'];
+
+        $fileName = "daily_register_{$fromDate}_to_{$toDate}.csv";
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename={$fileName}",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'Date',
+            'Opening Balance',
+            'Total Sale',
+            'Return',
+            'Net Sale',
+            'Cash Received',
+            'Cash Payments',
+            'Cash Balance',
+            'Jazz Cash Received',
+            'Jazz Cash Payments',
+            'Jazz Cash Balance',
+            'Bank Received',
+            'Bank Payments',
+            'Bank Balance',
+            'Closing Balance',
+            'Cash In Hand',
+        ];
+
+        $callback = function() use ($rows, $totals, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($rows as $row) {
+                fputcsv($file, [
+                    $row['date'],
+                    number_format($row['opening_cash'], 2, '.', ''),
+                    number_format($row['total_sale'], 2, '.', ''),
+                    number_format($row['return'], 2, '.', ''),
+                    number_format($row['net_sale'], 2, '.', ''),
+                    number_format($row['cash_received'], 2, '.', ''),
+                    number_format($row['cash_payments'], 2, '.', ''),
+                    number_format($row['cash_balance'], 2, '.', ''),
+                    number_format($row['jazzcash_received'], 2, '.', ''),
+                    number_format($row['jazzcash_payments'], 2, '.', ''),
+                    number_format($row['jazzcash_balance'], 2, '.', ''),
+                    number_format($row['bank_received'], 2, '.', ''),
+                    number_format($row['bank_payments'], 2, '.', ''),
+                    number_format($row['bank_balance'], 2, '.', ''),
+                    number_format($row['closing_cash'], 2, '.', ''),
+                    number_format($row['cash_closing'], 2, '.', ''),
+                ]);
+            }
+
+            // Summary Totals Row
+            fputcsv($file, [
+                'Total',
+                number_format($totals['initial_opening_cash'], 2, '.', ''),
+                number_format($totals['total_sale'], 2, '.', ''),
+                number_format($totals['returns_amount'], 2, '.', ''),
+                number_format($totals['net_sale'], 2, '.', ''),
+                number_format($totals['cash_received'], 2, '.', ''),
+                number_format($totals['cash_payments'], 2, '.', ''),
+                number_format($totals['cash_balance'], 2, '.', ''),
+                number_format($totals['jazzcash_received'], 2, '.', ''),
+                number_format($totals['jazzcash_payments'], 2, '.', ''),
+                number_format($totals['jazzcash_balance'], 2, '.', ''),
+                number_format($totals['bank_received'], 2, '.', ''),
+                number_format($totals['bank_payments'], 2, '.', ''),
+                number_format($totals['bank_balance'], 2, '.', ''),
+                number_format($totals['final_closing_cash'], 2, '.', ''),
+                number_format($totals['total_cash_in_hand'], 2, '.', ''),
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

@@ -319,16 +319,27 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong class="text-uppercase d-block" style="font-size: 8.5pt;">Net Period Cash Surplus:</strong>
-                                    <span class="text-muted" style="font-size: 7.4pt;">Total Collections less Disbursements</span>
+                                    <span class="text-muted" style="font-size: 7.4pt;">Period Collections less Disbursements</span>
                                 </div>
                                 <div class="font-monospace fw-bold" style="font-size: 11pt;">
                                     {{ $periodNetSurplus >= 0 ? '+' : '' }} Rs. {{ number_format($periodNetSurplus, 2) }}
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between pt-1.5 px-1 mt-1" style="font-size: 8pt;">
-                            <span class="text-muted text-uppercase fw-semibold">Grand Total Liquid Balance:</span>
-                            <strong class="font-monospace">Rs. {{ number_format($totalLiveLiquidity, 2) }}</strong>
+
+                        <div class="p-2 border border-light-subtle rounded-1 bg-white mt-1.5" style="font-size: 7.8pt;">
+                            <div class="d-flex justify-content-between py-0.5 text-muted">
+                                <span>(+) Period Opening Balance:</span>
+                                <span class="font-monospace">Rs. {{ number_format($periodOpeningLiquid, 2) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-0.5 text-muted">
+                                <span>(+) Net Period Cash Surplus:</span>
+                                <span class="font-monospace">{{ $periodNetSurplus >= 0 ? '+' : '' }} Rs. {{ number_format($periodNetSurplus, 2) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between pt-1 border-top border-secondary fw-bold text-dark">
+                                <span class="text-uppercase">Total Available Liquid Funds:</span>
+                                <span class="font-monospace">Rs. {{ number_format($periodClosingLiquid, 2) }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
