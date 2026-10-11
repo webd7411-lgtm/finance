@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Enable Bootstrap 5 pagination styling across all pages
+        Paginator::useBootstrapFive();
+
         // Hard technical safeguard: Permanently prohibit destructive database commands
         Event::listen(CommandStarting::class, function (CommandStarting $event) {
             $destructiveCommands = ['migrate:fresh', 'db:wipe', 'migrate:reset'];

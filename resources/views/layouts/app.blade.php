@@ -289,6 +289,31 @@
             padding: 4px 10px;
             border-radius: 6px;
         }
+        /* Global Pagination Styling & SVG Overflow Safeguard */
+        nav svg, .pagination svg {
+            max-width: 1rem !important;
+            max-height: 1rem !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        .pagination {
+            margin-bottom: 0 !important;
+            gap: 2px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .page-item .page-link {
+            border-radius: 6px !important;
+            font-size: 0.82rem;
+            padding: 0.35rem 0.65rem;
+            color: #334155;
+            border-color: #e2e8f0;
+        }
+        .page-item.active .page-link {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            color: #ffffff !important;
+        }
         @media print {
             .vip-navbar, .sub-header, .no-print, .btn, .alert, footer, nav, header, .modal, .modal-backdrop, .btn-close {
                 display: none !important;
