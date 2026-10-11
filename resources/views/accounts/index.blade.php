@@ -104,10 +104,11 @@
                     <th style="width: 50px;">#</th>
                     <th>Account Name</th>
                     <th>Channel Type</th>
+                    <th class="text-center">Status</th>
                     <th>Account / Mobile Number</th>
                     <th class="text-end">Opening Balance</th>
                     <th class="text-end">Current Balance</th>
-                    <th class="text-end" style="width: 150px;">Actions</th>
+                    <th class="text-end" style="width: 170px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -133,6 +134,7 @@
                             </div>
                         </td>
                         <td>{!! $acc->type_badge !!}</td>
+                        <td class="text-center">{!! $acc->status_badge !!}</td>
                         <td class="font-monospace text-secondary small">
                             {{ $acc->account_number ?? '-' }}
                         </td>
@@ -156,9 +158,21 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#editAccountModal{{ $acc->id }}" title="Edit Account">
                                     <i class="bi bi-pencil"></i>
                                 </button>
+                                @if($acc->type !== 'cash')
+                                    <form action="{{ route('accounts.toggle-status', $acc->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-{{ $acc->isActive() ? 'warning' : 'success' }} btn-sm py-1 px-2" title="{{ $acc->isActive() ? 'Deactivate Account (Hide from entries)' : 'Activate Account' }}">
+                                            <i class="bi bi-{{ $acc->isActive() ? 'pause-circle' : 'play-circle' }}"></i>
+                                        </button>
+                                    </form>
+                                @endif
                                 @if($acc->type === 'cash')
                                     <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 disabled" title="Auto Cash Account cannot be deleted" disabled>
                                         <i class="bi bi-shield-lock"></i>
+                                    </button>
+                                @elseif($acc->transactions()->exists())
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 disabled" title="Cannot delete: recorded transaction history exists. Deactivate instead.">
+                                        <i class="bi bi-trash opacity-50"></i>
                                     </button>
                                 @else
                                     <form action="{{ route('accounts.destroy', $acc->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this account?');">
@@ -174,7 +188,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted small">
+                        <td colspan="8" class="text-center py-4 text-muted small">
                             No accounts found. Click <strong>"Add Account"</strong> to register Cash, JazzCash, or Bank accounts.
                         </td>
                     </tr>
@@ -215,8 +229,9 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="flex-shrink-0">
+                        <div class="flex-shrink-0 d-flex align-items-center gap-1">
                             {!! $acc->type_badge !!}
+                            {!! $acc->status_badge !!}
                         </div>
                     </div>
 
@@ -250,9 +265,22 @@
                             <i class="bi bi-pencil me-1"></i> Edit
                         </button>
 
+                        @if($acc->type !== 'cash')
+                            <form action="{{ route('accounts.toggle-status', $acc->id) }}" method="POST" class="flex-shrink-0 m-0">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-{{ $acc->isActive() ? 'warning' : 'success' }} btn-sm py-1.5 px-2 rounded-2" style="font-size: 0.76rem;" title="{{ $acc->isActive() ? 'Deactivate Account' : 'Activate Account' }}">
+                                    <i class="bi bi-{{ $acc->isActive() ? 'pause-circle' : 'play-circle' }}"></i>
+                                </button>
+                            </form>
+                        @endif
+
                         @if($acc->type === 'cash')
                             <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2 disabled flex-shrink-0" title="Auto Cash Account cannot be deleted" disabled>
                                 <i class="bi bi-shield-lock"></i>
+                            </button>
+                        @elseif($acc->transactions()->exists())
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2 disabled flex-shrink-0" title="Cannot delete: recorded transaction history exists. Deactivate instead.">
+                                <i class="bi bi-trash opacity-50"></i>
                             </button>
                         @else
                             <form action="{{ route('accounts.destroy', $acc->id) }}" method="POST" class="flex-shrink-0 m-0" onsubmit="return confirm('Are you sure you want to delete this account?');">
@@ -315,13 +343,32 @@
                                 <input type="text" class="form-control form-control-sm py-2" name="account_number" value="{{ $acc->account_number }}">
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                                <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="{{ $acc->opening_balance }}" placeholder="0.00" autocomplete="off">
+                        @if($acc->type !== 'cash')
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
+                                        <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="{{ $acc->opening_balance }}" placeholder="0.00" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label small fw-semibold text-secondary">Account Status</label>
+                                    <select class="form-select form-select-sm py-2" name="status">
+                                        <option value="active" {{ $acc->isActive() ? 'selected' : '' }}>Active (Available for entry)</option>
+                                        <option value="inactive" {{ !$acc->isActive() ? 'selected' : '' }}>Inactive (Deactivated)</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
+                                    <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="{{ $acc->opening_balance }}" placeholder="0.00" autocomplete="off">
+                                </div>
+                            </div>
+                        @endif
                     </div>
                     <div class="modal-footer border-top py-2">
                         <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>

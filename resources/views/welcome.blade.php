@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>FinanceDesk - Closing Sheet & Ledger Management | Proware Technologies</title>
+    <title>FinanceDesk - Closing Sheet & Ledger Management | Prowave Technologies</title>
 
     <!-- Standard Clean Font: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -405,16 +405,18 @@
     <!-- Header Navbar -->
     <header class="navbar-custom d-flex justify-content-between align-items-center">
         <a href="{{ url('/') }}" class="brand-logo-container">
-            <div class="brand-icon">
-                <i class="bi bi-wallet2"></i>
-            </div>
+            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 42px; max-width: 150px; object-fit: contain;" class="rounded-1 me-2" onerror="this.onerror=null; this.src='/images/logo.png';">
             <div class="brand-text-group">
-                <span class="brand-company">Proware Technologies</span>
+                <span class="brand-company">Prowave Technologies</span>
                 <span class="brand-product">Finance<span>Desk</span></span>
             </div>
         </a>
 
-        <div>
+        <div class="d-flex align-items-center gap-2 gap-md-3">
+            <a href="tel:+923173836223" class="d-none d-sm-inline-flex align-items-center gap-1.5 text-decoration-none text-light small px-3 py-1.5 rounded-pill border border-secondary border-opacity-25 bg-dark bg-opacity-50" title="Contact Prowave Technologies">
+                <i class="bi bi-telephone-fill text-success"></i>
+                <span class="fw-semibold">+92 317 3836223</span>
+            </a>
             @auth
                 <a href="{{ route('dashboard') }}" class="btn-nav-action">
                     <i class="bi bi-speedometer2 text-primary"></i>
@@ -516,11 +518,11 @@
     <footer class="footer-custom">
         <div class="footer-content">
             <div>
-                <span>FinanceDesk &bull; <strong>Proware Technologies</strong> &copy; {{ date('Y') }}. All rights reserved.</span>
+                <span>FinanceDesk &bull; Developed by <strong>Prowave Technologies</strong> &copy; {{ date('Y') }}. All rights reserved.</span>
             </div>
             <div class="d-flex align-items-center gap-2 justify-content-center text-muted">
-                <i class="bi bi-shield-check text-success"></i>
-                <span>Enterprise Grade Security</span>
+                <i class="bi bi-telephone-fill text-success"></i>
+                <span>Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-info fw-semibold">+92 317 3836223</a></span>
             </div>
         </div>
     </footer>

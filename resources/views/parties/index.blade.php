@@ -145,13 +145,19 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#editPartyModal{{ $party->id }}" title="Edit Party">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <form action="{{ route('parties.destroy', $party->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this party?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Party">
-                                        <i class="bi bi-trash"></i>
+                                @if(abs($party->current_balance) > 0.001)
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 disabled" title="Cannot delete: active balance of Rs. {{ number_format($party->current_balance, 2) }}. Clear to Rs. 0.00 first.">
+                                        <i class="bi bi-trash opacity-50"></i>
                                     </button>
-                                </form>
+                                @else
+                                    <form action="{{ route('parties.destroy', $party->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this party?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Party">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -222,13 +228,19 @@
                         <button type="button" class="btn btn-outline-primary btn-sm flex-fill py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;" data-bs-toggle="modal" data-bs-target="#editPartyModal{{ $party->id }}">
                             <i class="bi bi-pencil me-1"></i> Edit
                         </button>
-                        <form action="{{ route('parties.destroy', $party->id) }}" method="POST" class="flex-shrink-0 m-0" onsubmit="return confirm('Are you sure you want to delete this party?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Party">
-                                <i class="bi bi-trash"></i>
+                        @if(abs($party->current_balance) > 0.001)
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2 disabled" style="font-size: 0.76rem;" title="Active balance Rs. {{ number_format($party->current_balance, 2) }}. Cannot delete.">
+                                <i class="bi bi-trash opacity-50"></i>
                             </button>
-                        </form>
+                        @else
+                            <form action="{{ route('parties.destroy', $party->id) }}" method="POST" class="flex-shrink-0 m-0" onsubmit="return confirm('Are you sure you want to delete this party?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Party">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             @empty

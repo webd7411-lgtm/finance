@@ -475,7 +475,7 @@ class ReportController extends Controller
         $dailyAverage = $grandTotalAmount / $diffDays;
 
         // Category-wise Breakdown (from voucher expenses)
-        $allCategories = ExpenseCategory::orderBy('name')->get();
+        $allCategories = ExpenseCategory::expense()->orderBy('name')->get();
         $categoryBreakdown = [];
 
         foreach ($allCategories as $cat) {

@@ -18,7 +18,11 @@ class TransactionController extends Controller
         $query = Transaction::with(['party', 'account', 'category', 'creator'])->latest('date')->latest('id');
 
         if ($request->filled('type')) {
-            $query->where('type', $request->type);
+            if ($request->type === 'expense') {
+                $query->where('type', 'payment_out')->whereNull('party_id');
+            } else {
+                $query->where('type', $request->type);
+            }
         }
 
         if ($request->filled('account_id')) {
@@ -47,6 +51,8 @@ class TransactionController extends Controller
         $parties = Party::orderBy('name')->get();
         $accounts = Account::orderBy('name')->get();
         $categories = ExpenseCategory::orderBy('name')->get();
+        $expenseCategories = ExpenseCategory::expense()->orderBy('name')->get();
+        $purchaseCategories = ExpenseCategory::purchase()->orderBy('name')->get();
 
         return view('transactions.index', compact(
             'transactions',
@@ -55,7 +61,9 @@ class TransactionController extends Controller
             'netCashFlow',
             'parties',
             'accounts',
-            'categories'
+            'categories',
+            'expenseCategories',
+            'purchaseCategories'
         ));
     }
 
@@ -114,24 +122,30 @@ class TransactionController extends Controller
                 $party->save();
             }
 
+            $isExpense = empty($validated['party_id']) && !empty($validated['category_id']);
             $mod = match($validated['type']) {
                 'payment_in' => 'Payment In',
                 'purchase_bill' => 'Purchase Bill',
-                default => 'Payment Out',
+                default => $isExpense ? 'Expense' : 'Payment Out',
             };
-            $partyName = !empty($validated['party_id']) ? Party::find($validated['party_id'])?->name : 'Direct Counter';
+            $partyName = !empty($validated['party_id']) 
+                ? (Party::find($validated['party_id'])?->name ?? 'Party') 
+                : ($isExpense ? (ExpenseCategory::find($validated['category_id'])?->name ?? 'Operational Expense') : 'Direct Counter');
             $channelInfo = !empty($validated['account_id']) ? Account::find($validated['account_id'])?->name : 'Credit (No Cash)';
             ActivityLog::log(
                 'Created',
                 $mod,
-                "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$channelInfo}, Party: {$partyName})"
+                "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$channelInfo}, " . ($isExpense ? "Category: {$partyName}" : "Party: {$partyName}") . ")"
             );
         });
 
+        $isExpense = empty($validated['party_id']) && !empty($validated['category_id']);
         $msg = match($validated['type']) {
             'payment_in' => 'Payment In recorded and account balance credited successfully.',
             'purchase_bill' => 'Purchase Bill recorded and supplier ledger credited successfully.',
-            default => 'Payment Out recorded and account balance debited successfully.',
+            default => $isExpense 
+                ? 'Expense recorded and account balance debited successfully.' 
+                : 'Payment Out recorded and account balance debited successfully.',
         };
 
         return redirect()->route('transactions.index')->with('success', $msg);

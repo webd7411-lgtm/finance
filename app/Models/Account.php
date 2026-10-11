@@ -12,10 +12,23 @@ class Account extends Model
     protected $fillable = [
         'name',
         'type',
+        'status',
         'account_number',
         'opening_balance',
         'current_balance',
     ];
+
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'active') === 'active';
+    }
+
+    public function getStatusBadgeAttribute(): string
+    {
+        return $this->isActive()
+            ? '<span class="badge bg-success-subtle text-success border border-success"><i class="bi bi-check-circle me-1"></i>Active</span>'
+            : '<span class="badge bg-secondary-subtle text-secondary border border-secondary"><i class="bi bi-dash-circle me-1"></i>Inactive</span>';
+    }
 
     protected $casts = [
         'opening_balance' => 'decimal:2',

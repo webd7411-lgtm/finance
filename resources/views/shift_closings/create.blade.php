@@ -156,7 +156,7 @@
                 </div>
                 <div class="input-group input-group-sm" style="height: 36px;">
                     <span class="input-group-text bg-light text-muted fw-bold h-100">#</span>
-                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm fw-bold font-monospace h-100" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()">
+                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm fw-bold font-monospace h-100 {{ !empty($suggestedInvoiceStart) ? 'bg-light text-muted' : '' }}" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()" {{ !empty($suggestedInvoiceStart) ? 'readonly' : '' }}>
                 </div>
             </div>
 
@@ -232,7 +232,7 @@
                                 </div>
                                 <div class="input-group input-group-sm" style="height: 34px;">
                                     <span class="input-group-text bg-white text-muted fw-bold h-100">#</span>
-                                    <input type="number" min="1" id="return_invoice_start" name="return_invoice_start" class="form-control form-control-sm font-monospace h-100" placeholder="e.g. 15" value="{{ old('return_invoice_start', $suggestedReturnInvoiceStart ?? '') }}" oninput="calculateReturnInvoiceCount()">
+                                    <input type="number" min="1" id="return_invoice_start" name="return_invoice_start" class="form-control form-control-sm font-monospace h-100 {{ !empty($suggestedReturnInvoiceStart) ? 'bg-light text-muted' : '' }}" placeholder="e.g. 15" value="{{ old('return_invoice_start', $suggestedReturnInvoiceStart ?? '') }}" oninput="calculateReturnInvoiceCount()" {{ !empty($suggestedReturnInvoiceStart) ? 'readonly' : '' }}>
                                 </div>
                             </div>
                             <div class="col-6 col-sm-6 col-md-3">

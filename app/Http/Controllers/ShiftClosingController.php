@@ -17,7 +17,15 @@ class ShiftClosingController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ShiftClosing::with(['cashier', 'verifier'])->latest('date')->latest('id');
+        $isTrashView = $request->get('view') === 'trash';
+        $activeCount = ShiftClosing::count();
+        $trashCount = ShiftClosing::onlyTrashed()->count();
+
+        if ($isTrashView) {
+            $query = ShiftClosing::onlyTrashed()->with(['cashier', 'verifier', 'deletedBy'])->latest('deleted_at');
+        } else {
+            $query = ShiftClosing::with(['cashier', 'verifier'])->latest('date')->latest('id');
+        }
 
         if ($request->filled('date')) {
             $query->whereDate('date', $request->date);
@@ -40,14 +48,17 @@ class ShiftClosingController extends Controller
             'totalSalesToday',
             'totalReceivedToday',
             'totalDifferenceToday',
-            'parties'
+            'parties',
+            'isTrashView',
+            'activeCount',
+            'trashCount'
         ));
     }
 
     public function create()
     {
         $parties = Party::orderBy('name')->get();
-        $accounts = Account::where('type', '!=', 'cash')->orderBy('type')->orderBy('name')->get();
+        $accounts = Account::where('type', '!=', 'cash')->where('status', 'active')->orderBy('type')->orderBy('name')->get();
         $cashiers = User::where('status', 'active')->orderBy('name')->get();
         if ($cashiers->isEmpty()) {
             $cashiers = User::orderBy('name')->get();
@@ -139,6 +150,34 @@ class ShiftClosingController extends Controller
         // 3. Invoice range handling: If invoice_end was left empty, clear invoice_start so it doesn't fail required_with
         if (!$request->filled('invoice_end')) {
             $request->merge(['invoice_start' => null, 'invoice_end' => null]);
+        } else {
+            // Lock invoice_start to previous shift's end + 1 if previous shift exists
+            $lastShift = ShiftClosing::whereNotNull('invoice_end')
+                ->where('invoice_end', '>', 0)
+                ->orderByDesc('id')
+                ->first();
+            if ($lastShift) {
+                $request->merge(['invoice_start' => (int) $lastShift->invoice_end + 1]);
+            }
+        }
+
+        // Return invoice start enforcement
+        if ($request->filled('return_invoice_end') || $request->filled('return_invoice_start')) {
+            $lastReturnShift = ShiftClosing::where(function ($q) {
+                    $q->whereNotNull('return_invoice_end')->where('return_invoice_end', '>', 0);
+                })
+                ->orWhere(function ($q) {
+                    $q->whereNotNull('return_invoice_start')->where('return_invoice_start', '>', 0);
+                })
+                ->orderByDesc('id')
+                ->first();
+
+            if ($lastReturnShift) {
+                $lastRetEnd = $lastReturnShift->return_invoice_end ?: $lastReturnShift->return_invoice_start;
+                if ($lastRetEnd > 0) {
+                    $request->merge(['return_invoice_start' => (int) $lastRetEnd + 1]);
+                }
+            }
         }
 
         $validated = $request->validate([
@@ -370,9 +409,12 @@ class ShiftClosingController extends Controller
                          ->with('success', 'Shift closing submitted and locked successfully.');
     }
 
-    public function show(ShiftClosing $shiftClosing)
+    public function show($id)
     {
-        $shiftClosing->load(['cashier', 'verifier', 'partyPayments.party', 'transactions.account']);
+        $shiftClosing = ShiftClosing::withTrashed()
+            ->with(['cashier', 'verifier', 'deletedBy', 'partyPayments.party', 'transactions.account'])
+            ->findOrFail($id);
+
         return view('shift_closings.show', compact('shiftClosing'));
     }
 
@@ -435,11 +477,17 @@ class ShiftClosingController extends Controller
                 $tx->delete();
             }
 
+            $shiftClosing->deleted_by = auth()->id();
+            $shiftClosing->save();
             $shiftClosing->delete();
         });
 
-        ActivityLog::log('Deleted', 'Shift Closing', "Deleted shift closing sheet #{$closingId}");
+        ActivityLog::log(
+            'Deleted',
+            'Shift Closing',
+            "Deleted and archived {$shiftClosing->shift_type} shift closing sheet #{$closingId} (Date: " . $shiftClosing->date->format('d M Y') . ", Sales: Rs. " . number_format($shiftClosing->total_sale, 2) . ", Counted: Rs. " . number_format($shiftClosing->total_counted_cash, 2) . ", Diff: Rs. " . number_format($shiftClosing->difference, 2) . ") by " . auth()->user()->name
+        );
 
-        return redirect()->route('shift-closings.index')->with('success', 'Shift closing sheet deleted.');
+        return redirect()->route('shift-closings.index')->with('success', "Shift closing sheet #{$closingId} deleted and safely archived in Deleted Sheets audit.");
     }
 }

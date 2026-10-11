@@ -273,10 +273,13 @@
     <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
     <div class="bank-stmt-header d-none d-print-block">
         <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
-            <div>
-                <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 16pt;">FINANCEDESK ENTERPRISE</h3>
-                <div class="small fw-semibold text-secondary">SYSTEM AUDIT TRAIL & COMPLIANCE DIVISION</div>
-                <div class="small text-muted" style="font-size: 8pt;">Proware Technologies &bull; Immutable Audit Logs & Security Operations</div>
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;">
+                <div>
+                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                    <div class="small fw-semibold text-secondary">SYSTEM AUDIT TRAIL &amp; COMPLIANCE DIVISION</div>
+                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; 24/7 &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Ph: +92 317 3836223</div>
+                </div>
             </div>
             <div class="text-end">
                 <div class="badge bg-dark text-white text-uppercase px-2 py-1 mb-1" style="font-size: 8.5pt;">Security Register</div>
@@ -446,6 +449,10 @@
                 <div class="text-muted" style="font-size: 7.5pt;">Executive Oversight</div>
             </div>
         </div>
+    </div>
+
+    <div class="text-center pt-3 mt-3 border-top text-muted small" style="font-size: 8pt;">
+        <span>Official System Audit Trail Register &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
     </div>
 </div>
 @endsection

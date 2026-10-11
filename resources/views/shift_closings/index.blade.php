@@ -81,13 +81,31 @@
 <!-- Shift Closings History Card -->
 <div class="card-custom overflow-hidden">
     <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h6 class="fw-bold text-dark m-0">Shift Closing Sheets</h6>
-            <small class="text-muted" style="font-size: 0.78rem;">Detailed shift submissions with note counts & variance audit</small>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div>
+                <h6 class="fw-bold text-dark m-0">{{ $isTrashView ? 'Deleted Shift Closing Sheets (Trash Audit)' : 'Shift Closing Sheets' }}</h6>
+                <small class="text-muted" style="font-size: 0.78rem;">
+                    {{ $isTrashView ? 'Permanently archived shift closings with reversal audit' : 'Detailed shift submissions with note counts & variance audit' }}
+                </small>
+            </div>
+            <!-- View Tabs -->
+            <div class="btn-group btn-group-sm ms-sm-2" role="group">
+                <a href="{{ route('shift-closings.index') }}" class="btn btn-sm {{ !$isTrashView ? 'btn-primary active' : 'btn-outline-secondary' }}">
+                    <i class="bi bi-clock-history me-1"></i> Active Shifts
+                    <span class="badge {{ !$isTrashView ? 'bg-white text-primary' : 'bg-secondary text-white' }} ms-1">{{ $activeCount }}</span>
+                </a>
+                <a href="{{ route('shift-closings.index', ['view' => 'trash']) }}" class="btn btn-sm {{ $isTrashView ? 'btn-danger active' : 'btn-outline-danger' }}">
+                    <i class="bi bi-trash3 me-1"></i> Deleted Sheets
+                    <span class="badge {{ $isTrashView ? 'bg-white text-danger' : 'bg-danger text-white' }} ms-1">{{ $trashCount }}</span>
+                </a>
+            </div>
         </div>
 
         <!-- Filter Form -->
         <form method="GET" action="{{ route('shift-closings.index') }}" class="d-flex gap-2 flex-wrap w-100 w-sm-auto align-items-center">
+            @if($isTrashView)
+                <input type="hidden" name="view" value="trash">
+            @endif
             <div class="input-group input-group-sm flex-fill flex-sm-grow-0" style="min-width: 140px; max-width: 170px;">
                 <span class="input-group-text bg-light"><i class="bi bi-calendar"></i></span>
                 <input type="date" name="date" class="form-control" value="{{ request('date') }}">
@@ -99,95 +117,156 @@
             </select>
             <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-filter"></i> Filter</button>
             @if(request('date') || request('shift_type'))
-                <a href="{{ route('shift-closings.index') }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none">Clear</a>
+                <a href="{{ route('shift-closings.index', $isTrashView ? ['view' => 'trash'] : []) }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none">Clear</a>
             @endif
         </form>
     </div>
+
+    @if($isTrashView)
+        <div class="p-3 bg-danger bg-opacity-10 border-bottom d-flex align-items-center gap-2 text-danger small">
+            <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+            <div>
+                <strong>Audit Record:</strong> Deleted shift sheets are preserved here permanently. Financial balances for these deleted sheets were safely reversed at the time of deletion. Click <strong>"Audit Sheet"</strong> to inspect full note breakdown and figures.
+            </div>
+        </div>
+    @endif
 
     <!-- Desktop View: Table -->
     <div class="d-none d-md-block table-responsive">
         <table class="table table-custom table-hover align-middle mb-0">
             <thead>
-                <tr>
-                    <th style="width: 50px;">#</th>
-                    <th>Date</th>
-                    <th>Shift</th>
-                    <th>Cashier</th>
-                    <th class="text-center">Invoices</th>
-                    <th class="text-end">Total Sale</th>
-                    <th class="text-end">Cash Counted</th>
-                    <th class="text-end">JazzCash / Bank</th>
-                    <th class="text-end">Expected Cash</th>
-                    <th class="text-center">Difference</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-end" style="width: 140px;">Actions</th>
-                </tr>
+                @if($isTrashView)
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Shift Date</th>
+                        <th>Shift</th>
+                        <th>Cashier</th>
+                        <th class="text-center">Invoices</th>
+                        <th class="text-end">Total Sale</th>
+                        <th class="text-end">Cash Counted</th>
+                        <th class="text-center">Difference</th>
+                        <th>Deleted On</th>
+                        <th>Deleted By</th>
+                        <th class="text-end" style="width: 140px;">Audit Sheet</th>
+                    </tr>
+                @else
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Date</th>
+                        <th>Shift</th>
+                        <th>Cashier</th>
+                        <th class="text-center">Invoices</th>
+                        <th class="text-end">Total Sale</th>
+                        <th class="text-end">Cash Counted</th>
+                        <th class="text-end">JazzCash / Bank</th>
+                        <th class="text-end">Expected Cash</th>
+                        <th class="text-center">Difference</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end" style="width: 140px;">Actions</th>
+                    </tr>
+                @endif
             </thead>
             <tbody>
                 @forelse($closings as $index => $c)
-                    <tr>
-                        <td class="text-muted small">{{ $closings->firstItem() + $index }}</td>
-                        <td class="fw-semibold text-dark small">{{ $c->date->format('d M Y') }}</td>
-                        <td>{!! $c->shift_badge !!}</td>
-                        <td class="small text-secondary">
-                            <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
-                        </td>
-                        <td class="text-center small font-monospace">
-                            {{ $c->total_invoices }}
-                            @if($c->invoice_start && $c->invoice_end)
-                                <small class="d-block text-muted">#{{ $c->invoice_start }}-#{{ $c->invoice_end }}</small>
-                            @endif
-                        </td>
-                        <td class="text-end font-monospace small fw-bold">Rs. {{ number_format($c->total_sale, 2) }}</td>
-                        <td class="text-end font-monospace small text-success">Rs. {{ number_format($c->total_counted_cash, 2) }}</td>
-                        <td class="text-end font-monospace small text-primary">Rs. {{ number_format($c->jazzcash_amount + $c->bank_amount, 2) }}</td>
-                        <td class="text-end font-monospace small text-secondary">Rs. {{ number_format($c->expected_cash, 2) }}</td>
-                        <td class="text-center">{!! $c->difference_badge !!}</td>
-                        <td class="text-center">{!! $c->status_badge !!}</td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" title="View & Print Closing Sheet">
-                                    <i class="bi bi-eye"></i> Sheet
+                    @if($isTrashView)
+                        <tr class="table-light">
+                            <td class="text-muted small">{{ $closings->firstItem() + $index }}</td>
+                            <td class="fw-semibold text-dark small">{{ $c->date->format('d M Y') }}</td>
+                            <td>{!! $c->shift_badge !!}</td>
+                            <td class="small text-secondary">
+                                <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
+                            </td>
+                            <td class="text-center small font-monospace">
+                                {{ $c->total_invoices }}
+                                @if($c->invoice_start && $c->invoice_end)
+                                    <small class="d-block text-muted">#{{ $c->invoice_start }}-#{{ $c->invoice_end }}</small>
+                                @endif
+                            </td>
+                            <td class="text-end font-monospace small fw-bold">Rs. {{ number_format($c->total_sale, 2) }}</td>
+                            <td class="text-end font-monospace small text-success">Rs. {{ number_format($c->total_counted_cash, 2) }}</td>
+                            <td class="text-center">{!! $c->difference_badge !!}</td>
+                            <td class="small text-danger font-monospace">
+                                <i class="bi bi-calendar-x me-1"></i>{{ $c->deleted_at ? $c->deleted_at->format('d M Y, h:i A') : '-' }}
+                            </td>
+                            <td class="small text-dark fw-semibold">
+                                <i class="bi bi-person-badge me-1 text-danger"></i>{{ $c->deletedBy->name ?? 'Admin' }}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-danger btn-sm py-1 px-2" title="Inspect Deleted Shift Sheet">
+                                    <i class="bi bi-file-earmark-lock me-1"></i> Audit Sheet
                                 </a>
-                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                                    @if($c->status === 'locked')
-                                        <form action="{{ route('shift-closings.unlock', $c->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Unlock this shift sheet for supervisor editing?');">
+                            </td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="text-muted small">{{ $closings->firstItem() + $index }}</td>
+                            <td class="fw-semibold text-dark small">{{ $c->date->format('d M Y') }}</td>
+                            <td>{!! $c->shift_badge !!}</td>
+                            <td class="small text-secondary">
+                                <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
+                            </td>
+                            <td class="text-center small font-monospace">
+                                {{ $c->total_invoices }}
+                                @if($c->invoice_start && $c->invoice_end)
+                                    <small class="d-block text-muted">#{{ $c->invoice_start }}-#{{ $c->invoice_end }}</small>
+                                @endif
+                            </td>
+                            <td class="text-end font-monospace small fw-bold">Rs. {{ number_format($c->total_sale, 2) }}</td>
+                            <td class="text-end font-monospace small text-success">Rs. {{ number_format($c->total_counted_cash, 2) }}</td>
+                            <td class="text-end font-monospace small text-primary">Rs. {{ number_format($c->jazzcash_amount + $c->bank_amount, 2) }}</td>
+                            <td class="text-end font-monospace small text-secondary">Rs. {{ number_format($c->expected_cash, 2) }}</td>
+                            <td class="text-center">{!! $c->difference_badge !!}</td>
+                            <td class="text-center">{!! $c->status_badge !!}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" title="View & Print Closing Sheet">
+                                        <i class="bi bi-eye"></i> Sheet
+                                    </a>
+                                    @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                        @if($c->status === 'locked')
+                                            <form action="{{ route('shift-closings.unlock', $c->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Unlock this shift sheet for supervisor editing?');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-warning btn-sm py-1 px-2" title="Unlock Sheet">
+                                                    <i class="bi bi-unlock"></i>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('shift-closings.lock', $c->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Lock Sheet">
+                                                    <i class="bi bi-lock"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endif
+                                    @if(auth()->user()->isOwner())
+                                        <form action="{{ route('shift-closings.destroy', $c->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
                                             @csrf
-                                            <button type="submit" class="btn btn-outline-warning btn-sm py-1 px-2" title="Unlock Sheet">
-                                                <i class="bi bi-unlock"></i>
-                                            </button>
-                                        </form>
-                                    @else
-                                        <form action="{{ route('shift-closings.lock', $c->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Lock Sheet">
-                                                <i class="bi bi-lock"></i>
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Sheet">
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     @endif
-                                @endif
-                                @if(auth()->user()->isOwner())
-                                    <form action="{{ route('shift-closings.destroy', $c->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Sheet">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
+                                </div>
+                            </td>
+                        </tr>
+                    @endif
                 @empty
                     <tr>
                         <td colspan="12" class="text-center py-5 text-muted small">
-                            <i class="bi bi-clock-history fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                            No shift closing records found.
-                            <div class="mt-2">
-                                <a href="{{ route('shift-closings.create') }}" class="btn btn-sm btn-outline-primary rounded-3">
-                                    <i class="bi bi-plus-circle me-1"></i> Submit New Shift Closing
-                                </a>
-                            </div>
+                            @if($isTrashView)
+                                <i class="bi bi-trash3 fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                                No deleted shift closing records in trash archive.
+                            @else
+                                <i class="bi bi-clock-history fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                                No shift closing records found.
+                                <div class="mt-2">
+                                    <a href="{{ route('shift-closings.create') }}" class="btn btn-sm btn-outline-primary rounded-3">
+                                        <i class="bi bi-plus-circle me-1"></i> Submit New Shift Closing
+                                    </a>
+                                </div>
+                            @endif
                         </td>
                     </tr>
                 @endforelse
@@ -199,7 +278,7 @@
     <div class="d-block d-md-none p-2 p-sm-3">
         <div class="d-flex flex-column gap-2">
             @forelse($closings as $c)
-                <div class="p-3 rounded-3 border bg-white shadow-xs">
+                <div class="p-3 rounded-3 border bg-white shadow-xs {{ $isTrashView ? 'border-danger-subtle bg-danger bg-opacity-10' : '' }}">
                     <!-- Top Row: Date, Shift & Status -->
                     <div class="d-flex align-items-center justify-content-between gap-1 mb-2">
                         <div class="d-flex align-items-center gap-1.5 min-w-0">
@@ -207,7 +286,11 @@
                             {!! $c->shift_badge !!}
                         </div>
                         <div class="flex-shrink-0">
-                            {!! $c->status_badge !!}
+                            @if($isTrashView)
+                                <span class="badge bg-danger-subtle text-danger border border-danger"><i class="bi bi-trash3 me-1"></i>Deleted</span>
+                            @else
+                                {!! $c->status_badge !!}
+                            @endif
                         </div>
                     </div>
 
@@ -223,6 +306,12 @@
                             @endif
                         </span>
                     </div>
+
+                    @if($isTrashView)
+                        <div class="small text-danger pb-2 border-bottom mb-2 font-monospace" style="font-size: 0.74rem;">
+                            <i class="bi bi-calendar-x me-1"></i>Deleted: {{ $c->deleted_at ? $c->deleted_at->format('d M Y, h:i A') : '-' }} &bull; By: {{ $c->deletedBy->name ?? 'Admin' }}
+                        </div>
+                    @endif
 
                     <!-- Financials 2x2 Grid -->
                     <div class="p-2.5 rounded-2 bg-light border mb-2">
@@ -259,48 +348,59 @@
 
                     <!-- Actions Row -->
                     <div class="d-flex align-items-center gap-1.5 pt-1">
-                        <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-primary btn-sm flex-fill py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;">
-                            <i class="bi bi-eye me-1"></i> View Sheet
-                        </a>
+                        @if($isTrashView)
+                            <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-danger btn-sm w-100 py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;">
+                                <i class="bi bi-file-earmark-lock me-1"></i> Audit Deleted Sheet
+                            </a>
+                        @else
+                            <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-primary btn-sm flex-fill py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;">
+                                <i class="bi bi-eye me-1"></i> View Sheet
+                            </a>
 
-                        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                            @if($c->status === 'locked')
-                                <form action="{{ route('shift-closings.unlock', $c->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Unlock this shift sheet for supervisor editing?');">
+                            @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                @if($c->status === 'locked')
+                                    <form action="{{ route('shift-closings.unlock', $c->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Unlock this shift sheet for supervisor editing?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-warning btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Unlock Sheet">
+                                            <i class="bi bi-unlock"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('shift-closings.lock', $c->id) }}" method="POST" class="m-0 flex-shrink-0">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Lock Sheet">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
+
+                            @if(auth()->user()->isOwner())
+                                <form action="{{ route('shift-closings.destroy', $c->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
                                     @csrf
-                                    <button type="submit" class="btn btn-outline-warning btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Unlock Sheet">
-                                        <i class="bi bi-unlock"></i>
-                                    </button>
-                                </form>
-                            @else
-                                <form action="{{ route('shift-closings.lock', $c->id) }}" method="POST" class="m-0 flex-shrink-0">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Lock Sheet">
-                                        <i class="bi bi-lock"></i>
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Sheet">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                             @endif
-                        @endif
-
-                        @if(auth()->user()->isOwner())
-                            <form action="{{ route('shift-closings.destroy', $c->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Sheet">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
                         @endif
                     </div>
                 </div>
             @empty
                 <div class="text-center py-4 text-muted small">
-                    <i class="bi bi-clock-history fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                    No shift closing records found.
-                    <div class="mt-2">
-                        <a href="{{ route('shift-closings.create') }}" class="btn btn-sm btn-outline-primary rounded-3">
-                            <i class="bi bi-plus-circle me-1"></i> Submit New Shift Closing
-                        </a>
-                    </div>
+                    @if($isTrashView)
+                        <i class="bi bi-trash3 fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                        No deleted shift closing records in trash archive.
+                    @else
+                        <i class="bi bi-clock-history fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                        No shift closing records found.
+                        <div class="mt-2">
+                            <a href="{{ route('shift-closings.create') }}" class="btn btn-sm btn-outline-primary rounded-3">
+                                <i class="bi bi-plus-circle me-1"></i> Submit New Shift Closing
+                            </a>
+                        </div>
+                    @endif
                 </div>
             @endforelse
         </div>

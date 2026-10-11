@@ -210,10 +210,13 @@
         <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
         <div class="bank-stmt-header d-none d-print-block">
             <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
-                <div>
-                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 16pt;">FINANCEDESK ENTERPRISE</h3>
-                    <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY & COMMERCIAL AUDIT</div>
-                    <div class="small text-muted" style="font-size: 8pt;">Proware Technologies &bull; Verified Accounts &amp; Commercial Ledger</div>
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    <div>
+                        <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                        <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY &amp; COMMERCIAL AUDIT</div>
+                        <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; Verified Accounts &amp; Commercial Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                    </div>
                 </div>
                 <div class="text-end">
                     <div class="badge bg-dark text-white text-uppercase px-2 py-1 mb-1" style="font-size: 8.5pt;">Official Statement</div>
@@ -269,15 +272,13 @@
 
         <!-- Letterhead Header -->
         <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
-            <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <div class="bg-primary text-white rounded-2 p-1 px-2 fw-bold">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                    <h4 class="fw-bold text-dark m-0">FinanceDesk</h4>
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <div>
+                    <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                    <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Statement of Account & Ledger</h5>
+                    <small class="text-muted">Your Health Companion &bull; Financial Accounting Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
                 </div>
-                <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Statement of Account & Ledger</h5>
-                <small class="text-muted">Proware Technologies &bull; Financial Accounting Ledger</small>
             </div>
             <div class="text-start text-md-end">
                 <span class="badge bg-light text-dark border px-2 py-1 mb-1 font-monospace d-inline-block">
@@ -528,7 +529,10 @@
             </div>
         </div>
 
-
+        <!-- Statement Footer Notice -->
+        <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+            <span>Official Statement of Account &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
+        </div>
 
     </div>
 @else

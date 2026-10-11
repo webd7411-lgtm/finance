@@ -222,12 +222,16 @@
 
         <!-- 1. STATEMENT HEADER BLOCK -->
         <div class="d-flex justify-content-between align-items-start pb-2 mb-2 border-bottom border-2 border-dark">
-            <div>
-                <h4 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">FINANCEDESK ENTERPRISE</h4>
-                <div class="fw-semibold text-secondary" style="font-size: 8.5pt;">CENTRAL COMMERCIAL TREASURY &bull; OFFICIAL STATEMENT OF ACCOUNT</div>
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Green Pharmacie" style="height: 50px; max-width: 175px; object-fit: contain;">
+                <div>
+                    <h4 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 14pt;">GREEN PHARMACIE</h4>
+                    <div class="fw-semibold text-secondary" style="font-size: 8.5pt;">CENTRAL COMMERCIAL TREASURY &bull; OFFICIAL STATEMENT OF ACCOUNT</div>
+                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; 24/7 &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Ph: +92 317 3836223</div>
+                </div>
             </div>
             <div class="text-end">
-                <div class="fw-bold text-uppercase" style="font-size: 11pt; color: #0f172a;">SALES & CASH FLOW STATEMENT</div>
+                <div class="fw-bold text-uppercase" style="font-size: 11pt; color: #0f172a;">SALES &amp; CASH FLOW STATEMENT</div>
                 <div class="small text-muted" style="font-size: 7.8pt;">Date Issued: {{ now()->format('d M, Y h:i A') }}</div>
             </div>
         </div>
@@ -511,7 +515,9 @@
             </div>
         </div>
 
-
+        <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+            <span>Official Treasury Sales & Cash Flow Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
+        </div>
 
     </div>
 

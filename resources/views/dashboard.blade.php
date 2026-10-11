@@ -110,7 +110,7 @@
 
     <!-- Card 3: Bank Accounts (Commercial Bank Balances) -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-left-color: #0284c7 !important;">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: #0284c7 !important;">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="small fw-semibold text-uppercase" style="color: #0284c7; letter-spacing: 0.5px; font-size: 0.72rem;">Bank Accounts</span>
                 <div class="text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #0284c7;">
@@ -200,7 +200,10 @@
 
     <!-- Card 3: Shift Reconciliation & Discrepancy -->
     <div class="col-12 col-md-4">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 {{ $todayVariance < 0 ? 'border-danger' : ($todayVariance > 0 ? 'border-primary' : 'border-indigo') }} shadow-sm position-relative overflow-hidden" style="border-left-color: #6366f1 !important;">
+        @php
+            $varBorderColor = $todayVariance < 0 ? '#ef4444' : ($todayVariance > 0 ? '#2563eb' : '#6366f1');
+        @endphp
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: {{ $varBorderColor }} !important;">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Shift Variance</span>
                 <div class="rounded-3 p-2 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #4f46e5;">

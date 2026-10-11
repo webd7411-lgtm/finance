@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Voucher #' . $transaction->id)
+@section('title', 'Voucher #' . $transaction->id . ' (80mm Thermal)')
 @section('page_title', 'Transaction Voucher Receipt')
 
 @section('page_badge')
     <span class="badge bg-light text-secondary border px-2 py-1 small">
-        Voucher #{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}
+        Voucher #{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }} &bull; 80mm Thermal
     </span>
 @endsection
 
 @section('page_actions')
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 no-print" onclick="window.print()">
-            <i class="bi bi-printer me-1"></i> Print Voucher
+    <div class="d-flex gap-2 no-print">
+        <button type="button" class="btn btn-primary btn-sm rounded-3 px-3 shadow-sm" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print Voucher (80mm)
         </button>
-        <a href="{{ route('transactions.index') }}" class="btn btn-light btn-sm rounded-3 no-print">
+        <a href="{{ route('transactions.index') }}" class="btn btn-light btn-sm rounded-3 border">
             <i class="bi bi-arrow-left me-1"></i> Back to Journal
         </a>
     </div>
@@ -22,179 +22,300 @@
 
 @push('styles')
 <style>
+    /* ----------------------------------------------------
+       Screen Preview Styling (80mm Thermal Simulation)
+       ---------------------------------------------------- */
+    .thermal-preview-container {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 30px;
+    }
+
+    .thermal-receipt {
+        width: 100%;
+        max-width: 380px;
+        background: #ffffff;
+        color: #111827;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
+        font-size: 12px;
+        line-height: 1.4;
+        padding: 24px 20px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        box-sizing: border-box;
+    }
+
+    .thermal-divider-dashed {
+        border-top: 1px dashed #cbd5e1;
+        margin: 10px 0;
+    }
+
+    .thermal-divider-double {
+        border-top: 1px dashed #cbd5e1;
+        border-bottom: 1px dashed #cbd5e1;
+        height: 4px;
+        margin: 10px 0;
+    }
+
+    .thermal-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .thermal-table td {
+        padding: 4px 0;
+        vertical-align: top;
+        font-size: 12px;
+    }
+
+    .thermal-label {
+        color: #475569;
+        white-space: nowrap;
+        padding-right: 10px !important;
+        font-size: 11.5px;
+    }
+
+    .thermal-value {
+        color: #0f172a;
+        word-break: break-word;
+    }
+
+    .thermal-sig-line {
+        border-top: 1px dashed #94a3b8;
+        padding-top: 5px;
+        margin-top: 30px;
+    }
+
+    /* ----------------------------------------------------
+       80mm Thermal Printer Print Media Rules
+       ---------------------------------------------------- */
     @media print {
         @page {
-            size: A4 portrait;
-            margin: 15mm 20mm;
+            size: 80mm auto;
+            margin: 0;
         }
+
         html, body {
             background: #ffffff !important;
-            color: #0f172a !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-            font-size: 9pt !important;
-            line-height: 1.35 !important;
-            width: 100% !important;
+            color: #000000 !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace, sans-serif !important;
+            font-size: 11px !important;
+            line-height: 1.3 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
             margin: 0 !important;
             padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        /* Hide Web Navigation and UI elements */
-        .vip-navbar, .sub-header, .no-print, .btn, .alert, footer, nav, header {
+        /* Hide all UI elements */
+        .vip-navbar, .sub-header, .no-print, .btn, .alert, footer, nav, header, .card-header, .page-header {
             display: none !important;
         }
 
-        /* Container Resets */
-        main, .container-fluid, .row, .col-12, .col-md-8, .col-lg-6 {
+        main, .container-fluid, .row, [class*="col-"], .thermal-preview-container {
+            display: block !important;
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            display: block !important;
         }
 
-        #printableVoucher {
-            border: 1.5px solid #0f172a !important;
-            box-shadow: none !important;
-            border-radius: 4px !important;
-            padding: 24px 28px !important;
-            margin: 20px auto !important;
-            max-width: 620px !important;
-            background: #fff !important;
-        }
-
-        table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-        }
-        .table td, .table th {
-            border: 1px solid #475569 !important;
-            padding: 6px 10px !important;
-            font-size: 8.8pt !important;
-            color: #0f172a !important;
-        }
-        .badge {
-            border: 1px solid #94a3b8 !important;
-            background: transparent !important;
-            color: #0f172a !important;
-        }
-
-        .statement-sig-line {
-            border-top: 1px dashed #475569 !important;
-            width: 80% !important;
+        .thermal-receipt {
+            width: 74mm !important;
+            max-width: 74mm !important;
+            min-width: 74mm !important;
             margin: 0 auto !important;
+            padding: 4mm 2mm !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            page-break-inside: avoid !important;
+        }
+
+        .thermal-receipt * {
+            color: #000000 !important;
+            background: transparent !important;
+        }
+
+        .thermal-divider-dashed {
+            border-top: 1px dashed #000000 !important;
+            margin: 6px 0 !important;
+        }
+
+        .thermal-divider-double {
+            border-top: 1px dashed #000000 !important;
+            border-bottom: 1px dashed #000000 !important;
+            height: 3px !important;
+            margin: 6px 0 !important;
+        }
+
+        .thermal-table td {
+            padding: 2.5px 0 !important;
+            font-size: 10.5px !important;
+        }
+
+        .thermal-label {
+            color: #000000 !important;
+            font-size: 10.5px !important;
+        }
+
+        .thermal-value {
+            color: #000000 !important;
+            font-size: 10.5px !important;
+        }
+
+        .thermal-sig-line {
+            border-top: 1px dashed #000000 !important;
             padding-top: 4px !important;
+            margin-top: 25px !important;
         }
     }
 </style>
 @endpush
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-12 col-md-8 col-lg-6">
-        <div class="card-custom p-4 bg-white shadow-sm" id="printableVoucher">
-            <!-- Voucher Header -->
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="bg-primary text-white rounded-2 p-1 px-2 fw-bold">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold text-dark m-0">FinanceDesk</h5>
-                        <small class="text-muted">Proware Technologies</small>
-                    </div>
-                </div>
-                <div class="text-end">
-                    <div class="fw-bold font-monospace text-dark">#VCH-{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}</div>
-                    <small class="text-muted">{{ $transaction->date->format('d M, Y') }}</small>
+<div class="thermal-preview-container">
+    <div id="printableVoucher" class="thermal-receipt">
+
+        <!-- Business Header -->
+        <div class="text-center mb-2">
+            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 175px; object-fit: contain;" class="mb-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+            <h6 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 13px;">Green Pharmacie</h6>
+            <div class="text-dark small" style="font-size: 10px;">Your Health Companion &bull; 24 Hrs 7 Days</div>
+        </div>
+
+        <div class="thermal-divider-dashed"></div>
+
+        <!-- Voucher Type Banner -->
+        <div class="text-center my-1">
+            <div class="fw-bold text-uppercase" style="font-size: 12.5px; letter-spacing: 0.3px;">
+                @if($transaction->type == 'payment_in')
+                    *** RECEIPT VOUCHER ***
+                @elseif($transaction->type == 'purchase_bill')
+                    *** PURCHASE BILL ***
+                @elseif(empty($transaction->party_id) && !empty($transaction->category_id))
+                    *** EXPENSE VOUCHER ***
+                @else
+                    *** PAYMENT VOUCHER ***
+                @endif
+            </div>
+            <div class="fw-bold font-monospace" style="font-size: 12px;">
+                #VCH-{{ str_pad($transaction->id, 6, '0', STR_PAD_LEFT) }}
+            </div>
+        </div>
+
+        <div class="thermal-divider-dashed"></div>
+
+        <!-- Voucher Meta Details -->
+        <table class="thermal-table">
+            <tbody>
+                <tr>
+                    <td class="thermal-label">Date:</td>
+                    <td class="thermal-value text-end">{{ $transaction->date->format('d/m/Y') }}</td>
+                </tr>
+                <tr>
+                    <td class="thermal-label">Time:</td>
+                    <td class="thermal-value text-end">{{ $transaction->created_at ? $transaction->created_at->format('h:i A') : '-' }}</td>
+                </tr>
+                <tr>
+                    <td class="thermal-label">Voucher Type:</td>
+                    <td class="thermal-value text-end fw-semibold">
+                        @if($transaction->type == 'payment_in')
+                            Payment In (Received)
+                        @elseif($transaction->type == 'purchase_bill')
+                            Purchase Bill (Credit)
+                        @elseif(empty($transaction->party_id) && !empty($transaction->category_id))
+                            Expense Voucher
+                        @else
+                            Payment Out (Paid)
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <td class="thermal-label">Channel:</td>
+                    <td class="thermal-value text-end">
+                        @if($transaction->account)
+                            {{ $transaction->account->name }} <span class="small">({{ ucfirst($transaction->account->type) }})</span>
+                        @else
+                            Credit Purchase (No Cash Deduction)
+                        @endif
+                    </td>
+                </tr>
+                @if($transaction->party)
+                <tr>
+                    <td class="thermal-label">{{ $transaction->type == 'payment_in' ? 'Received From:' : ($transaction->type == 'purchase_bill' ? 'Supplier/Vendor:' : 'Paid To:') }}</td>
+                    <td class="thermal-value text-end fw-bold">
+                        {{ $transaction->party->name }}
+                        <div class="small fw-normal text-muted" style="font-size: 9.5px;">
+                            [{{ strtoupper($transaction->party->type) }}]@if($transaction->party->phone) &bull; {{ $transaction->party->phone }}@endif
+                        </div>
+                    </td>
+                </tr>
+                @endif
+                @if($transaction->category)
+                <tr>
+                    <td class="thermal-label">Category:</td>
+                    <td class="thermal-value text-end">{{ $transaction->category->name }}</td>
+                </tr>
+                @endif
+                @if($transaction->bill_no)
+                <tr>
+                    <td class="thermal-label">Bill / Ref #:</td>
+                    <td class="thermal-value text-end font-monospace">{{ $transaction->bill_no }}</td>
+                </tr>
+                @endif
+                @if($transaction->description)
+                <tr>
+                    <td class="thermal-label">Description:</td>
+                    <td class="thermal-value text-end" style="font-size: 10.5px;">{{ $transaction->description }}</td>
+                </tr>
+                @endif
+            </tbody>
+        </table>
+
+        <div class="thermal-divider-double"></div>
+
+        <!-- Total Amount -->
+        <div class="d-flex justify-content-between align-items-center py-1">
+            <span class="fw-bold" style="font-size: 13px;">TOTAL AMOUNT:</span>
+            <span class="fw-bold font-monospace" style="font-size: 16px;">
+                Rs. {{ number_format($transaction->amount, 2) }}
+            </span>
+        </div>
+
+        <div class="thermal-divider-double"></div>
+
+        <!-- Signature Section -->
+        <div class="d-flex justify-content-between text-center pt-2">
+            <div style="width: 46%;">
+                <div class="thermal-sig-line">
+                    <div class="text-muted" style="font-size: 9.5px;">Prepared By</div>
+                    <div class="fw-semibold" style="font-size: 11px;">{{ $transaction->creator->name ?? 'User' }}</div>
                 </div>
             </div>
-
-            <!-- Voucher Title -->
-            <div class="text-center py-2 mb-3 rounded-2 {{ $transaction->type == 'payment_in' ? 'bg-success bg-opacity-10 text-success border border-success' : ($transaction->type == 'purchase_bill' ? 'bg-warning bg-opacity-10 text-warning-emphasis border border-warning' : 'bg-danger bg-opacity-10 text-danger border border-danger') }}">
-                <h6 class="fw-bold m-0 text-uppercase">
-                    @if($transaction->type == 'payment_in')
-                        Receipt Voucher (Payment In)
-                    @elseif($transaction->type == 'purchase_bill')
-                        Purchase Bill (Credit Voucher)
-                    @else
-                        Payment Voucher (Payment Out)
-                    @endif
-                </h6>
-            </div>
-
-            <!-- Key Details Table -->
-            <table class="table table-sm table-bordered align-middle mb-4">
-                <tbody>
-                    <tr>
-                        <td class="text-muted" style="width: 35%;">Transaction Date:</td>
-                        <td class="fw-bold text-dark">{{ $transaction->date->format('l, d F Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Payment Channel:</td>
-                        <td class="fw-semibold text-dark">
-                            @if($transaction->account)
-                                {{ $transaction->account->name }} ({!! $transaction->account->type_badge !!})
-                            @else
-                                <span class="badge bg-secondary-subtle text-secondary border">Credit Purchase (No Cash Deduction)</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @if($transaction->party)
-                        <tr>
-                            <td class="text-muted">{{ $transaction->type == 'payment_in' ? 'Received From:' : ($transaction->type == 'purchase_bill' ? 'Supplier / Vendor:' : 'Paid To:') }}</td>
-                            <td class="fw-bold text-dark">
-                                {{ $transaction->party->name }} 
-                                <span class="badge bg-light text-secondary border ms-1">{{ strtoupper($transaction->party->type) }}</span>
-                            </td>
-                        </tr>
-                    @endif
-                    @if($transaction->category)
-                        <tr>
-                            <td class="text-muted">Expense Category:</td>
-                            <td><span class="badge bg-warning-subtle text-warning border border-warning">{{ $transaction->category->name }}</span></td>
-                        </tr>
-                    @endif
-                    @if($transaction->bill_no)
-                        <tr>
-                            <td class="text-muted">Bill / Reference #:</td>
-                            <td class="font-monospace text-dark">{{ $transaction->bill_no }}</td>
-                        </tr>
-                    @endif
-                    @if($transaction->description)
-                        <tr>
-                            <td class="text-muted">Description:</td>
-                            <td class="text-dark small">{{ $transaction->description }}</td>
-                        </tr>
-                    @endif
-                    <tr class="table-light">
-                        <td class="fw-bold fs-6 text-dark">Total Amount:</td>
-                        <td class="fw-bold fs-5 font-monospace {{ $transaction->type == 'payment_in' ? 'text-success' : ($transaction->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}">
-                            Rs. {{ number_format($transaction->amount, 2) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Signatures Section -->
-            <div class="row pt-4 mt-4 border-top">
-                <div class="col-6 text-center">
-                    <div class="border-top border-dark mx-auto pt-1" style="max-width: 140px;">
-                        <small class="text-muted d-block">Prepared By</small>
-                        <small class="fw-semibold text-dark">{{ $transaction->creator->name ?? 'User' }}</small>
-                    </div>
-                </div>
-                <div class="col-6 text-center">
-                    <div class="border-top border-dark mx-auto pt-1" style="max-width: 140px;">
-                        <small class="text-muted d-block">Authorized Sign</small>
-                        <small class="fw-semibold text-dark">Receiver / Payee</small>
-                    </div>
+            <div style="width: 46%;">
+                <div class="thermal-sig-line">
+                    <div class="text-muted" style="font-size: 9.5px;">Receiver Sign</div>
+                    <div class="fw-semibold" style="font-size: 11px;">&nbsp;</div>
                 </div>
             </div>
         </div>
+
+        <!-- Thermal Footer -->
+        <div class="text-center mt-3 pt-2" style="border-top: 1px dashed #94a3b8; font-size: 9.5px; color: #64748b;">
+            <div class="fw-semibold">*** SYSTEM GENERATED VOUCHER ***</div>
+            <div style="font-size: 8.5px;">Printed: {{ now()->format('d/m/Y h:i A') }}</div>
+            <div style="font-size: 8.5px; margin-top: 2px; color: #0f172a;">Developed by <strong>Prowave Technologies</strong> &bull; Ph: <strong>+92 317 3836223</strong></div>
+        </div>
+
     </div>
 </div>
 @endsection

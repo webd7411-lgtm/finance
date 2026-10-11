@@ -313,15 +313,15 @@
                 <!-- Brand & Navigation -->
                 <div class="d-flex align-items-center gap-2 gap-xl-3" style="min-width: 0;">
                     <a href="{{ route('dashboard') }}" class="vip-brand">
-                        <div class="vip-brand-icon">
-                            <i class="bi bi-wallet2"></i>
-                        </div>
-                        <div class="vip-brand-content">
-                            <span class="vip-company-name">Proware Technologies</span>
+                        <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 38px; max-width: 135px; object-fit: contain;" class="rounded-1 me-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                        <div class="vip-brand-content d-none d-sm-flex">
+                            <span class="vip-company-name">Prowave Technologies</span>
+                            <span class="text-success fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.2px; white-space: nowrap;">
+                                <i class="bi bi-telephone-fill me-1" style="font-size: 0.65rem;"></i>+92 317 3836223
+                            </span>
                             <div class="vip-brand-date">
-                                <i class="bi bi-calendar3 me-1"></i>{{ date('D, d M Y') }}
+                                <i class="bi bi-calendar3 me-1"></i>{{ date('D, d M Y') }} &bull; Finance<span class="text-accent ms-0.5">Desk</span>
                             </div>
-                            <span class="vip-product-name">Finance<span class="text-accent">Desk</span></span>
                         </div>
                     </a>
 
@@ -355,7 +355,7 @@
                                 </li>
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
-                                        <i class="bi bi-tags text-warning"></i> Expense Categories
+                                        <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
                                     </a>
                                 </li>
                             </ul>
@@ -479,7 +479,7 @@
                                 </li>
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
-                                        <i class="bi bi-tags text-warning"></i> Expense Categories
+                                        <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
                                     </a>
                                 </li>
                             </ul>
@@ -622,19 +622,22 @@
     <div class="offcanvas offcanvas-start bg-dark text-white border-0 shadow-lg" tabindex="-1" id="mobileNavDrawer" aria-labelledby="mobileNavDrawerLabel" style="width: 295px; background-color: #0b1120 !important; z-index: 1060;">
         <div class="offcanvas-header border-bottom border-secondary border-opacity-25 pb-3">
             <div class="d-flex align-items-center gap-2">
-                <div class="vip-brand-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">
-                    <i class="bi bi-wallet2"></i>
-                </div>
+                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 36px; max-width: 130px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div class="d-flex flex-column lh-1">
-                    <span class="fw-bold text-white text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.4px;">Proware Technologies</span>
-                    <span class="text-info mt-1" style="font-size: 0.72rem;"><i class="bi bi-calendar3 me-1"></i>{{ date('D, d M Y') }}</span>
-                    <span class="fw-semibold text-white mt-1" style="font-size: 0.85rem;">Finance<span class="text-primary">Desk</span></span>
+                    <span class="fw-bold text-white text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.4px;">Prowave Technologies</span>
+                    <span class="text-success fw-semibold mt-1" style="font-size: 0.75rem;"><i class="bi bi-telephone-fill me-1"></i>+92 317 3836223</span>
+                    <span class="text-info mt-1" style="font-size: 0.68rem;"><i class="bi bi-calendar3 me-1"></i>{{ date('D, d M Y') }} &bull; FinanceDesk</span>
                 </div>
             </div>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close" id="mobileNavCloseBtn"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column justify-content-between p-3" style="overflow-y: auto;">
             <div class="d-flex flex-column gap-1">
+                <!-- Prowave Support Pill Mobile -->
+                <div class="p-2 mb-2 rounded-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 text-center">
+                    <div class="text-secondary" style="font-size: 0.72rem;">Developed by <strong class="text-light">Prowave Technologies</strong></div>
+                    <a href="tel:+923173836223" class="text-info text-decoration-none fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-telephone-fill text-success me-1"></i>+92 317 3836223</a>
+                </div>
                 <!-- User Profile Pill -->
                 <div class="p-2 mb-2 rounded-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex align-items-center gap-2">
                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 32px; height: 32px; font-size: 0.85rem;">
@@ -674,7 +677,7 @@
                     <i class="bi bi-bank text-success"></i> Payment Accounts
                 </a>
                 <a href="{{ route('expense-categories.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('expense-categories.*') ? 'active' : '' }}">
-                    <i class="bi bi-tags text-warning"></i> Expense Categories
+                    <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
                 </a>
 
                 <div class="text-secondary small fw-bold text-uppercase px-2 pt-2" style="font-size: 0.68rem; letter-spacing: 0.5px;">Daily Operations</div>
@@ -785,8 +788,9 @@
 
     <!-- Footer -->
     <footer class="bg-white border-top py-3 text-center text-muted small mt-auto">
-        <div class="container-fluid px-3 px-lg-4 d-flex justify-content-center align-items-center">
-            <span>Closing Sheet & Ledger Management &bull; <strong>Proware Technologies</strong> &copy; {{ date('Y') }}</span>
+        <div class="container-fluid px-3 px-lg-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+            <span>Closing Sheet &amp; Ledger Management &bull; Developed by <strong class="text-dark">Prowave Technologies</strong> &copy; {{ date('Y') }}</span>
+            <span><i class="bi bi-telephone-fill text-success me-1"></i>Helpline: <a href="tel:+923173836223" class="text-decoration-none fw-semibold text-dark">+92 317 3836223</a></span>
         </div>
     </footer>
 

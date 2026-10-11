@@ -49,6 +49,10 @@ class Transaction extends Model
 
     public function getTypeBadgeAttribute(): string
     {
+        if ($this->type === 'payment_out' && empty($this->party_id) && !empty($this->category_id)) {
+            return '<span class="badge bg-danger text-white border border-danger fw-bold"><i class="bi bi-receipt-cutoff me-1"></i>Expense</span>';
+        }
+
         return match($this->type) {
             'payment_in'    => '<span class="badge bg-success-subtle text-success border border-success fw-bold"><i class="bi bi-arrow-down-left me-1"></i>Payment In</span>',
             'payment_out'   => '<span class="badge bg-danger-subtle text-danger border border-danger fw-bold"><i class="bi bi-arrow-up-right me-1"></i>Payment Out</span>',

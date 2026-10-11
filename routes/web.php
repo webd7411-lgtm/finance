@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     // Step 2: Master Setup (Parties, Accounts, Categories)
     Route::resource('parties', PartyController::class);
     Route::resource('accounts', AccountController::class);
+    Route::post('accounts/{account}/toggle-status', [AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
     Route::resource('expense-categories', ExpenseCategoryController::class)->except(['create', 'show', 'edit']);
 
     // Step 3: Shift Closing Module (Morning & Evening)

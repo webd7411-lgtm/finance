@@ -7,6 +7,11 @@
     <span class="badge bg-light text-secondary border px-2 py-1 small">
         Ref #{{ str_pad($shiftClosing->id, 5, '0', STR_PAD_LEFT) }}
     </span>
+    @if($shiftClosing->trashed())
+        <span class="badge bg-danger text-white border-0 px-2 py-1 small ms-1">
+            <i class="bi bi-trash3 me-1"></i> DELETED (ARCHIVED)
+        </span>
+    @endif
 @endsection
 
 @section('page_actions')
@@ -14,7 +19,7 @@
         <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 no-print" onclick="window.print()">
             <i class="bi bi-printer me-1"></i> Print Statement
         </button>
-        @if(auth()->user()->isOwner())
+        @if(!$shiftClosing->trashed() && auth()->user()->isOwner())
             <form action="{{ route('shift-closings.destroy', $shiftClosing->id) }}" method="POST" class="d-inline no-print" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
                 @csrf
                 @method('DELETE')
@@ -23,7 +28,7 @@
                 </button>
             </form>
         @endif
-        <a href="{{ route('shift-closings.index') }}" class="btn btn-light btn-sm rounded-3 no-print">
+        <a href="{{ route('shift-closings.index', $shiftClosing->trashed() ? ['view' => 'trash'] : []) }}" class="btn btn-light btn-sm rounded-3 no-print">
             <i class="bi bi-arrow-left me-1"></i> Back to Shift History
         </a>
     </div>
@@ -32,16 +37,35 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-12 col-xl-10">
+        @if($shiftClosing->trashed())
+            <div class="alert alert-danger d-flex align-items-center gap-3 mb-4 rounded-3 shadow-xs border-danger no-print">
+                <i class="bi bi-trash3-fill fs-2 text-danger flex-shrink-0"></i>
+                <div>
+                    <h6 class="fw-bold mb-1 text-danger">DELETED SHIFT CLOSING SHEET (ARCHIVED RECORD)</h6>
+                    <div class="small text-dark">
+                        This shift sheet was deleted on <strong>{{ $shiftClosing->deleted_at->format('d M Y, h:i A') }}</strong>
+                        @if($shiftClosing->deletedBy)
+                            by <strong>{{ $shiftClosing->deletedBy->name }}</strong>.
+                        @endif
+                        All associated ledger balances and transactions were safely reversed upon deletion. This historical sheet is permanently preserved here for transparency and audit review.
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Printable Shift Statement Card -->
         <div class="card-custom p-4 p-md-5 bg-white shadow-sm" id="printableSheet">
 
             <!-- Statement Header (Print Only: Clean Official Financial Document Header) -->
             <div class="d-none d-print-block statement-print-header mb-3 pb-2 border-bottom border-dark border-2">
                 <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 15pt; color: #000;">PROWARE TECHNOLOGIES</h4>
-                        <div class="fw-bold text-dark" style="font-size: 11pt; margin-top: 2px;">DAILY SHIFT CLOSING STATEMENT</div>
-                        <div class="text-secondary small" style="font-size: 8.5pt;">Finance Desk &bull; Register Reference #SC-{{ str_pad($shiftClosing->id, 5, '0', STR_PAD_LEFT) }}</div>
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 50px; max-width: 170px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                        <div>
+                            <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 14pt; color: #000;">GREEN PHARMACIE</h4>
+                            <div class="fw-bold text-dark" style="font-size: 10.5pt; margin-top: 2px;">DAILY SHIFT CLOSING STATEMENT</div>
+                            <div class="text-secondary small" style="font-size: 8.5pt;">Your Health Companion &bull; Ref #SC-{{ str_pad($shiftClosing->id, 5, '0', STR_PAD_LEFT) }} &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                        </div>
                     </div>
                     <div class="text-end" style="font-size: 9pt; line-height: 1.45; color: #000;">
                         <div><strong>Date:</strong> {{ $shiftClosing->date->format('d F, Y') }}</div>
@@ -54,15 +78,13 @@
 
             <!-- Header Section (Screen Only: Modern Web UI with Branding & Badges) -->
             <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4 flex-wrap gap-3 d-print-none">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <div class="bg-primary text-white rounded-2 p-1 px-2 fw-bold">
-                            <i class="bi bi-wallet2"></i>
-                        </div>
-                        <h4 class="fw-bold text-dark m-0">FinanceDesk</h4>
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    <div>
+                        <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                        <h6 class="text-secondary fw-semibold m-0">Daily Shift Closing Register</h6>
+                        <small class="text-muted">Your Health Companion &bull; Finance Management &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
                     </div>
-                    <h6 class="text-secondary fw-semibold m-0">Daily Shift Closing Register</h6>
-                    <small class="text-muted">Proware Technologies &bull; Finance Management System</small>
                 </div>
                 <div class="text-md-end">
                     <div class="d-inline-block text-start text-md-end">
@@ -280,7 +302,10 @@
                 </div>
             </div>
 
-
+            <!-- Statement Footer Notice -->
+            <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+                <span>Official Shift Closing Audit Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
+            </div>
 
         </div>
     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Sign In - FinanceDesk | Proware Technologies</title>
+    <title>Sign In - FinanceDesk | Prowave Technologies</title>
     
     <!-- Standard Clean Font: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -362,12 +362,12 @@
             
             <!-- Brand Header -->
             <div class="text-center mb-4">
-                <div class="brand-icon">
-                    <i class="bi bi-wallet2"></i>
+                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 58px; max-width: 220px; object-fit: contain;" class="mb-2" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <h1 class="brand-title" style="font-size: 1.5rem;">Green<span>Pharmacie</span></h1>
+                <p class="brand-desc mb-1">Your Health Companion &bull; 24/7 Financial Portal</p>
+                <div class="small text-secondary" style="font-size: 0.78rem;">
+                    Developed by <strong class="text-info">Prowave Technologies</strong> &bull; <a href="tel:+923173836223" class="text-decoration-none text-light"><i class="bi bi-telephone-fill text-success me-1"></i>+92 317 3836223</a>
                 </div>
-                <div class="brand-subtitle-company">Proware Technologies</div>
-                <h1 class="brand-title">Finance<span>Desk</span></h1>
-                <p class="brand-desc">Sign in to your financial portal</p>
             </div>
 
             <!-- Error Notification -->
@@ -444,9 +444,14 @@
                     <span>Back to Home</span>
                 </a>
                 
-                <div class="security-badge">
-                    <i class="bi bi-shield-lock-fill text-success"></i>
-                    <span>256-Bit SSL Encrypted &bull; Audit Monitored</span>
+                <div class="security-badge flex-column gap-1">
+                    <div>
+                        <i class="bi bi-shield-lock-fill text-success"></i>
+                        <span>256-Bit SSL Encrypted &bull; Audit Monitored</span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: #94a3b8;">
+                        Powered by <strong>Prowave Technologies</strong> &bull; Support: <a href="tel:+923173836223" class="text-decoration-none text-light fw-semibold">+92 317 3836223</a>
+                    </div>
                 </div>
             </div>
 

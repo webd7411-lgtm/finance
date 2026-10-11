@@ -11,6 +11,22 @@ class ExpenseCategory extends Model
 
     protected $fillable = [
         'name',
+        'type',
         'description',
     ];
+
+    public function scopeExpense($query)
+    {
+        return $query->where('type', 'expense');
+    }
+
+    public function scopePurchase($query)
+    {
+        return $query->where('type', 'purchase');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'category_id');
+    }
 }

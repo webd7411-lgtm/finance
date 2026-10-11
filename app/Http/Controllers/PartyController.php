@@ -104,7 +104,18 @@ class PartyController extends Controller
 
     public function destroy(Party $party)
     {
+        if (abs((float) $party->current_balance) > 0.001) {
+            $formattedBal = number_format(abs($party->current_balance), 2);
+            $nature = $party->current_balance > 0 ? "positive balance of Rs. {$formattedBal}" : "negative balance of Rs. -{$formattedBal}";
+            return redirect()->route('parties.index')->with('error', "Party '{$party->name}' cannot be deleted because they have an active ledger balance ({$nature}). The ledger balance must be cleared to Rs. 0.00 before deletion.");
+        }
+
+        $partyName = $party->name;
+        $partyType = ucfirst($party->type);
         $party->delete();
-        return redirect()->route('parties.index')->with('success', 'Party deleted successfully.');
+
+        \App\Models\ActivityLog::log('Deleted', 'Party', "Deleted party '{$partyName}' ({$partyType}) with zero ledger balance");
+
+        return redirect()->route('parties.index')->with('success', "Party '{$partyName}' deleted successfully.");
     }
 }

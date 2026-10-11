@@ -26,6 +26,10 @@
         <button type="button" class="btn btn-danger btn-sm rounded-3 fw-semibold px-2.5 px-sm-3 shadow-sm flex-fill flex-sm-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#paymentOutModal">
             <i class="bi bi-arrow-up-right me-1"></i> Payment Out
         </button>
+
+        <button type="button" class="btn btn-sm rounded-3 fw-semibold px-2.5 px-sm-3 shadow-sm flex-fill flex-sm-grow-0 text-nowrap text-white" style="background-color: #be123c; border-color: #be123c;" data-bs-toggle="modal" data-bs-target="#recordExpenseModal">
+            <i class="bi bi-receipt-cutoff me-1"></i> Record Expense
+        </button>
     </div>
 @endsection
 
@@ -96,17 +100,18 @@
 
         <!-- Filter Form -->
         <form method="GET" action="{{ route('transactions.index') }}" class="d-flex gap-1.5 flex-wrap w-100 w-sm-auto align-items-center">
-            <select name="type" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 110px; max-width: 135px;">
+            <select name="type" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 110px; max-width: 140px;">
                 <option value="">All Types</option>
                 <option value="payment_in" {{ request('type') == 'payment_in' ? 'selected' : '' }}>Payment In</option>
                 <option value="payment_out" {{ request('type') == 'payment_out' ? 'selected' : '' }}>Payment Out</option>
+                <option value="expense" {{ request('type') == 'expense' ? 'selected' : '' }}>Expense</option>
                 <option value="purchase_bill" {{ request('type') == 'purchase_bill' ? 'selected' : '' }}>Purchase Bill</option>
             </select>
 
             <select name="account_id" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 120px; max-width: 150px;">
                 <option value="">All Accounts</option>
                 @foreach($accounts as $acc)
-                    <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}</option>
+                    <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}{{ $acc->isActive() ? '' : ' (Inactive)' }}</option>
                 @endforeach
             </select>
 
@@ -319,7 +324,7 @@
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Deposit Into Account <span class="text-danger">*</span></label>
                             <select name="account_id" class="form-select form-select-sm py-2" required>
-                                @foreach($accounts as $acc)
+                                @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
@@ -377,8 +382,8 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-arrow-up-right-circle fs-5"></i>
                     <div>
-                        <h6 class="modal-title fw-bold text-white mb-0" id="payOutLabel">Record Payment Out</h6>
-                        <small class="text-white-50" style="font-size: 0.75rem;">Supplier payments, staff advances, and business expenses</small>
+                        <h6 class="modal-title fw-bold text-white mb-0" id="payOutLabel">Record Payment Out (Party Settlement)</h6>
+                        <small class="text-white-50" style="font-size: 0.75rem;">Supplier payments and staff advances</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -397,11 +402,24 @@
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Pay From Account <span class="text-danger">*</span></label>
                             <select name="account_id" class="form-select form-select-sm py-2" required>
-                                @foreach($accounts as $acc)
-                                    <option value="{{ $acc->id }}">{{ $acc->name }}</option>
+                                @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
+                                    <option value="{{ $acc->id }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Paid To Party <span class="text-danger">*</span></label>
+                        <select name="party_id" class="form-select form-select-sm py-2" required>
+                            <option value="" disabled selected>-- Select Supplier / Trader / Staff --</option>
+                            @foreach($parties as $p)
+                                <option value="{{ $p->id }}">
+                                    {{ $p->name }} [{{ strtoupper($p->type) }}] - Balance: Rs. {{ number_format($p->current_balance, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text small text-muted" style="font-size: 0.72rem;">Selecting a supplier reduces payable balance; selecting staff registers an advance loan.</div>
                     </div>
 
                     <div class="mb-3">
@@ -413,37 +431,13 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Paid To Party <span class="text-muted fw-normal">(Supplier / Trader / Staff)</span></label>
-                        <select name="party_id" class="form-select form-select-sm py-2">
-                            <option value="">-- No Party (Shop Expense / Miscellaneous) --</option>
-                            @foreach($parties as $p)
-                                <option value="{{ $p->id }}">
-                                    {{ $p->name }} [{{ strtoupper($p->type) }}] - Balance: Rs. {{ number_format($p->current_balance, 2) }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <div class="form-text small text-muted" style="font-size: 0.72rem;">Selecting a supplier reduces payable balance; selecting staff registers an advance loan.</div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Expense Category</label>
-                            <select name="category_id" class="form-select form-select-sm py-2">
-                                <option value="">-- Select Category --</option>
-                                @foreach($categories as $cat)
-                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Bill Number / Invoice #</label>
-                            <input type="text" name="bill_no" class="form-control form-control-sm py-2" placeholder="e.g. INV-9042">
-                        </div>
+                        <label class="form-label small fw-semibold text-secondary">Voucher / Cheque / Ref #</label>
+                        <input type="text" name="bill_no" class="form-control form-control-sm py-2" placeholder="e.g. CHQ-9042, TR-104">
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label small fw-semibold text-secondary">Description / Remarks</label>
-                        <textarea name="description" class="form-control form-control-sm py-2" rows="2" placeholder="Details about this payment out..."></textarea>
+                        <textarea name="description" class="form-control form-control-sm py-2" rows="2" placeholder="Details about this payment to party..."></textarea>
                     </div>
                 </div>
 
@@ -451,6 +445,86 @@
                     <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger btn-sm px-4 fw-semibold shadow-sm">
                         <i class="bi bi-check-circle me-1"></i> Save Payment Out
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== RECORD EXPENSE MODAL ==================== -->
+<div class="modal fade" id="recordExpenseModal" tabindex="-1" aria-labelledby="recordExpenseLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg text-start">
+            <div class="modal-header border-bottom py-3 text-white" style="background-color: #be123c;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-receipt-cutoff fs-5"></i>
+                    <div>
+                        <h6 class="modal-title fw-bold text-white mb-0" id="recordExpenseLabel">Record Business Expense</h6>
+                        <small class="text-white-50" style="font-size: 0.75rem;">Rent, refreshments, utilities, maintenance & petty cash</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form action="{{ route('transactions.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="type" value="payment_out">
+                <input type="hidden" name="party_id" value="">
+
+                <div class="modal-body p-3 p-sm-4 text-start">
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Expense Date <span class="text-danger">*</span></label>
+                            <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Pay From Account <span class="text-danger">*</span></label>
+                            <select name="account_id" class="form-select form-select-sm py-2" required>
+                                @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
+                                    <option value="{{ $acc->id }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Expense Category <span class="text-danger">*</span></label>
+                        <select name="category_id" class="form-select form-select-sm py-2" required>
+                            <option value="" disabled selected>-- Select Expense Category --</option>
+                            @foreach($expenseCategories as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-muted small" style="font-size: 0.72rem;">Operational expense category</span>
+                            <a href="{{ route('expense-categories.index', ['tab' => 'expense']) }}" class="small text-decoration-none" style="font-size: 0.72rem;">+ Manage Categories</a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Expense Amount (Rs.) <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light fw-bold text-danger">PKR</span>
+                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Receipt / Bill / Invoice #</label>
+                        <input type="text" name="bill_no" class="form-control form-control-sm py-2" placeholder="e.g. REC-1029, Utility Bill #">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-secondary">Description / Remarks</label>
+                        <textarea name="description" class="form-control form-control-sm py-2" rows="2" placeholder="Details about this expense (e.g. Office tea, shop repairs, generator fuel)..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-2 bg-light">
+                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn text-white btn-sm px-4 fw-semibold shadow-sm" style="background-color: #be123c;">
+                        <i class="bi bi-check-circle me-1"></i> Save Expense
                     </button>
                 </div>
             </form>
@@ -486,7 +560,7 @@
                             <label class="form-label small fw-semibold text-danger">Transfer From (Source) <span class="text-danger">*</span></label>
                             <select name="from_account_id" class="form-select form-select-sm py-2" required>
                                 <option value="" disabled selected>-- Select Source --</option>
-                                @foreach($accounts as $acc)
+                                @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
@@ -497,7 +571,7 @@
                             <label class="form-label small fw-semibold text-success">Transfer To (Destination) <span class="text-danger">*</span></label>
                             <select name="to_account_id" class="form-select form-select-sm py-2" required>
                                 <option value="" disabled selected>-- Select Destination --</option>
-                                @foreach($accounts as $acc)
+                                @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
                                     <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                                 @endforeach
                             </select>
@@ -592,11 +666,15 @@
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Purchase Category</label>
                             <select name="category_id" class="form-select form-select-sm py-2">
-                                <option value="">-- Select Category --</option>
-                                @foreach($categories as $cat)
+                                <option value="">-- Select Purchase Category --</option>
+                                @foreach($purchaseCategories as $cat)
                                     <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                 @endforeach
                             </select>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="text-muted small" style="font-size: 0.72rem;">Optional inventory category</span>
+                                <a href="{{ route('expense-categories.index', ['tab' => 'purchase']) }}" class="small text-decoration-none" style="font-size: 0.72rem;">+ Manage Categories</a>
+                            </div>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Supplier Bill / Invoice #</label>

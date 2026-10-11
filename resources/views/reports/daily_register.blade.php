@@ -248,11 +248,20 @@
 <div class="container-fluid px-3 px-lg-4 py-3">
 
     <!-- Print Only Header -->
-    <div class="print-only-header text-center border-bottom pb-2 mb-3">
-        <h4 class="fw-bold mb-1">FINANCEDESK - DAILY ACCOUNT & SALES REGISTER</h4>
-        <div class="small text-muted">
-            Report Statement Period: <strong>{{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</strong> to <strong>{{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</strong>
-            | Generated on: {{ now()->format('d M Y, h:i A') }}
+    <div class="print-only-header border-bottom pb-2 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 44px; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <div>
+                    <h4 class="fw-bold text-uppercase m-0" style="font-size: 13pt; color: #000;">GREEN PHARMACIE</h4>
+                    <div class="fw-bold text-dark" style="font-size: 9.5pt;">DAILY ACCOUNT &amp; SALES REGISTER</div>
+                    <div class="text-secondary small" style="font-size: 7.5pt;">Your Health Companion &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                </div>
+            </div>
+            <div class="text-end small text-muted" style="font-size: 8pt;">
+                <div>Report Period: <strong>{{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</strong> to <strong>{{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</strong></div>
+                <div>Generated on: {{ now()->format('d M Y, h:i A') }}</div>
+            </div>
         </div>
     </div>
 
@@ -526,6 +535,11 @@
                     </tr>
                 </tfoot>
             </table>
+        </div>
+
+        <!-- Statement Footer Notice -->
+        <div class="text-center pt-2 pb-2 text-muted small" style="font-size: 7.8pt;">
+            <span>Official Daily Register Audit Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
         </div>
     </div>
 

@@ -29,10 +29,13 @@
             <!-- Statement Header (Print Only: Official Corporate Document Header) -->
             <div class="d-none d-print-block statement-print-header mb-3 pb-2 border-bottom border-dark border-2">
                 <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 15pt; color: #000;">PROWARE TECHNOLOGIES</h4>
-                        <div class="fw-bold text-dark" style="font-size: 11pt; margin-top: 2px;">DAILY CASH POSITION & DAY CLOSING STATEMENT</div>
-                        <div class="text-secondary small" style="font-size: 8.5pt;">Financial Audit & Closing Ledger &bull; Statement Ref #DC-{{ str_pad($dayClosing->id, 5, '0', STR_PAD_LEFT) }}</div>
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 50px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                        <div>
+                            <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 14pt; color: #000;">GREEN PHARMACIE</h4>
+                            <div class="fw-bold text-dark" style="font-size: 10.5pt; margin-top: 2px;">DAILY CASH POSITION & DAY CLOSING STATEMENT</div>
+                            <div class="text-secondary small" style="font-size: 8.5pt;">Your Health Companion &bull; Statement Ref #DC-{{ str_pad($dayClosing->id, 5, '0', STR_PAD_LEFT) }} &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                        </div>
                     </div>
                     <div class="text-end" style="font-size: 9pt; line-height: 1.45; color: #000;">
                         <div><strong>Date:</strong> {{ $dayClosing->date->format('l, d F, Y') }}</div>
@@ -45,15 +48,13 @@
 
             <!-- Header Section (Screen Only: Modern Web UI with Branding & Badges) -->
             <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4 flex-wrap gap-3 d-print-none">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <div class="bg-primary text-white rounded-2 p-1 px-2 fw-bold">
-                            <i class="bi bi-calendar2-check"></i>
-                        </div>
-                        <h4 class="fw-bold text-dark m-0">FinanceDesk</h4>
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    <div>
+                        <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                        <h5 class="text-secondary fw-bold m-0" style="font-size: 1.05rem;">Daily Cash Position & Day Closing Statement</h5>
+                        <small class="text-muted">Your Health Companion &bull; Financial Audit & Closing Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
                     </div>
-                    <h5 class="text-secondary fw-bold m-0">Daily Cash Position & Day Closing Statement</h5>
-                    <small class="text-muted">Proware Technologies &bull; Financial Audit & Closing Ledger</small>
                 </div>
                 <div class="text-md-end">
                     <div class="d-inline-block text-start text-md-end">
@@ -548,7 +549,10 @@
                 </div>
             </div>
 
-
+            <!-- Statement Footer Notice -->
+            <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+                <span>Official Day Closing Audit Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
+            </div>
 
         </div>
     </div>

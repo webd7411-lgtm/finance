@@ -244,10 +244,13 @@
     <!-- Statement Header (Print Only: Official Audit Statement Header) -->
     <div class="d-none d-print-block statement-print-header mb-3 pb-2 border-bottom border-dark border-2">
         <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 15pt; color: #000;">PROWARE TECHNOLOGIES</h4>
-                <div class="fw-bold text-dark" style="font-size: 11pt; margin-top: 2px;">CONSOLIDATED DAILY CLOSINGS & CASH FLOW AUDIT STATEMENT</div>
-                <div class="text-secondary small" style="font-size: 8.5pt;">Financial Management System &bull; Periodic Audit & Register</div>
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <div>
+                    <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 14pt; color: #000;">GREEN PHARMACIE</h4>
+                    <div class="fw-bold text-dark" style="font-size: 10.5pt; margin-top: 2px;">CONSOLIDATED DAILY CLOSINGS & CASH FLOW AUDIT STATEMENT</div>
+                    <div class="text-secondary small" style="font-size: 8.5pt;">Your Health Companion &bull; Periodic Audit & Register &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                </div>
             </div>
             <div class="text-end" style="font-size: 9pt; line-height: 1.45; color: #000;">
                 <div><strong>Audit Period:</strong> {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} &rarr; {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</div>
@@ -261,14 +264,14 @@
     <div class="border-bottom pb-3 mb-3 d-print-none">
         <div class="row align-items-start g-2">
             <div class="col-12 col-md-7">
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <div class="bg-primary text-white rounded-2 p-1 px-2 fw-bold d-inline-flex align-items-center justify-content-center">
-                        <i class="bi bi-graph-up-arrow"></i>
+                <div class="d-flex align-items-center gap-3 mb-1">
+                    <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    <div>
+                        <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                        <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Consolidated Daily Closings & Cash Flow Audit</h5>
+                        <small class="text-muted d-block">Your Health Companion &bull; Daily Financial Performance &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
                     </div>
-                    <h4 class="fw-bold text-dark m-0">FinanceDesk</h4>
                 </div>
-                <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Consolidated Daily Closings & Cash Flow Audit</h5>
-                <small class="text-muted d-block">Proware Technologies &bull; Daily Financial Performance, Collections & Disbursal Breakdown</small>
             </div>
             <div class="col-12 col-md-5 text-start text-md-end">
                 <div class="d-inline-flex flex-column align-items-start align-items-md-end bg-light p-2 rounded-3 border">
@@ -764,7 +767,10 @@
         </div>
     </div>
 
-
+    <!-- Statement Footer Notice -->
+    <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+        <span>Official Consolidated Closing Audit Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
+    </div>
 
 </div>
 @endsection

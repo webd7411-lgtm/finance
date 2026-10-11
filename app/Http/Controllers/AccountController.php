@@ -84,9 +84,29 @@ class AccountController extends Controller
             $account->current_balance = $validated['opening_balance'] ?? 0;
         }
 
+        if ($request->has('status') && $account->type !== 'cash') {
+            $account->status = $request->input('status');
+        }
+
         $account->update($validated);
 
         return redirect()->route('accounts.index')->with('success', 'Account details updated successfully.');
+    }
+
+    public function toggleStatus(Account $account)
+    {
+        if ($account->type === 'cash') {
+            return redirect()->route('accounts.index')->with('error', 'The system Cash in Hand account must always remain active and cannot be deactivated.');
+        }
+
+        $newStatus = ($account->status ?? 'active') === 'active' ? 'inactive' : 'active';
+        $account->status = $newStatus;
+        $account->save();
+
+        $action = $newStatus === 'active' ? 'Activated' : 'Deactivated';
+        \App\Models\ActivityLog::log('Updated', 'Account', "{$action} account '{$account->name}'");
+
+        return redirect()->route('accounts.index')->with('success', "Account '{$account->name}' is now {$newStatus}.");
     }
 
     public function destroy(Account $account)
@@ -95,7 +115,19 @@ class AccountController extends Controller
             return redirect()->route('accounts.index')->with('error', 'The system Cash in Hand account is automatic and cannot be deleted.');
         }
 
+        if ($account->transactions()->exists()) {
+            return redirect()->route('accounts.index')->with('error', "Cannot delete account '{$account->name}' because transactions (payments or shift collections) have already been recorded for it. You can deactivate this account instead to prevent future use.");
+        }
+
+        if (abs((float) $account->current_balance) > 0.001) {
+            return redirect()->route('accounts.index')->with('error', "Cannot delete account '{$account->name}' because it has an active balance of Rs. " . number_format($account->current_balance, 2) . ". You can deactivate this account instead.");
+        }
+
+        $accName = $account->name;
         $account->delete();
-        return redirect()->route('accounts.index')->with('success', 'Account deleted successfully.');
+
+        \App\Models\ActivityLog::log('Deleted', 'Account', "Deleted payment account '{$accName}'");
+
+        return redirect()->route('accounts.index')->with('success', "Account '{$accName}' deleted successfully.");
     }
 }
