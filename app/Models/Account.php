@@ -62,6 +62,31 @@ class Account extends Model
         );
     }
 
+    public static function syncCashAccountBalance(): float
+    {
+        $cashAccount = static::getCashAccount();
+        $baseOpening = (float) $cashAccount->opening_balance;
+        $shiftCash = (float) \App\Models\ShiftClosing::sum('total_counted_cash');
+        $directIn = (float) \App\Models\Transaction::whereNull('shift_closing_id')
+            ->where('type', 'payment_in')
+            ->where(function ($q) use ($cashAccount) {
+                $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+            })
+            ->sum('amount');
+        $directOut = (float) \App\Models\Transaction::whereNull('shift_closing_id')
+            ->where('type', 'payment_out')
+            ->where(function ($q) use ($cashAccount) {
+                $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+            })
+            ->sum('amount');
+
+        $calculated = $baseOpening + $shiftCash + $directIn - $directOut;
+        $cashAccount->current_balance = $calculated;
+        $cashAccount->save();
+
+        return $calculated;
+    }
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class);

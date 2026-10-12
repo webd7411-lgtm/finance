@@ -11,14 +11,10 @@
 
 @section('page_actions')
     <div class="d-flex flex-wrap gap-1 gap-sm-2 w-100 justify-content-start justify-content-sm-end">
-        @if(!$existingDayClosing)
-            <button type="button" class="btn btn-primary btn-sm rounded-3 fw-semibold px-3 shadow-sm text-nowrap w-100 w-sm-auto" data-bs-toggle="modal" data-bs-target="#finalizeDayModal">
-                <i class="bi bi-check2-circle me-1"></i> Finalize Day Closing
-            </button>
-        @else
-            <span class="badge bg-success-subtle text-success border border-success p-2 small fw-semibold text-truncate flex-grow-1 flex-sm-grow-0">
-                <i class="bi bi-check-all me-1"></i> Day Finalized by {{ $existingDayClosing->closer->name ?? 'User' }}
-            </span>
+        <span class="badge bg-success-subtle text-success border border-success p-2 small fw-semibold text-truncate flex-grow-1 flex-sm-grow-0">
+            <i class="bi bi-broadcast me-1"></i> Live Auto Closing Active
+        </span>
+        @if($existingDayClosing)
             <a href="{{ route('day-closings.show', $existingDayClosing->id) }}" class="btn btn-outline-primary btn-sm rounded-3 text-nowrap flex-grow-1 flex-sm-grow-0">
                 <i class="bi bi-printer me-1"></i> View Statement
             </a>
@@ -75,7 +71,7 @@
         </div>
         <div class="small text-muted" style="font-size: 0.75rem;">
             <i class="bi bi-shield-check text-success me-1"></i> 
-            Opening Cash is automatically carried forward from previous finalized day closing.
+            Opening Cash is automatically calculated and carried forward in real-time.
         </div>
     </form>
 </div>
@@ -552,8 +548,8 @@
 <div class="card-custom overflow-hidden bg-white border shadow-sm">
     <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
         <div>
-            <h6 class="fw-bold text-dark m-0">Finalized Day Closings Register</h6>
-            <small class="text-muted" style="font-size: 0.78rem;">Permanent financial log of opening cash, collections, payouts, and verified closing cash</small>
+            <h6 class="fw-bold text-dark m-0">Daily Financial Closings Register</h6>
+            <small class="text-muted" style="font-size: 0.78rem;">Automated real-time log of opening cash, collections, payouts, and verified closing cash</small>
         </div>
     </div>
 
@@ -570,7 +566,7 @@
                     <th class="text-end">Closing Balance</th>
                     <th class="text-center">Shift Variance</th>
                     <th class="text-center">Status</th>
-                    <th>Finalized By</th>
+                    <th>Recorded By</th>
                     <th class="text-end" style="width: 140px;">Actions</th>
                 </tr>
             </thead>
@@ -633,7 +629,7 @@
                     <tr>
                         <td colspan="10" class="text-center py-5 text-muted small">
                             <i class="bi bi-calendar-x fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                            No finalized day closings found. Click <strong>"Finalize Day Closing"</strong> above to close today's register balance.
+                            No day closing records found.
                         </td>
                     </tr>
                 @endforelse
@@ -722,7 +718,7 @@
             @empty
                 <div class="text-center py-4 text-muted small">
                     <i class="bi bi-calendar-x fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                    No finalized day closings found. Click <strong>"Finalize Day Closing"</strong> above to close today's balance.
+                    No day closing records found.
                 </div>
             @endforelse
         </div>
@@ -733,123 +729,5 @@
             {{ $history->links() }}
         </div>
     @endif
-</div>
-
-<!-- ==================== FINALIZE DAY CLOSING MODAL ==================== -->
-<div class="modal fade" id="finalizeDayModal" tabindex="-1" aria-labelledby="finDayLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg text-start">
-            <div class="modal-header border-bottom py-3" style="background-color: #0f172a; color: #ffffff;">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-calendar2-check-fill fs-5 text-primary"></i>
-                    <div>
-                        <h6 class="modal-title fw-bold text-white mb-0" id="finDayLabel">Finalize Day Closing: {{ Carbon\Carbon::parse($selectedDate)->format('d M Y') }}</h6>
-                        <small class="text-white-50" style="font-size: 0.75rem;">Consolidate shift records & lock physical opening cash for tomorrow</small>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <form action="{{ route('day-closings.store') }}" method="POST">
-                @csrf
-                <input type="hidden" name="date" value="{{ $selectedDate }}">
-
-                <div class="modal-body p-3 p-sm-4 text-start">
-                    <!-- Step-by-Step Math Box (Matches 4 Performance Cards Above) -->
-                    <div class="p-3 bg-light rounded-3 mb-3 border">
-                        <!-- Step 1: Total Starting Balance (All Accounts) -->
-                        <div class="d-flex justify-content-between align-items-center py-1 small">
-                            <div>
-                                <span class="text-secondary fw-semibold d-block">Step 1 &bull; Total Starting Balance:</span>
-                                <small class="text-muted" style="font-size: 0.72rem;">Cash Drawer: Rs. {{ number_format($cashOpening, 2) }} | Bank: Rs. {{ number_format($bankOpening, 2) }}</small>
-                            </div>
-                            <span class="fw-bold text-dark font-monospace text-nowrap fs-6">Rs. {{ number_format($totalOpeningAllAccounts, 2) }}</span>
-                        </div>
-
-                        <!-- Step 2: Total Inflows -->
-                        <div class="d-flex justify-content-between align-items-center py-1 small text-success border-top pt-2 mt-1">
-                            <div>
-                                <span class="fw-semibold d-block">(+) Step 2 &bull; Total Payments Received:</span>
-                                <small class="text-muted" style="font-size: 0.72rem;">
-                                    Cash In: +Rs. {{ number_format($cashIn, 2) }} | Bank In: +Rs. {{ number_format($bankIn + $jazzcashIn, 2) }}
-                                </small>
-                            </div>
-                            <span class="fw-bold font-monospace text-nowrap">+Rs. {{ number_format($totalInAllAccounts, 2) }}</span>
-                        </div>
-
-                        <!-- Step 3: Total Outflows -->
-                        <div class="d-flex justify-content-between align-items-center py-1 small text-danger border-top pt-2 mt-1">
-                            <div>
-                                <span class="fw-semibold d-block">(-) Step 3 &bull; Total Payments Disbursed:</span>
-                                <small class="text-muted" style="font-size: 0.72rem;">
-                                    Cash Out: -Rs. {{ number_format($cashOut, 2) }} | Bank Out: -Rs. {{ number_format($bankOut + $jazzcashOut, 2) }}
-                                </small>
-                            </div>
-                            <span class="fw-bold font-monospace text-nowrap">-Rs. {{ number_format($totalOutAllAccounts, 2) }}</span>
-                        </div>
-
-                        <!-- Step 4: Total Business Closing Balance -->
-                        <div class="d-flex justify-content-between align-items-center py-2 border-top mt-2 bg-white px-2 rounded border">
-                            <div>
-                                <span class="fw-bold text-dark d-block">(=) Step 4 &bull; Total Business Closing:</span>
-                                <small class="text-muted" style="font-size: 0.72rem;">Total Business Capital (Cash + Bank)</small>
-                            </div>
-                            <span class="fw-bold fs-5 text-primary font-monospace text-nowrap ms-2">Rs. {{ number_format($totalClosingAllAccounts, 2) }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Physical Register Drawer Reconciliation Box -->
-                    <div class="p-2.5 rounded-3 bg-white border border-primary-subtle shadow-xs mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-primary-subtle text-primary p-1.5 rounded-circle">
-                                    <i class="bi bi-wallet2 fs-6"></i>
-                                </span>
-                                <div>
-                                    <span class="fw-bold text-dark small d-block">Physical Cash in Register Drawer:</span>
-                                    <small class="text-muted" style="font-size: 0.72rem;">Locks tomorrow's physical cash opening balance</small>
-                                </div>
-                            </div>
-                            <span class="fw-bold fs-6 text-success font-monospace text-nowrap ms-2">Rs. {{ number_format($cashClosing, 2) }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top small text-muted" style="font-size: 0.74rem;">
-                            <span><i class="bi bi-building me-1"></i>Bank & Digital Wallets Balance:</span>
-                            <span class="font-monospace fw-semibold text-dark">Rs. {{ number_format($bankClosing + $jazzcashClosing, 2) }}</span>
-                        </div>
-                    </div>
-
-                    <input type="hidden" name="opening_cash" value="{{ $autoOpeningCash }}">
-                    <input type="hidden" name="total_cash_in" value="{{ $totalCashIn }}">
-                    <input type="hidden" name="total_payments_out" value="{{ $totalPaymentsOut }}">
-                    <input type="hidden" name="closing_cash" value="{{ $calculatedClosingCash }}">
-                    <input type="hidden" name="total_difference" value="{{ $totalDifference }}">
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Consolidated Shift Audit Status:</label>
-                        <div class="p-2 rounded bg-light border fw-semibold small font-monospace {{ $totalDifference < 0 ? 'text-danger' : ($totalDifference > 0 ? 'text-primary' : 'text-success') }}">
-                            {{ $totalDifference >= 0 ? '+' : '' }}Rs. {{ number_format($totalDifference, 2) }} 
-                            <span class="fw-normal text-muted">({{ $totalDifference == 0 ? 'Balanced' : ($totalDifference > 0 ? 'Cash Surplus' : 'Cash Shortage') }})</span>
-                        </div>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold text-secondary">Closing Remarks / Audit Notes</label>
-                        <textarea name="remarks" class="form-control form-control-sm py-2" rows="3" placeholder="Optional audit handover notes or remarks..."></textarea>
-                    </div>
-
-                    <div class="small text-muted mt-2" style="font-size: 0.74rem;">
-                        <i class="bi bi-shield-lock-fill text-warning me-1"></i> Once finalized, this closing cash will automatically become tomorrow's opening balance.
-                    </div>
-                </div>
-
-                <div class="modal-footer border-top py-2 bg-light">
-                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold shadow-sm">
-                        <i class="bi bi-check2-circle me-1"></i> Confirm & Finalize Day
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
 @endsection

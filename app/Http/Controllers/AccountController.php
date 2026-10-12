@@ -10,6 +10,7 @@ class AccountController extends Controller
 {
     public function index()
     {
+        Account::syncCashAccountBalance();
         $accounts = Account::all();
         $totalBalance = $accounts->sum('current_balance');
         $cashBalance = $accounts->where('type', 'cash')->sum('current_balance');

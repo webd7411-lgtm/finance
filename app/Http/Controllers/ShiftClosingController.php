@@ -399,6 +399,10 @@ class ShiftClosingController extends Controller
             return $closing;
         });
 
+        // Directly sync cash account & day closing immediately
+        \App\Models\Account::syncCashAccountBalance();
+        \App\Models\DayClosing::autoSyncDay($closing->date);
+
         ActivityLog::log(
             'Created',
             'Shift Closing',
@@ -481,6 +485,9 @@ class ShiftClosingController extends Controller
             $shiftClosing->save();
             $shiftClosing->delete();
         });
+
+        \App\Models\Account::syncCashAccountBalance();
+        \App\Models\DayClosing::autoSyncDay($shiftClosing->date);
 
         ActivityLog::log(
             'Deleted',

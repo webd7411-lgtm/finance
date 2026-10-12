@@ -56,31 +56,11 @@ class DashboardController extends Controller
                          ($eveningShift ? (float)$eveningShift->difference : 0);
 
         // Vault & Accounts Summary
+        Account::syncCashAccountBalance();
         $accounts = Account::orderBy('id')->get();
         $bankFunds = (float) $accounts->where('type', 'bank')->sum('current_balance');
         $jazzFunds = (float) $accounts->where('type', 'jazzcash')->sum('current_balance');
-
-        if ($todayClosing && $todayClosing->status === 'closed') {
-            $cashInVault = (float) $todayClosing->closing_cash;
-        } else {
-            $prevClosing = DayClosing::where('date', '<', $today)->where('status', 'closed')->orderBy('date', 'desc')->first();
-            $cashOpening = $prevClosing ? (float)$prevClosing->closing_cash : (float)Account::where('type', 'cash')->sum('opening_balance');
-            $directCashIn = (float) Transaction::whereDate('date', $today)
-                ->whereNull('shift_closing_id')
-                ->where('type', 'payment_in')
-                ->where(function($q) {
-                    $q->whereNull('account_id')->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
-                })
-                ->sum('amount');
-            $directCashOut = (float) Transaction::whereDate('date', $today)
-                ->whereNull('shift_closing_id')
-                ->where('type', 'payment_out')
-                ->where(function($q) {
-                    $q->whereNull('account_id')->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
-                })
-                ->sum('amount');
-            $cashInVault = $cashOpening + $shiftCashIn + $directCashIn - $directCashOut;
-        }
+        $cashInVault = (float) $accounts->where('type', 'cash')->sum('current_balance');
 
         $totalLiquidFunds = $cashInVault + $bankFunds + $jazzFunds;
 

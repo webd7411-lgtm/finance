@@ -39,9 +39,9 @@
                     </div>
                     <div class="text-end" style="font-size: 9pt; line-height: 1.45; color: #000;">
                         <div><strong>Date:</strong> {{ $dayClosing->date->format('l, d F, Y') }}</div>
-                        <div><strong>Status:</strong> {{ strtoupper($dayClosing->status) }}</div>
-                        <div><strong>Finalized At:</strong> {{ $dayClosing->created_at->format('h:i A') }}</div>
-                        <div><strong>Authorized Closer:</strong> {{ $dayClosing->closer->name ?? 'User #' . $dayClosing->closed_by }}</div>
+                        <div><strong>Status:</strong> RECORDED</div>
+                        <div><strong>Recorded At:</strong> {{ $dayClosing->created_at->format('h:i A') }}</div>
+                        <div><strong>Audited By:</strong> {{ $dayClosing->closer->name ?? 'User #' . $dayClosing->closed_by }}</div>
                     </div>
                 </div>
             </div>
@@ -60,8 +60,8 @@
                     <div class="d-inline-block text-start text-md-end">
                         <div class="mb-1">{!! $dayClosing->status_badge !!}</div>
                         <div class="small fw-bold text-dark fs-6">Date: {{ $dayClosing->date->format('l, d F, Y') }}</div>
-                        <div class="small text-muted">Finalized At: {{ $dayClosing->created_at->format('h:i A') }}</div>
-                        <div class="small text-muted">Authorized Closer: <strong>{{ $dayClosing->closer->name ?? 'User #' . $dayClosing->closed_by }}</strong></div>
+                        <div class="small text-muted">Recorded At: {{ $dayClosing->created_at->format('h:i A') }}</div>
+                        <div class="small text-muted">Audited By: <strong>{{ $dayClosing->closer->name ?? 'User #' . $dayClosing->closed_by }}</strong></div>
                     </div>
                 </div>
             </div>

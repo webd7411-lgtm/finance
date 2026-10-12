@@ -184,20 +184,25 @@ class ReportController extends Controller
         $totalItemizedPaymentsOut = (float) $paymentsOut->sum('amount');
 
         // ----------------------------------------------------
-        // 1. ALL-ACCOUNTS OPENING BALANCES
+        // 1. ALL-ACCOUNTS OPENING BALANCES (Dynamic & Continuous)
         // ----------------------------------------------------
-        $prevDayClosing = DayClosing::where('date', '<', $fromDate)
-            ->where('status', 'closed')
-            ->orderBy('date', 'desc')
-            ->first();
-
-        if ($prevDayClosing) {
-            $cashOpening = (float) $prevDayClosing->closing_cash;
-        } elseif ($closings->isNotEmpty() && (float) $closings->last()->opening_cash > 0) {
-            $cashOpening = (float) $closings->last()->opening_cash;
-        } else {
-            $cashOpening = (float) Account::where('type', 'cash')->sum('opening_balance');
-        }
+        $cashAccount = Account::where('type', 'cash')->first() ?? Account::getCashAccount();
+        $cashOpening = (float) $cashAccount->opening_balance
+            + (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash')
+            + (float) Transaction::whereDate('date', '<', $fromDate)
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_in')
+                ->where(function($q) use ($cashAccount) {
+                    $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
+                })
+                ->sum('amount')
+            - (float) Transaction::whereDate('date', '<', $fromDate)
+                ->whereNull('shift_closing_id')
+                ->where('type', 'payment_out')
+                ->where(function($q) use ($cashAccount) {
+                    $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
+                })
+                ->sum('amount');
 
         $bankOpening = (float) Account::where('type', 'bank')->sum('opening_balance')
             + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $fromDate)->where('type', 'payment_in')->sum('amount')

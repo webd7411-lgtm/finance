@@ -101,7 +101,7 @@
             </div>
             <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
                 <span>
-                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>{{ $todayClosing && $todayClosing->status === 'closed' ? 'Finalized Cash' : 'Physical Cash' }}
+                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>Physical Cash
                 </span>
                 <a href="{{ route('ledgers.cash-book') }}" class="text-success text-decoration-none fw-semibold">Cash Book &rarr;</a>
             </div>
@@ -224,7 +224,7 @@
                     @endif
                 </span>
                 <span class="text-muted">
-                    {{ $todayClosing ? 'Day Finalized' : 'Day Open' }}
+                    Live Register
                 </span>
             </div>
         </div>

@@ -139,6 +139,9 @@ class TransactionController extends Controller
             );
         });
 
+        \App\Models\Account::syncCashAccountBalance();
+        \App\Models\DayClosing::autoSyncDay($validated['date']);
+
         $isExpense = empty($validated['party_id']) && !empty($validated['category_id']);
         $msg = match($validated['type']) {
             'payment_in' => 'Payment In recorded and account balance credited successfully.',
@@ -214,6 +217,9 @@ class TransactionController extends Controller
             );
         });
 
+        \App\Models\Account::syncCashAccountBalance();
+        \App\Models\DayClosing::autoSyncDay($validated['date']);
+
         return back()->with('success', "Rs. " . number_format($amount, 2) . " transferred successfully from {$fromAccount->name} to {$toAccount->name}.");
     }
 
@@ -228,6 +234,8 @@ class TransactionController extends Controller
         if (!auth()->user()->isOwner() && !auth()->user()->isIncharge()) {
             abort(403, 'Only Owner or Incharge can delete financial transactions.');
         }
+
+        $txDate = $transaction->date;
 
         DB::transaction(function () use ($transaction) {
             // Revert Account Balance if it was a cash/bank transaction
@@ -274,6 +282,9 @@ class TransactionController extends Controller
                 "Deleted {$txType} voucher #{$txId} of Rs. " . number_format($txAmount, 2) . " and reversed balances"
             );
         });
+
+        \App\Models\Account::syncCashAccountBalance();
+        \App\Models\DayClosing::autoSyncDay($txDate);
 
         return redirect()->route('transactions.index')->with('success', 'Transaction deleted and balances reverted successfully.');
     }

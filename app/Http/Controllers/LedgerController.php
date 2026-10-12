@@ -188,34 +188,25 @@ class LedgerController extends Controller
         $fromDate = $request->input('from_date', Carbon::today()->startOfMonth()->toDateString());
         $toDate = $request->input('to_date', Carbon::today()->toDateString());
 
-        // 1. Calculate opening cash prior to $fromDate
-        $prevDayClosing = DayClosing::whereDate('date', '<', $fromDate)
-            ->where('status', 'closed')
-            ->orderByDesc('date')
-            ->first();
+        // 1. Calculate opening cash prior to $fromDate (Dynamic & Continuous)
+        $baseOpening = (float) $cashAccount->opening_balance;
+        $priorShiftCash = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash');
+        $priorDirectIn = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->whereNull('shift_closing_id')
+            ->where('type', 'payment_in')
+            ->where(function ($q) use ($cashAccount) {
+                $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+            })
+            ->sum('amount');
+        $priorDirectOut = (float) Transaction::whereDate('date', '<', $fromDate)
+            ->whereNull('shift_closing_id')
+            ->where('type', 'payment_out')
+            ->where(function ($q) use ($cashAccount) {
+                $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
+            })
+            ->sum('amount');
 
-        if ($prevDayClosing) {
-            $openingBalance = (float) $prevDayClosing->closing_cash;
-        } else {
-            $baseOpening = (float) $cashAccount->opening_balance;
-            $priorShiftCash = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash');
-            $priorDirectIn = (float) Transaction::whereDate('date', '<', $fromDate)
-                ->whereNull('shift_closing_id')
-                ->where('type', 'payment_in')
-                ->where(function ($q) use ($cashAccount) {
-                    $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
-                })
-                ->sum('amount');
-            $priorDirectOut = (float) Transaction::whereDate('date', '<', $fromDate)
-                ->whereNull('shift_closing_id')
-                ->where('type', 'payment_out')
-                ->where(function ($q) use ($cashAccount) {
-                    $q->where('account_id', $cashAccount->id)->orWhereNull('account_id');
-                })
-                ->sum('amount');
-
-            $openingBalance = $baseOpening + $priorShiftCash + $priorDirectIn - $priorDirectOut;
-        }
+        $openingBalance = $baseOpening + $priorShiftCash + $priorDirectIn - $priorDirectOut;
 
         $items = [];
 

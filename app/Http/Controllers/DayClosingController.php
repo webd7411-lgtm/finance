@@ -28,20 +28,28 @@ class DayClosingController extends Controller
                                     ->with(['cashier', 'partyPayments.party'])
                                     ->first();
 
-        // Previous Day's Closing Cash is Today's Opening Cash (Automated)
-        $previousClosing = DayClosing::where('date', '<', $selectedDate)
-                                     ->where('status', 'closed')
-                                     ->orderBy('date', 'desc')
-                                     ->first();
+        // ----------------------------------------------------
+        // 1. ALL-ACCOUNTS OPENING BALANCES (Fully Automated & Dynamic)
+        // ----------------------------------------------------
+        $cashAccount = \App\Models\Account::where('type', 'cash')->first() ?? \App\Models\Account::getCashAccount();
+        $baseCashOpening = (float) $cashAccount->opening_balance;
+        $priorShiftCash = (float) ShiftClosing::whereDate('date', '<', $selectedDate)->sum('total_counted_cash');
+        $priorCashIn = (float) Transaction::whereDate('date', '<', $selectedDate)
+            ->whereNull('shift_closing_id')
+            ->where('type', 'payment_in')
+            ->where(function($q) use ($cashAccount) {
+                $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
+            })
+            ->sum('amount');
+        $priorCashOut = (float) Transaction::whereDate('date', '<', $selectedDate)
+            ->whereNull('shift_closing_id')
+            ->where('type', 'payment_out')
+            ->where(function($q) use ($cashAccount) {
+                $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
+            })
+            ->sum('amount');
 
-        // ----------------------------------------------------
-        // 1. ALL-ACCOUNTS OPENING BALANCES
-        // ----------------------------------------------------
-        if ($previousClosing) {
-            $cashOpening = (float) $previousClosing->closing_cash;
-        } else {
-            $cashOpening = (float) \App\Models\Account::where('type', 'cash')->sum('opening_balance');
-        }
+        $cashOpening = $baseCashOpening + $priorShiftCash + $priorCashIn - $priorCashOut;
 
         // Bank and JazzCash Opening: Base opening balance + all transactions in prior to selected date - all transactions out prior to selected date
         $bankOpening = (float) \App\Models\Account::where('type', 'bank')->sum('opening_balance')
@@ -280,8 +288,8 @@ class DayClosingController extends Controller
         $totalPartyOutflow = (float) $partyTransactions->sum('outflow');
         $netPartyMovement = $totalPartyInflow - $totalPartyOutflow;
 
-        // Check if day closing is already finalized
-        $existingDayClosing = DayClosing::whereDate('date', $selectedDate)->first();
+        // Automatically synchronize the day closing record in background
+        $existingDayClosing = DayClosing::autoSyncDay($selectedDate);
 
         // History of Day Closings
         $history = DayClosing::with('closer')->orderBy('date', 'desc')->paginate(15);
