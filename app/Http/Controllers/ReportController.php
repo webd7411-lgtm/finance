@@ -979,13 +979,6 @@ class ReportController extends Controller
             ->get()
             ->groupBy(fn($item) => Carbon::parse($item->date)->toDateString());
 
-        $partyPaymentsByDate = \App\Models\ShiftClosingPartyPayment::whereHas('shiftClosing', function ($q) use ($fromDate, $toDate) {
-                $q->whereDate('date', '>=', $fromDate)->whereDate('date', '<=', $toDate);
-            })
-            ->with('shiftClosing')
-            ->get()
-            ->groupBy(fn($item) => Carbon::parse($item->shiftClosing->date)->toDateString());
-
         $transactionsByDate = Transaction::whereDate('date', '>=', $fromDate)
             ->whereDate('date', '<=', $toDate)
             ->with('account')
@@ -1023,7 +1016,6 @@ class ReportController extends Controller
             $dateFormatted = $currentDate->format('j-M-y');
 
             $dayShifts = $shiftsByDate->get($dateStr, collect());
-            $dayPartyPayments = $partyPaymentsByDate->get($dateStr, collect());
             $dayTransactions = $transactionsByDate->get($dateStr, collect());
             $dayClosing = $dayClosingsByDate->get($dateStr);
 
@@ -1043,11 +1035,6 @@ class ReportController extends Controller
                 ->filter(fn($t) => !$t->account || $t->account->type === 'cash')
                 ->sum('amount');
 
-            // Shift counter expenses & shift party disbursements
-            $shiftExpenses = (float) $dayShifts->sum('expenses_amount');
-            $shiftPartyPay = (float) $dayPartyPayments->sum('amount');
-            $shiftCounterOutflows = $shiftExpenses + $shiftPartyPay;
-
             // Direct cash vouchers out from main drawer
             $directCashOut = (float) $dayTransactions
                 ->whereNull('shift_closing_id')
@@ -1055,9 +1042,9 @@ class ReportController extends Controller
                 ->filter(fn($t) => !$t->account || $t->account->type === 'cash')
                 ->sum('amount');
 
-            // Gross Cash Inflows & Outflows
-            $cashReceived = $shiftCountedCash + $shiftCounterOutflows + $directCashIn;
-            $cashPayments = $shiftCounterOutflows + $directCashOut;
+            // Cash Inflows & Outflows (Net Counted Cash from shifts + Direct Vouchers)
+            $cashReceived = $shiftCountedCash + $directCashIn;
+            $cashPayments = $directCashOut;
             $cashBalance = $cashReceived - $cashPayments;
             $runningCash += $cashBalance;
 

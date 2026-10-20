@@ -198,34 +198,23 @@
         </div>
     </div>
 
-    <!-- Card 3: Shift Reconciliation & Discrepancy -->
+    <!-- Card 3: Monthly Average Shift Sale (Sales minus Returns divided by Shifts) -->
     <div class="col-12 col-md-4">
-        @php
-            $varBorderColor = $todayVariance < 0 ? '#ef4444' : ($todayVariance > 0 ? '#2563eb' : '#6366f1');
-        @endphp
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: {{ $varBorderColor }} !important;">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: #6366f1 !important;">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Shift Variance</span>
-                <div class="rounded-3 p-2 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #4f46e5;">
-                    <i class="bi bi-shield-check fs-5"></i>
+                <span class="small fw-semibold text-uppercase" style="color: #6366f1; letter-spacing: 0.5px; font-size: 0.72rem;">Month Avg Shift Sale</span>
+                <div class="rounded-3 p-2 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #6366f1;">
+                    <i class="bi bi-graph-up-arrow fs-5"></i>
                 </div>
             </div>
-            <div class="fw-bold mb-1 font-monospace kpi-value-text {{ $todayVariance < 0 ? 'text-danger' : ($todayVariance > 0 ? 'text-primary' : 'text-dark') }}">
-                {{ $todayVariance >= 0 ? '+' : '' }}Rs. {{ number_format($todayVariance, 2) }}
+            <div class="fw-bold mb-1 font-monospace kpi-value-text text-dark">
+                Rs. {{ number_format($monthlyAvgShiftSale, 2) }}
             </div>
             <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
-                <span>
-                    @if($todayVariance < 0)
-                        <span class="badge bg-danger-subtle text-danger border border-danger">Cash Shortage</span>
-                    @elseif($todayVariance > 0)
-                        <span class="badge bg-primary-subtle text-primary border border-primary">Cash Surplus</span>
-                    @else
-                        <span class="badge bg-success-subtle text-success border border-success">Balanced (Zero Diff)</span>
-                    @endif
+                <span class="text-truncate">
+                    <i class="bi bi-receipt me-1 text-primary"></i>Sale minus returns ({{ $monthlyShiftsCount }} {{ Str::plural('Shift', $monthlyShiftsCount) }})
                 </span>
-                <span class="text-muted">
-                    Live Register
-                </span>
+                <a href="{{ route('shift-closings.index') }}" class="text-decoration-none fw-semibold" style="color: #6366f1;">All Shifts &rarr;</a>
             </div>
         </div>
     </div>

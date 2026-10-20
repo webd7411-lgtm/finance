@@ -115,11 +115,25 @@
                 @endforeach
             </select>
 
+            <select name="expense_category_id" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 135px; max-width: 165px;" title="Filter by Expense Category">
+                <option value="">Expense Category</option>
+                @foreach($expenseCategories as $ec)
+                    <option value="{{ $ec->id }}" {{ request('expense_category_id') == $ec->id ? 'selected' : '' }}>{{ $ec->name }}</option>
+                @endforeach
+            </select>
+
+            <select name="purchase_category_id" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 135px; max-width: 165px;" title="Filter by Purchase Category">
+                <option value="">Purchase Category</option>
+                @foreach($purchaseCategories as $pc)
+                    <option value="{{ $pc->id }}" {{ request('purchase_category_id') == $pc->id ? 'selected' : '' }}>{{ $pc->name }}</option>
+                @endforeach
+            </select>
+
             <input type="date" name="from_date" class="form-control form-control-sm flex-fill flex-sm-grow-0" value="{{ request('from_date') }}" title="From Date" style="min-width: 125px; max-width: 135px;">
             <input type="date" name="to_date" class="form-control form-control-sm flex-fill flex-sm-grow-0" value="{{ request('to_date') }}" title="To Date" style="min-width: 125px; max-width: 135px;">
 
             <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-filter"></i></button>
-            @if(request()->hasAny(['type', 'account_id', 'party_id', 'from_date', 'to_date']))
+            @if(request()->hasAny(['type', 'account_id', 'party_id', 'category_id', 'expense_category_id', 'purchase_category_id', 'from_date', 'to_date']))
                 <a href="{{ route('transactions.index') }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none">Clear</a>
             @endif
         </form>

@@ -60,7 +60,9 @@ class ShiftClosing extends Model
 
     public function cashier()
     {
-        return $this->belongsTo(User::class, 'cashier_id');
+        return $this->belongsTo(Cashier::class, 'cashier_id')->withDefault([
+            'name' => 'Cashier',
+        ]);
     }
 
     public function verifier()

@@ -33,6 +33,16 @@ class TransactionController extends Controller
             $query->where('party_id', $request->party_id);
         }
 
+        if ($request->filled('expense_category_id') && $request->filled('purchase_category_id')) {
+            $query->whereIn('category_id', [$request->expense_category_id, $request->purchase_category_id]);
+        } elseif ($request->filled('expense_category_id')) {
+            $query->where('category_id', $request->expense_category_id);
+        } elseif ($request->filled('purchase_category_id')) {
+            $query->where('category_id', $request->purchase_category_id);
+        } elseif ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
         if ($request->filled('from_date')) {
             $query->whereDate('date', '>=', $request->from_date);
         }

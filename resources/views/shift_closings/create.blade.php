@@ -115,7 +115,8 @@
                         <i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span>
                     </label>
                 </div>
-                <input type="date" name="date" class="form-control form-control-sm fw-semibold" value="{{ old('date', date('Y-m-d')) }}" required style="height: 36px;">
+                <input type="date" name="date" class="form-control form-control-sm fw-semibold" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
+                <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
             </div>
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
@@ -135,11 +136,13 @@
                     <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
                         <i class="bi bi-person-badge text-primary me-1"></i>Shift Cashier <span class="text-danger">*</span>
                     </label>
+                    <a href="{{ route('cashiers.index') }}" target="_blank" class="text-primary text-decoration-none small" style="font-size: 0.68rem;" title="Manage Cashiers in Master Setup">+ Add</a>
                 </div>
                 <select name="cashier_id" class="form-select form-select-sm fw-semibold" required style="height: 36px;">
-                    @foreach($cashiers as $cUser)
-                        <option value="{{ $cUser->id }}" {{ old('cashier_id', auth()->id()) == $cUser->id ? 'selected' : '' }}>
-                            {{ $cUser->name }} ({{ ucfirst($cUser->role) }})
+                    <option value="">-- Choose Cashier --</option>
+                    @foreach($cashiers as $c)
+                        <option value="{{ $c->id }}" {{ old('cashier_id') == $c->id ? 'selected' : '' }}>
+                            {{ $c->name }} ({{ $c->code ?: '#' . $c->id }})
                         </option>
                     @endforeach
                 </select>
@@ -276,68 +279,11 @@
                     <input type="hidden" name="expenses_details" value="">
                 </div>
 
-                <!-- Step 3: Cash Paid to Parties -->
+                <!-- Step 3: Digital & Online Collections (Account Wise) -->
                 <div class="card-custom p-3 bg-white shadow-sm border">
                     <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-danger text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">3</span>
-                            <h6 class="fw-bold text-dark m-0">
-                                <i class="bi bi-cash-coin text-danger me-1"></i> Cash Paid to Parties / Suppliers (Outflow)
-                            </h6>
-                        </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="addPartyPayment">
-                            <i class="bi bi-plus-lg me-1"></i> Add Row
-                        </button>
-                    </div>
-                    <small class="text-muted d-block mb-3" style="font-size: 0.75rem;">
-                        Instant cash payments given to suppliers or staff directly from register cash during this shift.
-                    </small>
-
-                    <div id="partyPaymentRows">
-                        <div class="p-2 mb-2 rounded bg-light border" data-party-payment-row>
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-5">
-                                    <label class="form-label small fw-semibold text-secondary">Search Party / Payee</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                        <input type="search" class="form-control form-control-sm" list="shiftClosingPartyList" data-party-search placeholder="Type name or phone..." autocomplete="off">
-                                    </div>
-                                    <input type="hidden" name="party_payments[0][party_id]" data-party-id>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[0][amount]" placeholder="0.00" autocomplete="off">
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
-                                    <input type="text" class="form-control form-control-sm" name="party_payments[0][details]" maxlength="1000" placeholder="Bill / memo reference">
-                                </div>
-                                <div class="col-12 col-md-1">
-                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-party-payment title="Remove row">
-                                        <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove Row</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <datalist id="shiftClosingPartyList">
-                        @foreach($parties as $party)
-                            <option value="{{ $party->name }}{{ $party->phone ? ' (' . $party->phone . ')' : '' }} [{{ ucfirst($party->type) }}] #{{ $party->id }}" data-party-id="{{ $party->id }}"></option>
-                        @endforeach
-                    </datalist>
-
-                    <div class="d-flex justify-content-between align-items-center pt-2 small text-secondary">
-                        <span>Total Cash Paid to Parties:</span>
-                        <span class="font-monospace fw-bold text-danger fs-6" id="display_party_total">Rs. 0.00</span>
-                    </div>
-                </div>
-
-                <!-- Step 4: Digital & Online Collections (Account Wise) -->
-                <div class="card-custom p-3 bg-white shadow-sm border">
-                    <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-info text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">4</span>
+                            <span class="badge bg-info text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">3</span>
                             <h6 class="fw-bold text-dark m-0">
                                 <i class="bi bi-bank text-primary me-1"></i> Digital & Online Collections Received
                             </h6>
@@ -392,6 +338,72 @@
                     <!-- Hidden legacy inputs for total sum -->
                     <input type="hidden" id="jazzcash_amount" name="jazzcash_amount" value="0">
                     <input type="hidden" id="bank_amount" name="bank_amount" value="0">
+                </div>
+
+                <!-- Step 4: Cash Paid to Parties / Suppliers (Outflow) -->
+                <div class="card-custom p-3 bg-white shadow-sm border">
+                    <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-danger text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">4</span>
+                            <h6 class="fw-bold text-dark m-0">
+                                <i class="bi bi-cash-coin text-danger me-1"></i> Cash Paid to Parties / Suppliers (Outflow)
+                            </h6>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="addPartyPayment">
+                            <i class="bi bi-plus-lg me-1"></i> Add Row
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mb-3" style="font-size: 0.75rem;">
+                        Instant cash payments given to suppliers or staff directly from register cash during this shift.
+                    </small>
+
+                    <div id="partyPaymentRows">
+                        <div class="p-2 mb-2 rounded bg-light border" data-party-payment-row>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-semibold text-secondary">Search Party / Payee</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="search" class="form-control form-control-sm" list="shiftClosingPartyList" data-party-search placeholder="Type name or phone..." autocomplete="off">
+                                    </div>
+                                    <input type="hidden" name="party_payments[0][party_id]" data-party-id>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary">Expense Category / Reason</label>
+                                    <select name="party_payments[0][expense_category_id]" class="form-select form-select-sm">
+                                        <option value="">-- Select Purpose --</option>
+                                        @foreach($expenseCategories as $cat)
+                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
+                                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[0][amount]" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
+                                    <input type="text" class="form-control form-control-sm" name="party_payments[0][details]" maxlength="1000" placeholder="Bill / memo reference">
+                                </div>
+                                <div class="col-12 col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-party-payment title="Remove row">
+                                        <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <datalist id="shiftClosingPartyList">
+                        @foreach($parties as $party)
+                            <option value="{{ $party->name }}{{ $party->phone ? ' (' . $party->phone . ')' : '' }} [{{ ucfirst($party->type) }}] #{{ $party->id }}" data-party-id="{{ $party->id }}"></option>
+                        @endforeach
+                    </datalist>
+
+                    <div class="d-flex justify-content-between align-items-center pt-2 small text-secondary">
+                        <span>Total Cash Paid to Parties:</span>
+                        <span class="font-monospace fw-bold text-danger fs-6" id="display_party_total">Rs. 0.00</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -656,7 +668,7 @@ document.getElementById('addPartyPayment').addEventListener('click', function ()
     row.dataset.partyPaymentRow = '';
     row.innerHTML = `
         <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
                 <label class="form-label small fw-semibold text-secondary">Search Party / Payee</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
@@ -664,20 +676,29 @@ document.getElementById('addPartyPayment').addEventListener('click', function ()
                 </div>
                 <input type="hidden" name="party_payments[${partyPaymentIndex}][party_id]" data-party-id>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Expense Category / Reason</label>
+                <select name="party_payments[${partyPaymentIndex}][expense_category_id]" class="form-select form-select-sm">
+                    <option value="">-- Select Purpose --</option>
+                    @foreach($expenseCategories as $cat)
+                        <option value="{{ $cat->id }}">{{ addslashes($cat->name) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white text-muted">Rs.</span>
                     <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[${partyPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
                 <input type="text" class="form-control form-control-sm" name="party_payments[${partyPaymentIndex}][details]" maxlength="1000" placeholder="Bill / memo reference">
             </div>
             <div class="col-12 col-md-1">
                 <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-party-payment title="Remove row">
-                    <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove Row</span>
+                    <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove</span>
                 </button>
             </div>
         </div>`;
@@ -957,6 +978,9 @@ function calculateClosing() {
     const kpiText = document.getElementById('kpi_variance_text');
     const alertBox = document.getElementById('diff_alert_box');
 
+    const submitBtn = document.getElementById('submitBtn');
+    window.currentShiftVariance = diff;
+
     if (diff === 0) {
         diffEl.innerText = 'Rs. 0.00';
         diffEl.className = 'font-monospace fw-bold fs-5 text-success text-nowrap';
@@ -968,6 +992,13 @@ function calculateClosing() {
         kpiText.innerText = 'Exact match (Rs. 0)';
         alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-success bg-opacity-10 text-success fw-semibold border border-success';
         alertBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Register is perfectly balanced. Counted funds match calculated sales.';
+
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-danger', 'btn-secondary');
+            submitBtn.classList.add('btn-primary');
+            submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
+        }
     } else if (diff > 0) {
         const text = '+Rs. ' + diff.toLocaleString('en-US', {minimumFractionDigits: 2});
         diffEl.innerText = text + ' (Surplus)';
@@ -980,6 +1011,13 @@ function calculateClosing() {
         kpiText.innerText = 'Excess received: ' + text;
         alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-info bg-opacity-10 text-info fw-semibold border border-info';
         alertBox.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> <strong>Cash Surplus:</strong> Received ' + text + ' more than expected sales.';
+
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-danger', 'btn-secondary');
+            submitBtn.classList.add('btn-primary');
+            submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
+        }
     } else {
         const text = '-Rs. ' + Math.abs(diff).toLocaleString('en-US', {minimumFractionDigits: 2});
         diffEl.innerText = text + ' (Shortage)';
@@ -990,8 +1028,15 @@ function calculateClosing() {
         kpiBadge.innerText = 'Shortage';
         kpiCard.className = 'card-custom p-2 p-sm-3 bg-white border-start border-4 border-danger h-100 shadow-sm';
         kpiText.innerText = 'Shortage: ' + text;
-        alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-danger bg-opacity-10 text-danger fw-semibold border border-danger';
-        alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Cash Shortage:</strong> Register is short by ' + text + '.';
+        alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-danger bg-opacity-10 text-danger fw-bold border border-danger';
+        alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Shift Close Blocked:</strong> Cash shortage of ' + text + ' detected. Negative variance shift cannot be closed.';
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('btn-primary', 'btn-secondary');
+            submitBtn.classList.add('btn-danger');
+            submitBtn.innerHTML = '<i class="bi bi-slash-circle me-1"></i> <span>Blocked: Negative Variance (Shortage)</span>';
+        }
     }
 }
 
@@ -1010,8 +1055,14 @@ noteInputs.forEach(function(input, index) {
     });
 });
 
-// Strip commas before submitting form
-document.getElementById('shiftClosingForm')?.addEventListener('submit', function() {
+// Strip commas and enforce no-negative-variance check before submitting form
+document.getElementById('shiftClosingForm')?.addEventListener('submit', function(e) {
+    if (typeof window.currentShiftVariance !== 'undefined' && window.currentShiftVariance < 0) {
+        e.preventDefault();
+        alert('Negative Variance Detected!\n\nShift closing cannot be submitted with a cash shortage of Rs. ' + Math.abs(window.currentShiftVariance).toFixed(2) + '.\nPlease balance your counted cash and deductions before closing.');
+        return false;
+    }
+
     document.querySelectorAll('.amount-format').forEach(function(input) {
         input.value = input.value.replace(/,/g, '');
     });

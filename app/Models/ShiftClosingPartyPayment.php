@@ -9,6 +9,7 @@ class ShiftClosingPartyPayment extends Model
     protected $fillable = [
         'shift_closing_id',
         'party_id',
+        'expense_category_id',
         'amount',
         'details',
     ];
@@ -25,5 +26,10 @@ class ShiftClosingPartyPayment extends Model
     public function party()
     {
         return $this->belongsTo(Party::class);
+    }
+
+    public function expenseCategory()
+    {
+        return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
     }
 }

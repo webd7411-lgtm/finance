@@ -364,7 +364,7 @@
 
                         <!-- Master Setup Dropdown -->
                         <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-sliders"></i> Master Setup
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
@@ -381,6 +381,11 @@
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
                                         <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('cashiers.index') }}">
+                                        <i class="bi bi-person-badge text-info"></i> Shift Cashiers
                                     </a>
                                 </li>
                             </ul>
@@ -488,7 +493,7 @@
 
                         <!-- Master Setup Dropdown -->
                         <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-sliders"></i> Master Setup
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
@@ -505,6 +510,11 @@
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
                                         <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('cashiers.index') }}">
+                                        <i class="bi bi-person-badge text-info"></i> Shift Cashiers
                                     </a>
                                 </li>
                             </ul>
@@ -703,6 +713,9 @@
                 </a>
                 <a href="{{ route('expense-categories.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('expense-categories.*') ? 'active' : '' }}">
                     <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
+                </a>
+                <a href="{{ route('cashiers.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('cashiers.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-badge text-info"></i> Shift Cashiers
                 </a>
 
                 <div class="text-secondary small fw-bold text-uppercase px-2 pt-2" style="font-size: 0.68rem; letter-spacing: 0.5px;">Daily Operations</div>

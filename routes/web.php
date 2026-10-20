@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PartyController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\CashierController;
 use App\Http\Controllers\ShiftClosingController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\DayClosingController;
@@ -38,6 +39,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('accounts', AccountController::class);
     Route::post('accounts/{account}/toggle-status', [AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
     Route::resource('expense-categories', ExpenseCategoryController::class)->except(['create', 'show', 'edit']);
+    Route::resource('cashiers', CashierController::class)->except(['create', 'show', 'edit']);
+    Route::post('cashiers/{cashier}/toggle-status', [CashierController::class, 'toggleStatus'])->name('cashiers.toggle-status');
 
     // Step 3: Shift Closing Module (Morning & Evening)
     Route::resource('shift-closings', ShiftClosingController::class)->except(['edit', 'update']);

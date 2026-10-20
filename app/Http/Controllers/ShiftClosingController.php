@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\ShiftClosing;
 use App\Models\User;
+use App\Models\Cashier;
 use App\Models\Party;
 use App\Models\Account;
+use App\Models\ExpenseCategory;
 use App\Models\Transaction;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
@@ -59,10 +61,11 @@ class ShiftClosingController extends Controller
     {
         $parties = Party::orderBy('name')->get();
         $accounts = Account::where('type', '!=', 'cash')->where('status', 'active')->orderBy('type')->orderBy('name')->get();
-        $cashiers = User::where('status', 'active')->orderBy('name')->get();
+        $cashiers = Cashier::where('status', 'active')->orderBy('name')->get();
         if ($cashiers->isEmpty()) {
-            $cashiers = User::orderBy('name')->get();
+            $cashiers = Cashier::orderBy('name')->get();
         }
+        $expenseCategories = ExpenseCategory::expense()->orderBy('name')->get();
 
         $lastShift = ShiftClosing::whereNotNull('invoice_end')
             ->where('invoice_end', '>', 0)
@@ -88,7 +91,7 @@ class ShiftClosingController extends Controller
             }
         }
 
-        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'suggestedReturnInvoiceStart', 'cashiers'));
+        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'suggestedReturnInvoiceStart', 'cashiers', 'expenseCategories'));
     }
 
     public function store(Request $request)
@@ -119,6 +122,7 @@ class ShiftClosingController extends Controller
             ->map(function ($payment) {
                 return [
                     'party_id' => (int) $payment['party_id'],
+                    'expense_category_id' => !empty($payment['expense_category_id']) ? (int) $payment['expense_category_id'] : null,
                     'amount' => (float) $payment['amount'],
                     'details' => filled($payment['details'] ?? null) ? $payment['details'] : 'Shift cash payout',
                 ];
@@ -180,10 +184,13 @@ class ShiftClosingController extends Controller
             }
         }
 
+        $yesterday = now()->subDay()->toDateString();
+        $today = now()->toDateString();
+
         $validated = $request->validate([
-            'date' => ['required', 'date'],
+            'date' => ['required', 'date', "after_or_equal:{$yesterday}", "before_or_equal:{$today}"],
             'shift_type' => ['required', Rule::in(['morning', 'evening'])],
-            'cashier_id' => ['nullable', 'integer', 'exists:users,id'],
+            'cashier_id' => ['required', 'integer', 'exists:cashiers,id'],
             'invoice_start' => ['nullable', 'integer', 'min:1'],
             'invoice_end' => ['nullable', 'integer', 'gte:invoice_start'],
             'total_sale' => ['required', 'numeric', 'min:0'],
@@ -195,6 +202,7 @@ class ShiftClosingController extends Controller
             'expenses_details' => ['nullable', 'string', 'max:2000'],
             'party_payments' => ['nullable', 'array', 'max:20'],
             'party_payments.*.party_id' => ['required', 'integer', 'exists:parties,id'],
+            'party_payments.*.expense_category_id' => ['nullable', 'integer', 'exists:expense_categories,id'],
             'party_payments.*.amount' => ['required', 'numeric', 'gt:0'],
             'party_payments.*.details' => ['nullable', 'string', 'max:1000'],
             'account_payments' => ['nullable', 'array', 'max:20'],
@@ -213,6 +221,10 @@ class ShiftClosingController extends Controller
             'bank_amount' => ['nullable', 'numeric', 'min:0'],
             'remarks' => ['nullable', 'string', 'max:1000'],
         ], [
+            'date.after_or_equal' => 'Shift closing can only be recorded for today or yesterday.',
+            'date.before_or_equal' => 'Shift closing cannot be recorded for future dates.',
+            'cashier_id.required' => 'Please select a shift cashier from Master Setup.',
+            'cashier_id.exists' => 'The selected cashier is invalid. Please configure cashiers in Master Setup.',
             'invoice_end.gte' => 'Invoice End number must be greater than or equal to Invoice Start number.',
         ]);
 
@@ -285,6 +297,12 @@ class ShiftClosingController extends Controller
 
         // Difference: Actual - Expected
         $difference = $actualReceived - $expectedCash;
+
+        if ($difference < 0) {
+            throw ValidationException::withMessages([
+                'difference' => 'Shift cannot be closed with a negative variance / cash shortage (Shortage: Rs. ' . number_format(abs($difference), 2) . '). Shift closing can only be saved when balanced or surplus.',
+            ]);
+        }
 
         $closing = DB::transaction(function () use (
             $validated,
@@ -416,7 +434,7 @@ class ShiftClosingController extends Controller
     public function show($id)
     {
         $shiftClosing = ShiftClosing::withTrashed()
-            ->with(['cashier', 'verifier', 'deletedBy', 'partyPayments.party', 'transactions.account'])
+            ->with(['cashier', 'verifier', 'deletedBy', 'partyPayments.party', 'partyPayments.expenseCategory', 'transactions.account'])
             ->findOrFail($id);
 
         return view('shift_closings.show', compact('shiftClosing'));

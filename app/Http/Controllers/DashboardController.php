@@ -55,6 +55,20 @@ class DashboardController extends Controller
         $todayVariance = ($morningShift ? (float)$morningShift->difference : 0) +
                          ($eveningShift ? (float)$eveningShift->difference : 0);
 
+        // Monthly Shift Sales Average (Total Shift Sale minus Returns Amount divided by number of shifts)
+        $currentMonthShifts = ShiftClosing::whereMonth('date', Carbon::today()->month)
+            ->whereYear('date', Carbon::today()->year)
+            ->get();
+
+        $monthlyShiftsCount = $currentMonthShifts->count();
+        $monthlyNetShiftSaleTotal = (float) $currentMonthShifts->sum(function ($shift) {
+            return (float) $shift->total_sale - (float) $shift->returns_amount;
+        });
+
+        $monthlyAvgShiftSale = $monthlyShiftsCount > 0
+            ? ($monthlyNetShiftSaleTotal / $monthlyShiftsCount)
+            : 0;
+
         // Vault & Accounts Summary
         Account::syncCashAccountBalance();
         $accounts = Account::orderBy('id')->get();
@@ -122,6 +136,9 @@ class DashboardController extends Controller
             'todayInflow',
             'todayOutflow',
             'todayVariance',
+            'monthlyAvgShiftSale',
+            'monthlyShiftsCount',
+            'monthlyNetShiftSaleTotal',
             'totalLiquidFunds',
             'cashInVault',
             'bankFunds',

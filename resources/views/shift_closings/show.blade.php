@@ -193,7 +193,12 @@
                             </tr>
                             @foreach($shiftClosing->partyPayments as $payment)
                                 <tr>
-                                    <td class="text-muted">(-) Cash Paid to {{ $payment->party->name ?? 'Deleted Party' }}:</td>
+                                    <td class="text-muted">
+                                        (-) Cash Paid to {{ $payment->party->name ?? 'Deleted Party' }}:
+                                        @if($payment->expenseCategory)
+                                            <span class="badge bg-secondary-subtle text-secondary border small ms-1">{{ $payment->expenseCategory->name }}</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end font-monospace text-danger">
                                         - Rs. {{ number_format($payment->amount, 2) }}
                                         <small class="d-block text-muted">{{ $payment->details }}</small>
