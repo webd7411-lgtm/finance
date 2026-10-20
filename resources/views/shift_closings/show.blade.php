@@ -158,6 +158,38 @@
                             </tr>
                         </tbody>
                     </table>
+
+                    <!-- Non-Cash / Account Collections (Under Physical Cash) -->
+                    <h6 class="fw-bold text-dark mt-4 mb-2 pb-1 border-bottom statement-section-title">
+                        <span class="statement-icon me-1"><i class="bi bi-bank text-primary"></i></span> Non-Cash / Account Collections
+                    </h6>
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <tbody>
+                            @if($shiftClosing->transactions->isNotEmpty())
+                                @foreach($shiftClosing->transactions as $tx)
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold">{{ $tx->account->name ?? 'Account' }}</span>
+                                            <span class="badge bg-light text-secondary border small">{{ ucfirst($tx->account->type ?? 'online') }}</span>
+                                            @if($tx->description)
+                                                <small class="d-block text-muted">{{ $tx->description }}</small>
+                                            @endif
+                                        </td>
+                                        <td class="text-end font-monospace fw-bold text-primary">Rs. {{ number_format($tx->amount, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            @else
+                                <tr>
+                                    <td>JazzCash / Wallets:</td>
+                                    <td class="text-end font-monospace">Rs. {{ number_format($shiftClosing->jazzcash_amount, 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Direct Bank Transfers:</td>
+                                    <td class="text-end font-monospace">Rs. {{ number_format($shiftClosing->bank_amount, 2) }}</td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Right Table: Sales, Online Transfers & Reconciliation -->
@@ -165,7 +197,7 @@
                     <h6 class="fw-bold text-dark mb-3 pb-1 border-bottom statement-section-title">
                         <span class="statement-icon me-1"><i class="bi bi-receipt text-primary"></i></span> Sales & Deductions Summary
                     </h6>
-                    <table class="table table-sm table-bordered align-middle mb-4">
+                    <table class="table table-sm table-bordered align-middle mb-0">
                         <tbody>
                             <tr>
                                 <td class="text-muted">Invoice Range / Count:</td>
@@ -209,37 +241,6 @@
                                 <th class="text-secondary">Expected Net Cash:</th>
                                 <th class="text-end font-monospace text-secondary fs-6">Rs. {{ number_format($shiftClosing->expected_cash, 2) }}</th>
                             </tr>
-                        </tbody>
-                    </table>
-
-                    <h6 class="fw-bold text-dark mb-3 pb-1 border-bottom statement-section-title">
-                        <span class="statement-icon me-1"><i class="bi bi-bank text-primary"></i></span> Non-Cash / Account Collections
-                    </h6>
-                    <table class="table table-sm table-bordered align-middle mb-0">
-                        <tbody>
-                            @if($shiftClosing->transactions->isNotEmpty())
-                                @foreach($shiftClosing->transactions as $tx)
-                                    <tr>
-                                        <td>
-                                            <span class="fw-semibold">{{ $tx->account->name ?? 'Account' }}</span>
-                                            <span class="badge bg-light text-secondary border small">{{ ucfirst($tx->account->type ?? 'online') }}</span>
-                                            @if($tx->description)
-                                                <small class="d-block text-muted">{{ $tx->description }}</small>
-                                            @endif
-                                        </td>
-                                        <td class="text-end font-monospace fw-bold text-primary">Rs. {{ number_format($tx->amount, 2) }}</td>
-                                    </tr>
-                                @endforeach
-                            @else
-                                <tr>
-                                    <td>JazzCash / Wallets:</td>
-                                    <td class="text-end font-monospace">Rs. {{ number_format($shiftClosing->jazzcash_amount, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td>Direct Bank Transfers:</td>
-                                    <td class="text-end font-monospace">Rs. {{ number_format($shiftClosing->bank_amount, 2) }}</td>
-                                </tr>
-                            @endif
                         </tbody>
                     </table>
                 </div>

@@ -115,7 +115,7 @@
                         <i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span>
                     </label>
                 </div>
-                <input type="date" name="date" class="form-control form-control-sm fw-semibold" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
+                <input type="date" id="closing_date" name="date" class="form-control form-control-sm fw-semibold" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
                 <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
             </div>
 
@@ -125,10 +125,11 @@
                         <i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span>
                     </label>
                 </div>
-                <select name="shift_type" class="form-select form-select-sm fw-semibold" required style="height: 36px;">
+                <select name="shift_type" id="shift_type_select" class="form-select form-select-sm fw-semibold" required style="height: 36px;">
                     <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
                     <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
                 </select>
+                <div id="shift_duplicate_warning" class="text-danger small mt-1 fw-bold d-none" style="font-size: 0.68rem;"></div>
             </div>
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
@@ -994,10 +995,17 @@ function calculateClosing() {
         alertBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Register is perfectly balanced. Counted funds match calculated sales.';
 
         if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('btn-danger', 'btn-secondary');
-            submitBtn.classList.add('btn-primary');
-            submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
+            if (window.isShiftAlreadyClosed) {
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('btn-primary', 'btn-danger');
+                submitBtn.classList.add('btn-secondary');
+                submitBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> <span>Blocked: Shift Already Closed</span>';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-danger', 'btn-secondary');
+                submitBtn.classList.add('btn-primary');
+                submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
+            }
         }
     } else if (diff > 0) {
         const text = '+Rs. ' + diff.toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -1013,10 +1021,17 @@ function calculateClosing() {
         alertBox.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> <strong>Cash Surplus:</strong> Received ' + text + ' more than expected sales.';
 
         if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('btn-danger', 'btn-secondary');
-            submitBtn.classList.add('btn-primary');
-            submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
+            if (window.isShiftAlreadyClosed) {
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('btn-primary', 'btn-danger');
+                submitBtn.classList.add('btn-secondary');
+                submitBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> <span>Blocked: Shift Already Closed</span>';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-danger', 'btn-secondary');
+                submitBtn.classList.add('btn-primary');
+                submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
+            }
         }
     } else {
         const text = '-Rs. ' + Math.abs(diff).toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -1040,6 +1055,57 @@ function calculateClosing() {
     }
 }
 
+// 8. Prevent duplicate shift closing for the same date & shift cycle
+const existingClosings = @json($existingClosings ?? []);
+
+function validateShiftAvailability() {
+    const dateInput = document.getElementById('closing_date');
+    const shiftSelect = document.getElementById('shift_type_select');
+    const warningEl = document.getElementById('shift_duplicate_warning');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (!dateInput || !shiftSelect) return;
+
+    // Update options labels
+    Array.from(shiftSelect.options).forEach(function(opt) {
+        const optKey = dateInput.value + '_' + opt.value;
+        const optClosed = existingClosings.includes(optKey);
+        const baseName = opt.value === 'morning' ? '☀️ Morning Shift' : '🌙 Evening Shift';
+        if (optClosed) {
+            opt.textContent = baseName + ' (Already Closed)';
+        } else {
+            opt.textContent = baseName;
+        }
+    });
+
+    const currentKey = dateInput.value + '_' + shiftSelect.value;
+    const isClosed = existingClosings.includes(currentKey);
+
+    if (isClosed) {
+        window.isShiftAlreadyClosed = true;
+        if (warningEl) {
+            warningEl.classList.remove('d-none');
+            warningEl.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> This shift is already closed! A shift cannot be closed twice.';
+        }
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('btn-primary', 'btn-danger');
+            submitBtn.classList.add('btn-secondary');
+            submitBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> <span>Blocked: Shift Already Closed</span>';
+        }
+    } else {
+        window.isShiftAlreadyClosed = false;
+        if (warningEl) {
+            warningEl.classList.add('d-none');
+            warningEl.innerHTML = '';
+        }
+        calculateClosing();
+    }
+}
+
+document.getElementById('closing_date')?.addEventListener('change', validateShiftAvailability);
+document.getElementById('shift_type_select')?.addEventListener('change', validateShiftAvailability);
+
 // Keyboard shortcuts: pressing Enter in note inputs moves to next note input
 const noteInputs = Array.from(document.querySelectorAll('.note-input'));
 noteInputs.forEach(function(input, index) {
@@ -1055,8 +1121,14 @@ noteInputs.forEach(function(input, index) {
     });
 });
 
-// Strip commas and enforce no-negative-variance check before submitting form
+// Strip commas and enforce no-negative-variance + no-duplicate-shift check before submitting form
 document.getElementById('shiftClosingForm')?.addEventListener('submit', function(e) {
+    if (window.isShiftAlreadyClosed) {
+        e.preventDefault();
+        alert('Duplicate Shift Blocked!\n\nThis shift has already been closed for the selected date. You cannot close the same shift twice.');
+        return false;
+    }
+
     if (typeof window.currentShiftVariance !== 'undefined' && window.currentShiftVariance < 0) {
         e.preventDefault();
         alert('Negative Variance Detected!\n\nShift closing cannot be submitted with a cash shortage of Rs. ' + Math.abs(window.currentShiftVariance).toFixed(2) + '.\nPlease balance your counted cash and deductions before closing.');
@@ -1078,6 +1150,7 @@ document.querySelectorAll('.amount-format').forEach(function(input) {
 
 calculateInvoiceCount();
 calculateReturnInvoiceCount();
+validateShiftAvailability();
 calculateClosing();
 </script>
 @endpush

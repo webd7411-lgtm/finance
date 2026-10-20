@@ -91,7 +91,14 @@ class ShiftClosingController extends Controller
             }
         }
 
-        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'suggestedReturnInvoiceStart', 'cashiers', 'expenseCategories'));
+        $existingClosings = ShiftClosing::select('date', 'shift_type')
+            ->whereIn('date', [now()->subDay()->toDateString(), now()->toDateString()])
+            ->get()
+            ->map(fn($item) => $item->date->format('Y-m-d') . '_' . $item->shift_type)
+            ->values()
+            ->toArray();
+
+        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'suggestedReturnInvoiceStart', 'cashiers', 'expenseCategories', 'existingClosings'));
     }
 
     public function store(Request $request)
@@ -189,7 +196,13 @@ class ShiftClosingController extends Controller
 
         $validated = $request->validate([
             'date' => ['required', 'date', "after_or_equal:{$yesterday}", "before_or_equal:{$today}"],
-            'shift_type' => ['required', Rule::in(['morning', 'evening'])],
+            'shift_type' => [
+                'required',
+                Rule::in(['morning', 'evening']),
+                Rule::unique('shift_closings', 'shift_type')->where(function ($query) use ($request) {
+                    return $query->whereDate('date', $request->date)->whereNull('deleted_at');
+                }),
+            ],
             'cashier_id' => ['required', 'integer', 'exists:cashiers,id'],
             'invoice_start' => ['nullable', 'integer', 'min:1'],
             'invoice_end' => ['nullable', 'integer', 'gte:invoice_start'],
@@ -223,6 +236,7 @@ class ShiftClosingController extends Controller
         ], [
             'date.after_or_equal' => 'Shift closing can only be recorded for today or yesterday.',
             'date.before_or_equal' => 'Shift closing cannot be recorded for future dates.',
+            'shift_type.unique' => 'The ' . ucfirst($request->shift_type) . ' shift for this date is already closed. A shift cannot be closed more than once.',
             'cashier_id.required' => 'Please select a shift cashier from Master Setup.',
             'cashier_id.exists' => 'The selected cashier is invalid. Please configure cashiers in Master Setup.',
             'invoice_end.gte' => 'Invoice End number must be greater than or equal to Invoice Start number.',
