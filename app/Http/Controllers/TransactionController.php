@@ -97,20 +97,40 @@ class TransactionController extends Controller
 
         $validated['created_by'] = auth()->id();
 
-        DB::transaction(function () use ($validated) {
-            $transaction = Transaction::create($validated);
-            $amount = $validated['amount'];
-
-            // Adjust Account Balance only for cash/bank payments
-            if ($validated['type'] !== 'purchase_bill' && !empty($validated['account_id'])) {
-                $account = Account::findOrFail($validated['account_id']);
-                if ($validated['type'] === 'payment_in') {
-                    $account->current_balance += $amount;
-                } else {
-                    $account->current_balance -= $amount;
-                }
-                $account->save();
+        // Prevent Payment Out exceeding account balance
+        if ($validated['type'] === 'payment_out' && !empty($validated['account_id'])) {
+            $targetAccount = Account::findOrFail($validated['account_id']);
+            if ($targetAccount->isCash()) {
+                Account::syncCashAccountBalance();
+                $targetAccount->refresh();
             }
+
+            $currentBal = (float) $targetAccount->current_balance;
+            $reqAmount = (float) $validated['amount'];
+
+            if ($reqAmount > $currentBal) {
+                return back()->withInput()->with('error', "Insufficient funds in '{$targetAccount->name}'. Available balance is Rs. " . number_format($currentBal, 2) . ", but you entered Rs. " . number_format($reqAmount, 2) . ". Payment Out cannot exceed available account balance.");
+            }
+        }
+
+        try {
+            DB::transaction(function () use ($validated) {
+                $transaction = Transaction::create($validated);
+                $amount = $validated['amount'];
+
+                // Adjust Account Balance only for cash/bank payments
+                if ($validated['type'] !== 'purchase_bill' && !empty($validated['account_id'])) {
+                    $account = Account::whereKey($validated['account_id'])->lockForUpdate()->firstOrFail();
+                    if ($validated['type'] === 'payment_in') {
+                        $account->current_balance += $amount;
+                    } else {
+                        if ((float) $amount > (float) $account->current_balance) {
+                            throw new \Exception("Insufficient funds in '{$account->name}'. Available balance is Rs. " . number_format($account->current_balance, 2) . ".");
+                        }
+                        $account->current_balance -= $amount;
+                    }
+                    $account->save();
+                }
 
             // Adjust Party Balance if party attached
             if (!empty($validated['party_id'])) {
@@ -148,6 +168,9 @@ class TransactionController extends Controller
                 "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$channelInfo}, " . ($isExpense ? "Category: {$partyName}" : "Party: {$partyName}") . ")"
             );
         });
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         \App\Models\Account::syncCashAccountBalance();
         \App\Models\DayClosing::autoSyncDay($validated['date']);
@@ -185,47 +208,68 @@ class TransactionController extends Controller
         $fromAccount = Account::findOrFail($validated['from_account_id']);
         $toAccount = Account::findOrFail($validated['to_account_id']);
         $amount = (float) $validated['amount'];
+
+        if ($fromAccount->isCash()) {
+            Account::syncCashAccountBalance();
+            $fromAccount->refresh();
+        }
+
+        $fromBal = (float) $fromAccount->current_balance;
+        if ($amount > $fromBal) {
+            return back()->withInput()->with('error', "Insufficient funds in source account '{$fromAccount->name}'. Available balance is Rs. " . number_format($fromBal, 2) . ", but transfer amount is Rs. " . number_format($amount, 2) . ". Transfer cannot exceed available account balance.");
+        }
+
         $notes = $validated['description'] ?? '';
         $ref = $validated['reference'] ?? 'Transfer';
 
-        DB::transaction(function () use ($validated, $fromAccount, $toAccount, $amount, $notes, $ref) {
-            // 1. Payment Out from Source Account
-            Transaction::create([
-                'date' => $validated['date'],
-                'type' => 'payment_out',
-                'account_id' => $fromAccount->id,
-                'party_id' => null,
-                'category_id' => null,
-                'amount' => $amount,
-                'bill_no' => $ref,
-                'description' => 'Transfer to ' . $toAccount->name . ($notes ? " ({$notes})" : ''),
-                'created_by' => auth()->id(),
-            ]);
-            $fromAccount->current_balance -= $amount;
-            $fromAccount->save();
+        try {
+            DB::transaction(function () use ($validated, $fromAccount, $toAccount, $amount, $notes, $ref) {
+                $lockedFrom = Account::whereKey($fromAccount->id)->lockForUpdate()->firstOrFail();
+                if ($amount > (float) $lockedFrom->current_balance) {
+                    throw new \Exception("Insufficient funds in source account '{$lockedFrom->name}'. Available balance is Rs. " . number_format($lockedFrom->current_balance, 2) . ".");
+                }
+                $lockedTo = Account::whereKey($toAccount->id)->lockForUpdate()->firstOrFail();
 
-            // 2. Payment In to Destination Account
-            Transaction::create([
-                'date' => $validated['date'],
-                'type' => 'payment_in',
-                'account_id' => $toAccount->id,
-                'party_id' => null,
-                'category_id' => null,
-                'amount' => $amount,
-                'bill_no' => $ref,
-                'description' => 'Transfer from ' . $fromAccount->name . ($notes ? " ({$notes})" : ''),
-                'created_by' => auth()->id(),
-            ]);
-            $toAccount->current_balance += $amount;
-            $toAccount->save();
+                // 1. Payment Out from Source Account
+                Transaction::create([
+                    'date' => $validated['date'],
+                    'type' => 'payment_out',
+                    'account_id' => $lockedFrom->id,
+                    'party_id' => null,
+                    'category_id' => null,
+                    'amount' => $amount,
+                    'bill_no' => $ref,
+                    'description' => 'Transfer to ' . $lockedTo->name . ($notes ? " ({$notes})" : ''),
+                    'created_by' => auth()->id(),
+                ]);
+                $lockedFrom->current_balance -= $amount;
+                $lockedFrom->save();
 
-            // 3. Activity Log
-            ActivityLog::log(
-                'Transfer',
-                'Funds Transfer',
-                "Transferred Rs. " . number_format($amount, 2) . " from {$fromAccount->name} to {$toAccount->name}" . ($notes ? " ({$notes})" : '')
-            );
-        });
+                // 2. Payment In to Destination Account
+                Transaction::create([
+                    'date' => $validated['date'],
+                    'type' => 'payment_in',
+                    'account_id' => $lockedTo->id,
+                    'party_id' => null,
+                    'category_id' => null,
+                    'amount' => $amount,
+                    'bill_no' => $ref,
+                    'description' => 'Transfer from ' . $lockedFrom->name . ($notes ? " ({$notes})" : ''),
+                    'created_by' => auth()->id(),
+                ]);
+                $lockedTo->current_balance += $amount;
+                $lockedTo->save();
+
+                // 3. Activity Log
+                ActivityLog::log(
+                    'Transfer',
+                    'Funds Transfer',
+                    "Transferred Rs. " . number_format($amount, 2) . " from {$lockedFrom->name} to {$lockedTo->name}" . ($notes ? " ({$notes})" : '')
+                );
+            });
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         \App\Models\Account::syncCashAccountBalance();
         \App\Models\DayClosing::autoSyncDay($validated['date']);

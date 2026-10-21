@@ -198,23 +198,23 @@
         </div>
     </div>
 
-    <!-- Card 3: Monthly Average Shift Sale (Sales minus Returns divided by Shifts) -->
+    <!-- Card 3: Monthly Average Day Sale (Sales minus Returns divided by operating days) -->
     <div class="col-12 col-md-4">
         <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: #6366f1 !important;">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="small fw-semibold text-uppercase" style="color: #6366f1; letter-spacing: 0.5px; font-size: 0.72rem;">Month Avg Shift Sale</span>
+                <span class="small fw-semibold text-uppercase" style="color: #6366f1; letter-spacing: 0.5px; font-size: 0.72rem;">Month Avg Day Sale</span>
                 <div class="rounded-3 p-2 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #6366f1;">
                     <i class="bi bi-graph-up-arrow fs-5"></i>
                 </div>
             </div>
             <div class="fw-bold mb-1 font-monospace kpi-value-text text-dark">
-                Rs. {{ number_format($monthlyAvgShiftSale, 2) }}
+                Rs. {{ number_format($monthlyAvgDaySale, 2) }}
             </div>
             <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
                 <span class="text-truncate">
-                    <i class="bi bi-receipt me-1 text-primary"></i>Sale minus returns ({{ $monthlyShiftsCount }} {{ Str::plural('Shift', $monthlyShiftsCount) }})
+                    <i class="bi bi-calendar-event me-1 text-primary"></i>Sale minus returns ({{ $monthlyDaysCount }} {{ Str::plural('Day', $monthlyDaysCount) }})
                 </span>
-                <a href="{{ route('shift-closings.index') }}" class="text-decoration-none fw-semibold" style="color: #6366f1;">All Shifts &rarr;</a>
+                <a href="{{ route('day-closings.index') }}" class="text-decoration-none fw-semibold" style="color: #6366f1;">Day Closings &rarr;</a>
             </div>
         </div>
     </div>

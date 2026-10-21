@@ -415,11 +415,13 @@
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Pay From Account <span class="text-danger">*</span></label>
-                            <select name="account_id" class="form-select form-select-sm py-2" required>
+                            <select name="account_id" id="payOutAccountSelect" class="form-select form-select-sm py-2" required>
+                                <option value="" disabled selected>-- Select Account --</option>
                                 @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
-                                    <option value="{{ $acc->id }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
+                                    <option value="{{ $acc->id }}" data-balance="{{ (float) $acc->current_balance }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
                                 @endforeach
                             </select>
+                            <div id="payOutBalanceFeedback" class="small mt-1" style="font-size: 0.75rem;"></div>
                         </div>
                     </div>
 
@@ -440,8 +442,9 @@
                         <label class="form-label small fw-semibold text-secondary">Amount Paid (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-danger">PKR</span>
-                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
+                            <input type="text" inputmode="decimal" name="amount" id="payOutAmountInput" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
                         </div>
+                        <div id="payOutAmountWarning" class="text-danger small fw-semibold mt-1" style="display: none; font-size: 0.75rem;"></div>
                     </div>
 
                     <div class="mb-3">
@@ -494,11 +497,13 @@
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Pay From Account <span class="text-danger">*</span></label>
-                            <select name="account_id" class="form-select form-select-sm py-2" required>
+                            <select name="account_id" id="expenseAccountSelect" class="form-select form-select-sm py-2" required>
+                                <option value="" disabled selected>-- Select Account --</option>
                                 @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
-                                    <option value="{{ $acc->id }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
+                                    <option value="{{ $acc->id }}" data-balance="{{ (float) $acc->current_balance }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
                                 @endforeach
                             </select>
+                            <div id="expenseBalanceFeedback" class="small mt-1" style="font-size: 0.75rem;"></div>
                         </div>
                     </div>
 
@@ -520,8 +525,9 @@
                         <label class="form-label small fw-semibold text-secondary">Expense Amount (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-danger">PKR</span>
-                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
+                            <input type="text" inputmode="decimal" name="amount" id="expenseAmountInput" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
                         </div>
+                        <div id="expenseAmountWarning" class="text-danger small fw-semibold mt-1" style="display: none; font-size: 0.75rem;"></div>
                     </div>
 
                     <div class="mb-3">
@@ -572,12 +578,13 @@
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-danger">Transfer From (Source) <span class="text-danger">*</span></label>
-                            <select name="from_account_id" class="form-select form-select-sm py-2" required>
+                            <select name="from_account_id" id="transferFromAccountSelect" class="form-select form-select-sm py-2" required>
                                 <option value="" disabled selected>-- Select Source --</option>
                                 @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
-                                    <option value="{{ $acc->id }}">{{ $acc->name }}</option>
+                                    <option value="{{ $acc->id }}" data-balance="{{ (float) $acc->current_balance }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
                                 @endforeach
                             </select>
+                            <div id="transferBalanceFeedback" class="small mt-1" style="font-size: 0.75rem;"></div>
                             <div class="text-muted small mt-1" style="font-size: 0.72rem;">Funds will be deducted from this account.</div>
                         </div>
 
@@ -586,7 +593,7 @@
                             <select name="to_account_id" class="form-select form-select-sm py-2" required>
                                 <option value="" disabled selected>-- Select Destination --</option>
                                 @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
-                                    <option value="{{ $acc->id }}">{{ $acc->name }}</option>
+                                    <option value="{{ $acc->id }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
                                 @endforeach
                             </select>
                             <div class="text-muted small mt-1" style="font-size: 0.72rem;">Funds will be added to this account.</div>
@@ -597,8 +604,9 @@
                         <label class="form-label small fw-semibold text-secondary">Transfer Amount (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-primary">PKR</span>
-                            <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm py-2 fw-bold fs-6 text-primary amount-format" placeholder="e.g. 5,000.00" autocomplete="off" required>
+                            <input type="text" inputmode="decimal" name="amount" id="transferAmountInput" class="form-control form-control-sm py-2 fw-bold fs-6 text-primary amount-format" placeholder="e.g. 5,000.00" autocomplete="off" required>
                         </div>
+                        <div id="transferAmountWarning" class="text-danger small fw-semibold mt-1" style="display: none; font-size: 0.75rem;"></div>
                     </div>
 
                     <div class="mb-3">
@@ -713,3 +721,71 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function setupBalanceCheck(selectId, inputId, feedbackId, warningId) {
+        const select = document.getElementById(selectId);
+        const input = document.getElementById(inputId);
+        const feedback = document.getElementById(feedbackId);
+        const warning = document.getElementById(warningId);
+        const form = select ? select.closest('form') : null;
+
+        if (!select || !input || !form) return;
+
+        function updateCheck() {
+            const selectedOpt = select.options[select.selectedIndex];
+            if (!selectedOpt || !selectedOpt.value) {
+                if (feedback) feedback.innerHTML = '';
+                if (warning) {
+                    warning.style.display = 'none';
+                    warning.innerHTML = '';
+                }
+                return true;
+            }
+
+            const bal = parseFloat(selectedOpt.getAttribute('data-balance') || '0');
+            const formattedBal = window.formatWithCommas(bal.toFixed(2));
+            
+            if (feedback) {
+                feedback.innerHTML = `<span class="badge ${bal > 0 ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}"><i class="bi bi-wallet2 me-1"></i>Available: Rs. ${formattedBal}</span>`;
+            }
+
+            const entered = window.parseAmount(input.value);
+            if (entered > 0 && entered > bal) {
+                input.classList.add('is-invalid');
+                if (warning) {
+                    warning.style.display = 'block';
+                    warning.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Amount (Rs. ${window.formatWithCommas(entered.toFixed(2))}) exceeds available balance of Rs. ${formattedBal}!`;
+                }
+                return false;
+            } else {
+                input.classList.remove('is-invalid');
+                if (warning) {
+                    warning.style.display = 'none';
+                    warning.innerHTML = '';
+                }
+                return true;
+            }
+        }
+
+        select.addEventListener('change', updateCheck);
+        input.addEventListener('input', updateCheck);
+        input.addEventListener('keyup', updateCheck);
+
+        form.addEventListener('submit', function(e) {
+            if (!updateCheck()) {
+                e.preventDefault();
+                e.stopPropagation();
+                alert('Transaction cannot be completed: Amount exceeds available account balance.');
+            }
+        });
+    }
+
+    setupBalanceCheck('payOutAccountSelect', 'payOutAmountInput', 'payOutBalanceFeedback', 'payOutAmountWarning');
+    setupBalanceCheck('expenseAccountSelect', 'expenseAmountInput', 'expenseBalanceFeedback', 'expenseAmountWarning');
+    setupBalanceCheck('transferFromAccountSelect', 'transferAmountInput', 'transferBalanceFeedback', 'transferAmountWarning');
+});
+</script>
+@endpush
