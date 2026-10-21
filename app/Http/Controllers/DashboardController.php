@@ -55,21 +55,17 @@ class DashboardController extends Controller
         $todayVariance = ($morningShift ? (float)$morningShift->difference : 0) +
                          ($eveningShift ? (float)$eveningShift->difference : 0);
 
-        // Monthly Daily Sales Average (All calendar days of the month up to completed days)
+        // Monthly Daily Sales Average (All completed calendar days of the month)
         $currentMonthShifts = ShiftClosing::whereMonth('date', Carbon::today()->month)
             ->whereYear('date', Carbon::today()->year)
             ->get();
 
         $monthlyShiftsCount = $currentMonthShifts->count();
 
-        // Calculate days to divide by:
-        // While today is in progress, average is calculated over completed days (e.g. on 21st date -> 20 days).
-        // Once today's closing/evening shift is completed, it counts the full 21 days.
+        // While today is in progress, average is calculated over completed calendar days (e.g. on 21st date -> 20 days).
+        // When today completes and tomorrow starts, it automatically includes the completed day.
         $todayDayNumber = (int) Carbon::today()->day;
-        $isTodayComplete = ($todayClosing && $todayClosing->status === 'closed')
-            || ($eveningShift && in_array($eveningShift->status, ['submitted', 'locked']));
-
-        $monthlyDaysCount = $isTodayComplete ? $todayDayNumber : max(1, $todayDayNumber - 1);
+        $monthlyDaysCount = max(1, $todayDayNumber - 1);
 
         $monthlyNetShiftSaleTotal = (float) $currentMonthShifts->sum(function ($shift) {
             return (float) $shift->total_sale - (float) $shift->returns_amount;
