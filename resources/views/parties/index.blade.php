@@ -267,7 +267,7 @@
                 <div class="modal-header border-bottom py-3">
                     <div>
                         <h6 class="modal-title fw-bold text-dark m-0" id="editPartyModalLabel{{ $party->id }}">Edit Party: {{ $party->name }}</h6>
-                        <small class="text-muted" style="font-size: 0.78rem;">Update party credentials, category, or opening balance</small>
+                        <small class="text-muted" style="font-size: 0.78rem;">Update party credentials and contact details</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -299,11 +299,17 @@
                             <input type="text" class="form-control form-control-sm py-2" name="address" value="{{ $party->address }}" placeholder="Shop / Market / City address">
                         </div>
                         <div class="mb-2">
-                            <label class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
+                            <label class="form-label small fw-semibold text-secondary d-flex justify-content-between align-items-center">
+                                <span>Opening Balance (Rs.)</span>
+                                <span class="badge bg-light text-muted border small"><i class="bi bi-lock-fill me-1"></i>Locked</span>
+                            </label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                                <input type="text" inputmode="decimal" class="form-control amount-format" name="opening_balance" value="{{ $party->opening_balance }}" placeholder="0.00" autocomplete="off">
+                                <input type="text" class="form-control bg-light text-muted font-monospace" value="{{ number_format($party->opening_balance, 2) }}" readonly disabled>
                             </div>
+                            <small class="text-muted" style="font-size: 0.72rem;">
+                                <i class="bi bi-info-circle me-1"></i>Opening balance cannot be edited once party is created.
+                            </small>
                         </div>
                     </div>
                     <div class="modal-footer border-top py-2">

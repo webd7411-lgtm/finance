@@ -79,23 +79,12 @@ class PartyController extends Controller
 
     public function update(Request $request, Party $party)
     {
-        if ($request->has('opening_balance')) {
-            $val = $request->input('opening_balance');
-            $request->merge(['opening_balance' => is_string($val) ? str_replace(',', '', $val) : $val]);
-        }
-
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in(['supplier', 'trader', 'staff', 'customer'])],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],
-            'opening_balance' => ['nullable', 'numeric'],
         ]);
-
-        // If current balance was same as opening balance, adjust it accordingly
-        if ($party->current_balance == $party->opening_balance) {
-            $party->current_balance = $validated['opening_balance'] ?? 0;
-        }
 
         $party->update($validated);
 

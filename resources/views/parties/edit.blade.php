@@ -63,14 +63,17 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="opening_balance" class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
+                        <label for="opening_balance" class="form-label small fw-semibold text-secondary d-flex justify-content-between align-items-center">
+                            <span>Opening Balance (Rs.)</span>
+                            <span class="badge bg-light text-muted border small"><i class="bi bi-lock-fill me-1"></i>Locked</span>
+                        </label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light fw-bold text-secondary">PKR</span>
-                            <input type="text" inputmode="decimal" class="form-control amount-format @error('opening_balance') is-invalid @enderror" id="opening_balance" name="opening_balance" value="{{ old('opening_balance', $party->opening_balance) }}" placeholder="0.00" autocomplete="off">
+                            <input type="text" class="form-control bg-light text-muted font-monospace" id="opening_balance" value="{{ number_format($party->opening_balance, 2) }}" readonly disabled>
                         </div>
-                        @error('opening_balance')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
+                        <small class="text-muted" style="font-size: 0.72rem;">
+                            <i class="bi bi-info-circle me-1"></i>Opening balance cannot be edited once party is created.
+                        </small>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 pt-3 border-top">
