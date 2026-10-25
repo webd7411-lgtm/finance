@@ -1,12 +1,24 @@
 @extends('layouts.app')
 
-@section('title', 'Party Ledger Statement - ' . ($party ? $party->name : 'Select Party'))
-@section('page_title', 'Party Ledger Statement')
+@section('title', 'Party Ledger Statement - ' . ($statementTitle ?? ($party ? $party->name : 'Select Party')))
+@section('page_title', ($ledgerScope ?? 'single') === 'all_credit' ? 'Credit Parties Ledger (Combined)' : (($ledgerScope ?? 'single') === 'all_cash' ? 'Cash Parties Ledger (Combined)' : (($ledgerScope ?? 'single') === 'all' ? 'All Parties Consolidated Ledger' : 'Party Ledger Statement')))
 
 @section('page_badge')
-    @if($party)
+    @if(($ledgerScope ?? 'single') === 'all_credit')
+        <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1 small">
+            <i class="bi bi-credit-card me-1"></i> Combined Credit Ledger &bull; {{ $selectedParties->count() }} Parties
+        </span>
+    @elseif(($ledgerScope ?? 'single') === 'all_cash')
+        <span class="badge bg-success-subtle text-success border border-success px-2 py-1 small">
+            <i class="bi bi-cash-stack me-1"></i> Combined Cash Ledger &bull; {{ $selectedParties->count() }} Parties
+        </span>
+    @elseif(($ledgerScope ?? 'single') === 'all')
+        <span class="badge bg-dark-subtle text-dark border px-2 py-1 small">
+            <i class="bi bi-people-fill me-1"></i> All Parties &bull; {{ $selectedParties->count() }} Parties
+        </span>
+    @elseif($party)
         <span class="badge bg-light text-secondary border px-2 py-1 small">
-            ID #PRT-{{ str_pad($party->id, 4, '0', STR_PAD_LEFT) }} &bull; {!! $party->type_badge !!}
+            ID #PRT-{{ str_pad($party->id, 4, '0', STR_PAD_LEFT) }} &bull; {!! $party->type_badge !!} &bull; {!! $party->dealing_badges !!}
         </span>
     @endif
 @endsection
@@ -170,18 +182,62 @@
 @endpush
 
 @section('content')
+<!-- Scope Switcher Pills (Single Party vs Combined Credit vs Combined Cash) -->
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap no-print">
+    <span class="text-secondary small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.3px;">Ledger Mode:</span>
+    <a href="{{ route('ledgers.party', array_filter(['from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'single' ? 'btn-dark text-white fw-bold shadow-xs' : 'btn-outline-secondary' }}" 
+       style="font-size: 0.78rem;">
+        <i class="bi bi-person me-1"></i> Individual Party
+    </a>
+    <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_credit', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'btn-primary text-white fw-bold shadow-xs' : 'btn-outline-primary' }}" 
+       style="font-size: 0.78rem;">
+        <i class="bi bi-credit-card me-1"></i> All Credit Parties (Combined) <span class="badge bg-primary-subtle text-primary ms-1">{{ $creditPartiesCount ?? 0 }}</span>
+    </a>
+    <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_cash', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'btn-success text-white fw-bold shadow-xs' : 'btn-outline-success' }}" 
+       style="font-size: 0.78rem;">
+        <i class="bi bi-cash-stack me-1"></i> All Cash Parties (Combined) <span class="badge bg-success-subtle text-success ms-1">{{ $cashPartiesCount ?? 0 }}</span>
+    </a>
+</div>
+
 <!-- Filter & Selection Bar (No-Print) -->
 <div class="card-custom p-3 mb-3 mb-md-4 no-print">
     <form method="GET" action="{{ route('ledgers.party') }}" class="row g-2 align-items-end">
-        <div class="col-12 col-md-4">
-            <label for="partySearch" class="form-label text-muted small fw-semibold mb-1">Select Counterparty / Party</label>
+        <div class="col-12 col-md-5">
+            <label for="partySearch" class="form-label text-muted small fw-semibold mb-1">Select Counterparty / Group Ledger</label>
             <div id="partyCombobox" class="position-relative">
-                <input type="search" id="partySearch" class="form-control form-control-sm py-2" placeholder="Search or select a party..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
-                <input type="hidden" name="party_id" id="partyId" value="{{ $party->id ?? '' }}">
+                <input type="search" id="partySearch" class="form-control form-control-sm py-2" placeholder="Search or select a party / group..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
+                <input type="hidden" name="party_id" id="partyId" value="{{ ($ledgerScope ?? 'single') === 'all_credit' ? 'all_credit' : (($ledgerScope ?? 'single') === 'all_cash' ? 'all_cash' : ($party->id ?? '')) }}">
                 <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox">
+                    <!-- Quick Combined Ledger Options -->
+                    <div class="px-2 py-1 text-muted fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.4px;">Combined Statements</div>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="all_credit" data-display-title="All Credit Parties (Combined)">
+                        <span><i class="bi bi-credit-card me-1 text-primary"></i> <strong>All Credit Parties</strong> (Combined Statement)</span>
+                        <span class="badge {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border' }}">{{ $creditPartiesCount ?? 0 }}</span>
+                    </button>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'active bg-success text-white' : '' }}" role="option" data-party-id="all_cash" data-display-title="All Cash Parties (Combined)">
+                        <span><i class="bi bi-cash-stack me-1 text-success"></i> <strong>All Cash Parties</strong> (Combined Statement)</span>
+                        <span class="badge {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'bg-white text-success' : 'bg-success-subtle text-success border' }}">{{ $cashPartiesCount ?? 0 }}</span>
+                    </button>
+                    
+                    <div class="dropdown-divider my-1"></div>
+                    <div class="px-2 py-1 text-muted fw-bold text-uppercase d-flex justify-content-between align-items-center" style="font-size: 0.65rem; letter-spacing: 0.4px;">
+                        <span>Individual Parties</span>
+                        <div class="btn-group btn-group-sm" id="comboboxModeFilter">
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 active" data-filter-mode="all" style="font-size: 0.65rem;">All</button>
+                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5" data-filter-mode="credit" style="font-size: 0.65rem;">Credit</button>
+                            <button type="button" class="btn btn-xs btn-outline-success py-0 px-1.5" data-filter-mode="cash" style="font-size: 0.65rem;">Cash</button>
+                        </div>
+                    </div>
+
                 @foreach($allParties as $p)
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2" role="option" data-party-id="{{ $p->id }}">
-                        [{{ ucfirst($p->type) }}] {{ $p->name }} ({{ $p->phone ?? 'No Phone' }})
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 party-item" role="option" data-party-id="{{ $p->id }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>[{{ ucfirst($p->type) }}] {{ $p->name }} ({{ $p->phone ?? 'No Phone' }})</span>
+                            <span class="ms-1">{!! $p->dealing_badges !!}</span>
+                        </div>
                     </button>
                 @endforeach
                     <div id="partySearchEmpty" class="dropdown-item small text-muted" aria-live="polite" hidden>No matching party found.</div>
@@ -192,7 +248,7 @@
             <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
             <input type="date" name="from_date" class="form-control form-control-sm py-2" value="{{ $fromDate }}">
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <label class="form-label text-muted small fw-semibold mb-1">To Date</label>
             <input type="date" name="to_date" class="form-control form-control-sm py-2" value="{{ $toDate }}">
         </div>
@@ -204,7 +260,7 @@
     </form>
 </div>
 
-@if($party)
+@if($party || ($ledgerScope ?? 'single') !== 'single')
     <!-- Printable Statement Card -->
     <div class="card-custom p-3 p-md-5 bg-white shadow-sm mb-4" id="partyStatementSheet">
         <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
@@ -227,10 +283,15 @@
 
             <div class="row mt-2 py-1 text-dark" style="font-size: 8.5pt;">
                 <div class="col-7">
-                    <div><strong>Account / Party:</strong> {{ $party->name }} (ID #PRT-{{ str_pad($party->id, 4, '0', STR_PAD_LEFT) }})</div>
-                    <div><strong>Category / Type:</strong> {{ ucfirst($party->type) }} &bull; <strong>Contact:</strong> {{ $party->phone ?? 'N/A' }}</div>
-                    @if($party->address)
-                    <div><strong>Address:</strong> {{ $party->address }}</div>
+                    @if($party)
+                        <div><strong>Account / Party:</strong> {{ $party->name }} (ID #PRT-{{ str_pad($party->id, 4, '0', STR_PAD_LEFT) }})</div>
+                        <div><strong>Category / Type:</strong> {{ ucfirst($party->type) }} &bull; <strong>Contact:</strong> {{ $party->phone ?? 'N/A' }}</div>
+                        @if($party->address)
+                        <div><strong>Address:</strong> {{ $party->address }}</div>
+                        @endif
+                    @else
+                        <div><strong>Account / Statement:</strong> {{ $statementTitle }}</div>
+                        <div><strong>Consolidated Scope:</strong> {{ $selectedParties->count() }} Parties included</div>
                     @endif
                 </div>
                 <div class="col-5 text-end">
@@ -259,10 +320,14 @@
                     <td class="text-end font-monospace fw-bold">
                         Rs. {{ number_format(abs($closingBalance), 2) }}
                         <small style="font-size: 7pt;">
-                            @if($party->type === 'customer' || $party->type === 'staff')
-                                {{ $closingBalance > 0 ? '(Dr - Receivable)' : ($closingBalance < 0 ? '(Cr - Advance)' : '(Settled)') }}
+                            @if($party)
+                                @if($party->type === 'customer' || $party->type === 'staff')
+                                    {{ $closingBalance > 0 ? '(Dr - Receivable)' : ($closingBalance < 0 ? '(Cr - Advance)' : '(Settled)') }}
+                                @else
+                                    {{ $closingBalance > 0 ? '(Cr - Payable)' : ($closingBalance < 0 ? '(Dr - Overpaid)' : '(Settled)') }}
+                                @endif
                             @else
-                                {{ $closingBalance > 0 ? '(Cr - Payable)' : ($closingBalance < 0 ? '(Dr - Overpaid)' : '(Settled)') }}
+                                {{ $closingBalance > 0 ? '(Cr - Net Payable)' : ($closingBalance < 0 ? '(Dr - Net Receivable)' : '(Settled)') }}
                             @endif
                         </small>
                     </td>
@@ -289,21 +354,40 @@
             </div>
         </div>
 
-        <!-- Party Profile Box -->
+        <!-- Party / Group Profile Box -->
         <div class="row g-2 g-md-3 mb-3 mb-md-4 p-3 bg-light rounded-3 border d-print-none">
-            <div class="col-12 col-md-6">
-                <div class="text-muted small fw-semibold" style="font-size: 0.75rem;">Account / Party Name:</div>
-                <h5 class="fw-bold text-dark m-0">{{ $party->name }}</h5>
+            <div class="col-12 col-md-7">
+                <div class="text-muted small fw-semibold" style="font-size: 0.75rem;">Account / Statement Target:</div>
+                <h5 class="fw-bold text-dark m-0">{{ $statementTitle }}</h5>
                 <div class="small text-muted mt-1" style="font-size: 0.74rem;">
-                    <i class="bi bi-geo-alt me-1"></i>{{ $party->address ?? 'No physical address registered' }}
+                    @if($party)
+                        <i class="bi bi-geo-alt me-1"></i>{{ $party->address ?? 'No physical address registered' }}
+                    @else
+                        <i class="bi bi-people me-1"></i>Combined statement of <strong>{{ $selectedParties->count() }}</strong> active parties
+                    @endif
                 </div>
             </div>
-            <div class="col-12 col-md-6 text-start text-md-end">
-                <div class="text-muted small fw-semibold" style="font-size: 0.75rem;">Account Type & Contact:</div>
-                <div class="mt-1">{!! $party->type_badge !!}</div>
-                <div class="small font-monospace text-dark mt-1" style="font-size: 0.74rem;">
-                    <i class="bi bi-telephone me-1 text-primary"></i>{{ $party->phone ?? 'N/A' }}
-                </div>
+            <div class="col-12 col-md-5 text-start text-md-end">
+                <div class="text-muted small fw-semibold" style="font-size: 0.75rem;">Category & Dealing Mode:</div>
+                @if($party)
+                    <div class="mt-1">{!! $party->type_badge !!} {!! $party->dealing_badges !!}</div>
+                    <div class="small font-monospace text-dark mt-1" style="font-size: 0.74rem;">
+                        <i class="bi bi-telephone me-1 text-primary"></i>{{ $party->phone ?? 'N/A' }}
+                    </div>
+                @else
+                    <div class="mt-1">
+                        @if(($ledgerScope ?? 'single') === 'all_credit')
+                            <span class="badge bg-primary text-white px-2 py-1"><i class="bi bi-credit-card me-1"></i>Credit Parties Only</span>
+                        @elseif(($ledgerScope ?? 'single') === 'all_cash')
+                            <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-cash-stack me-1"></i>Cash Parties Only</span>
+                        @else
+                            <span class="badge bg-dark text-white px-2 py-1"><i class="bi bi-people-fill me-1"></i>All Parties Consolidated</span>
+                        @endif
+                    </div>
+                    <div class="small text-muted mt-1" style="font-size: 0.74rem;">
+                        Total Accounts Included: <strong>{{ $selectedParties->count() }}</strong>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -335,10 +419,14 @@
                     <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">Net Ending Balance</span>
                     <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format(abs($closingBalance), 2) }}</h5>
                     <small class="text-white-50" style="font-size: 0.7rem;">
-                        @if($party->type === 'customer' || $party->type === 'staff')
-                            {{ $closingBalance > 0 ? 'Receivable (Dr)' : ($closingBalance < 0 ? 'Advance / Credit (Cr)' : 'Settled / Zero') }}
+                        @if($party)
+                            @if($party->type === 'customer' || $party->type === 'staff')
+                                {{ $closingBalance > 0 ? 'Receivable (Dr)' : ($closingBalance < 0 ? 'Advance / Credit (Cr)' : 'Settled / Zero') }}
+                            @else
+                                {{ $closingBalance > 0 ? 'Payable to Supplier' : ($closingBalance < 0 ? 'Debit Balance (Overpaid)' : 'Settled / Zero') }}
+                            @endif
                         @else
-                            {{ $closingBalance > 0 ? 'Payable to Supplier' : ($closingBalance < 0 ? 'Debit Balance (Overpaid)' : 'Settled / Zero') }}
+                            {{ $closingBalance > 0 ? 'Net Payable Balance' : ($closingBalance < 0 ? 'Net Receivable Balance' : 'Settled / Zero') }}
                         @endif
                     </small>
                 </div>
@@ -351,6 +439,9 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width: 105px;">Date</th>
+                        @if(($ledgerScope ?? 'single') !== 'single')
+                            <th>Counterparty</th>
+                        @endif
                         <th style="width: 110px;">Ref / Voucher</th>
                         <th>Account / Mode</th>
                         <th>Description / Details</th>
@@ -363,6 +454,9 @@
                     <!-- Opening Balance Row -->
                     <tr class="table-secondary bg-opacity-25 fw-semibold">
                         <td>{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
+                        @if(($ledgerScope ?? 'single') !== 'single')
+                            <td class="font-monospace text-muted">-</td>
+                        @endif
                         <td class="font-monospace text-muted">-</td>
                         <td class="text-muted">Opening Balance</td>
                         <td class="text-muted">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
@@ -376,6 +470,16 @@
                     @forelse($transactions as $entry)
                         <tr>
                             <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
+                            @if(($ledgerScope ?? 'single') !== 'single')
+                                <td>
+                                    <a href="{{ route('ledgers.party', ['party_id' => $entry->party_id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fw-semibold text-dark text-decoration-none" title="View individual party ledger">
+                                        {{ $entry->party_name }}
+                                    </a>
+                                    @if($entry->party_type)
+                                        <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.65rem;">{{ $entry->party_type }}</span>
+                                    @endif
+                                </td>
+                            @endif
                             <td class="font-monospace fw-bold">
                                 @if($entry->transaction_id)
                                     <a href="{{ route('transactions.show', $entry->transaction_id) }}" class="text-decoration-none" target="_blank">
@@ -409,16 +513,16 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
+                            <td colspan="{{ ($ledgerScope ?? 'single') !== 'single' ? 8 : 7 }}" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox fs-3 d-block mb-1"></i>
-                                No ledger transactions found for this party within the selected date range.
+                                No ledger transactions found for {{ ($ledgerScope ?? 'single') !== 'single' ? 'the selected parties' : 'this party' }} within the selected date range.
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
                 <tfoot class="table-light">
                     <tr class="fw-bold">
-                        <td colspan="4" class="text-end">Period Totals & Ending Balance:</td>
+                        <td colspan="{{ ($ledgerScope ?? 'single') !== 'single' ? 5 : 4 }}" class="text-end">Period Totals & Ending Balance:</td>
                         <td class="text-end font-monospace text-danger">Rs. {{ number_format($totalDebit, 2) }}</td>
                         <td class="text-end font-monospace text-success">Rs. {{ number_format($totalCredit, 2) }}</td>
                         <td class="text-end font-monospace text-primary fs-6">Rs. {{ number_format($closingBalance, 2) }}</td>
@@ -446,8 +550,27 @@
             <div class="d-flex flex-column gap-2">
                 @forelse($transactions as $entry)
                     <div class="p-3 rounded-3 border bg-white shadow-xs">
+                        @if(($ledgerScope ?? 'single') !== 'single')
+                            <div class="mb-1.5 pb-1.5 border-bottom d-flex align-items-center justify-content-between">
+                                <a href="{{ route('ledgers.party', ['party_id' => $entry->party_id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fw-bold text-primary small text-decoration-none">
+                                    <i class="bi bi-person me-1"></i>{{ $entry->party_name }}
+                                </a>
+                                @if($entry->party_type)
+                                    <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;">{{ $entry->party_type }}</span>
+                                @endif
+                            </div>
+                        @endif
                         <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
                             <div class="d-flex align-items-center gap-1.5 min-w-0">
+                                <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
+                                @if($entry->transaction_id)
+                                    <span class="font-monospace text-muted small">#{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}</span>
+                                @endif
+                            </div>
+                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
+                                {{ $entry->account_name }}
+                            </span>
+                        </div>
                                 <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
                                 @if($entry->transaction_id)
                                     <span class="font-monospace text-muted small">#{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}</span>
@@ -551,35 +674,84 @@
     const partyOptions = Array.from(document.querySelectorAll('[data-party-id]'));
     const partyOptionsMenu = document.getElementById('partyOptions');
     const partySearchEmpty = document.getElementById('partySearchEmpty');
+    const comboboxModeFilter = document.getElementById('comboboxModeFilter');
+    let currentDealingFilter = 'all';
+
+    function getOptionDisplayTitle(option) {
+        if (!option) return '';
+        if (option.dataset.displayTitle) return option.dataset.displayTitle;
+        return option.textContent.replace(/\s+/g, ' ').trim();
+    }
+
     const selectedParty = partyOptions.find(function (option) {
         return option.dataset.partyId === partyId.value;
     });
 
-    if (selectedParty) partySearch.value = selectedParty.textContent.trim();
+    if (selectedParty && partySearch) {
+        partySearch.value = getOptionDisplayTitle(selectedParty);
+    }
 
     function closePartyOptions() {
-        partyOptionsMenu.classList.remove('show');
-        partySearch.setAttribute('aria-expanded', 'false');
+        if (partyOptionsMenu) {
+            partyOptionsMenu.classList.remove('show');
+            partySearch.setAttribute('aria-expanded', 'false');
+        }
     }
 
     function filterPartyOptions(query) {
-        const normalizedQuery = query.trim().toLocaleLowerCase();
+        const normalizedQuery = (query || '').trim().toLocaleLowerCase();
         let matchingParties = 0;
 
         partyOptions.forEach(function (option) {
-            const matches = option.textContent.toLocaleLowerCase().includes(normalizedQuery);
-            option.hidden = !matches;
+            const isCombined = option.dataset.partyId === 'all_credit' || option.dataset.partyId === 'all_cash';
+            const textMatches = option.textContent.toLocaleLowerCase().includes(normalizedQuery);
+            
+            let modeMatches = true;
+            if (currentDealingFilter === 'credit') {
+                if (isCombined) {
+                    modeMatches = option.dataset.partyId === 'all_credit';
+                } else {
+                    modeMatches = option.dataset.isCredit === '1';
+                }
+            } else if (currentDealingFilter === 'cash') {
+                if (isCombined) {
+                    modeMatches = option.dataset.partyId === 'all_cash';
+                } else {
+                    modeMatches = option.dataset.isCash === '1';
+                }
+            }
+
+            const visible = textMatches && modeMatches;
+            option.hidden = !visible;
             option.setAttribute('aria-selected', option.dataset.partyId === partyId.value ? 'true' : 'false');
-            if (matches) matchingParties++;
+            if (visible) matchingParties++;
         });
 
-        partySearchEmpty.hidden = matchingParties > 0;
+        if (partySearchEmpty) {
+            partySearchEmpty.hidden = matchingParties > 0;
+        }
     }
 
     function openPartyOptions(query) {
         filterPartyOptions(query);
         partyOptionsMenu.classList.add('show');
         partySearch.setAttribute('aria-expanded', 'true');
+    }
+
+    if (comboboxModeFilter) {
+        comboboxModeFilter.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const btn = e.target.closest('[data-filter-mode]');
+            if (!btn) return;
+            
+            currentDealingFilter = btn.dataset.filterMode;
+            comboboxModeFilter.querySelectorAll('[data-filter-mode]').forEach(function (b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            filterPartyOptions(partySearch.value);
+            partySearch.focus();
+        });
     }
 
     if (partySearch) {
@@ -589,7 +761,7 @@
         });
 
         partySearch.addEventListener('input', function () {
-            if (selectedParty && this.value.trim() !== selectedParty.textContent.trim()) {
+            if (selectedParty && this.value.trim() !== getOptionDisplayTitle(selectedParty)) {
                 partyId.value = '';
             }
             openPartyOptions(this.value);
@@ -616,7 +788,7 @@
 
     partyOptions.forEach(function (option) {
         option.addEventListener('click', function () {
-            partySearch.value = this.textContent.trim();
+            partySearch.value = getOptionDisplayTitle(this);
             partyId.value = this.dataset.partyId;
             partyCombobox.closest('form').submit();
         });

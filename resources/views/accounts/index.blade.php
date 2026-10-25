@@ -456,7 +456,8 @@
                 <div class="modal-body p-3 p-sm-4 text-start">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Transfer Date <span class="text-danger">*</span></label>
-                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                        <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
                     </div>
 
                     <div class="row g-2 mb-3">

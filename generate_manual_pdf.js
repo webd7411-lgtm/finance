@@ -201,7 +201,6 @@ drawBullet('Party Ledger (Khata Statement)', 'Kisi bhi party ka naam aur date ra
 drawBullet('Cash Book Register', 'Rozana ka entry-wise cash flow: Subah kitna cash tha, shifts se kitna aya, expenses kitnay huay aur sham ko kitna cash bacha.');
 drawBullet('Bank Book Register', 'Har bank aur digital wallet ka alag register. Kis tareekh ko kitne transfers aye aur kahan transfer huay.');
 drawBullet('Daily Closing Summary Report', 'Boss / Owner ke liye 1-page executive summary jo print nikal kar dukan ke record me file ki ja sakti hai.');
-drawBullet('Discrepancy & Variance Audit', 'Cashiers ki shortages aur excess ka tareekh-waar audit takay cash loss foran trace ho sakay.');
 
 // ==========================================
 // 8. AUDIT TRAIL & SYSTEM SECURITY

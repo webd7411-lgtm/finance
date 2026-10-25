@@ -26,10 +26,6 @@
         <button type="button" class="btn btn-danger btn-sm rounded-3 fw-semibold px-2.5 px-sm-3 shadow-sm flex-fill flex-sm-grow-0 text-nowrap" data-bs-toggle="modal" data-bs-target="#paymentOutModal">
             <i class="bi bi-arrow-up-right me-1"></i> Payment Out
         </button>
-
-        <button type="button" class="btn btn-sm rounded-3 fw-semibold px-2.5 px-sm-3 shadow-sm flex-fill flex-sm-grow-0 text-nowrap text-white" style="background-color: #be123c; border-color: #be123c;" data-bs-toggle="modal" data-bs-target="#recordExpenseModal">
-            <i class="bi bi-receipt-cutoff me-1"></i> Record Expense
-        </button>
     </div>
 @endsection
 
@@ -93,13 +89,31 @@
 <!-- Transactions Journal Card -->
 <div class="card-custom overflow-hidden">
     <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h6 class="fw-bold text-dark m-0">Voucher Journal & History</h6>
-            <small class="text-muted" style="font-size: 0.78rem;">Complete record of receipts, payouts, and party settlements</small>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div>
+                <h6 class="fw-bold text-dark m-0">{{ $isTrashView ? 'Deleted Vouchers (Trash Audit)' : 'Voucher Journal & History' }}</h6>
+                <small class="text-muted" style="font-size: 0.78rem;">
+                    {{ $isTrashView ? 'Permanently archived deleted vouchers with reversal audit' : 'Complete record of receipts, payouts, and party settlements' }}
+                </small>
+            </div>
+            <!-- View Tabs -->
+            <div class="btn-group btn-group-sm ms-sm-2" role="group">
+                <a href="{{ route('transactions.index') }}" class="btn btn-sm {{ !$isTrashView ? 'btn-primary active' : 'btn-outline-secondary' }}">
+                    <i class="bi bi-clock-history me-1"></i> Active Vouchers
+                    <span class="badge {{ !$isTrashView ? 'bg-white text-primary' : 'bg-secondary text-white' }} ms-1">{{ $activeCount }}</span>
+                </a>
+                <a href="{{ route('transactions.index', ['view' => 'trash']) }}" class="btn btn-sm {{ $isTrashView ? 'btn-danger active' : 'btn-outline-danger' }}">
+                    <i class="bi bi-trash3 me-1"></i> Deleted Vouchers
+                    <span class="badge {{ $isTrashView ? 'bg-white text-danger' : 'bg-danger text-white' }} ms-1">{{ $trashCount }}</span>
+                </a>
+            </div>
         </div>
 
         <!-- Filter Form -->
         <form method="GET" action="{{ route('transactions.index') }}" class="d-flex gap-1.5 flex-wrap w-100 w-sm-auto align-items-center">
+            @if($isTrashView)
+                <input type="hidden" name="view" value="trash">
+            @endif
             <select name="type" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 110px; max-width: 140px;">
                 <option value="">All Types</option>
                 <option value="payment_in" {{ request('type') == 'payment_in' ? 'selected' : '' }}>Payment In</option>
@@ -132,84 +146,193 @@
             <input type="date" name="from_date" class="form-control form-control-sm flex-fill flex-sm-grow-0" value="{{ request('from_date') }}" title="From Date" style="min-width: 125px; max-width: 135px;">
             <input type="date" name="to_date" class="form-control form-control-sm flex-fill flex-sm-grow-0" value="{{ request('to_date') }}" title="To Date" style="min-width: 125px; max-width: 135px;">
 
+            @if(!$isTrashView)
+                <select name="status" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 105px; max-width: 130px;">
+                    <option value="">All Status</option>
+                    <option value="locked" {{ request('status') == 'locked' ? 'selected' : '' }}>Locked</option>
+                    <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
+                </select>
+            @endif
+
             <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-filter"></i></button>
-            @if(request()->hasAny(['type', 'account_id', 'party_id', 'category_id', 'expense_category_id', 'purchase_category_id', 'from_date', 'to_date']))
-                <a href="{{ route('transactions.index') }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none">Clear</a>
+            @if(request()->hasAny(['type', 'account_id', 'party_id', 'category_id', 'expense_category_id', 'purchase_category_id', 'from_date', 'to_date', 'status']))
+                <a href="{{ route('transactions.index', $isTrashView ? ['view' => 'trash'] : []) }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none">Clear</a>
             @endif
         </form>
     </div>
+
+    @if($isTrashView)
+        <div class="p-3 bg-danger bg-opacity-10 border-bottom d-flex align-items-center gap-2 text-danger small">
+            <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+            <div>
+                <strong>Audit Record:</strong> Deleted payment vouchers are preserved here permanently. Financial account and party balances for these vouchers were safely reversed at the time of deletion. Click <strong>"Audit Voucher"</strong> to inspect details.
+            </div>
+        </div>
+    @endif
 
     <!-- Desktop View: Table -->
     <div class="d-none d-md-block table-responsive">
         <table class="table table-custom table-hover align-middle mb-0">
             <thead>
-                <tr>
-                    <th style="width: 50px;">#</th>
-                    <th>Date</th>
-                    <th>Voucher Type</th>
-                    <th>Party / Payee</th>
-                    <th>Payment Channel</th>
-                    <th>Bill # / Ref</th>
-                    <th>Description</th>
-                    <th class="text-end">Amount</th>
-                    <th class="text-end" style="width: 110px;">Actions</th>
-                </tr>
+                @if($isTrashView)
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Voucher Date</th>
+                        <th>Voucher Type</th>
+                        <th>Party / Payee</th>
+                        <th>Payment Channel</th>
+                        <th>Bill # / Ref</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                        <th>Deleted On</th>
+                        <th>Deleted By</th>
+                        <th class="text-end" style="width: 140px;">Audit Voucher</th>
+                    </tr>
+                @else
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Date</th>
+                        <th>Voucher Type</th>
+                        <th>Party / Payee</th>
+                        <th>Payment Channel</th>
+                        <th>Bill # / Ref</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center" style="width: 100px;">Status</th>
+                        <th class="text-end" style="width: 135px;">Actions</th>
+                    </tr>
+                @endif
             </thead>
             <tbody>
                 @forelse($transactions as $index => $trx)
-                    <tr>
-                        <td class="text-muted small">{{ $transactions->firstItem() + $index }}</td>
-                        <td class="small fw-semibold text-dark">{{ $trx->date->format('d M Y') }}</td>
-                        <td>{!! $trx->type_badge !!}</td>
-                        <td>
-                            @if($trx->party)
-                                <div class="fw-semibold text-dark">{{ $trx->party->name }}</div>
-                                <small class="text-muted">{!! $trx->party->type_badge !!}</small>
-                            @elseif($trx->category)
-                                <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ $trx->category->name }}</span>
-                            @else
-                                <span class="text-muted small">Direct Cash Flow</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($trx->account)
-                                <div class="small fw-semibold text-dark">{{ $trx->account->name }}</div>
-                                <small class="text-muted">{!! $trx->account->type_badge !!}</small>
-                            @else
-                                <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-clock-history me-1"></i>Credit Purchase</span>
-                            @endif
-                        </td>
-                        <td class="small font-monospace text-secondary">
-                            {{ $trx->bill_no ?? '-' }}
-                        </td>
-                        <td class="small text-muted text-truncate" style="max-width: 220px;" title="{{ $trx->description }}">
-                            {{ $trx->description ?? '-' }}
-                        </td>
-                        <td class="text-end font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : ($trx->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}">
-                            {{ $trx->type == 'payment_in' ? '+' : ($trx->type == 'purchase_bill' ? '•' : '-') }}Rs. {{ number_format($trx->amount, 2) }}
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" title="View & Print Voucher">
-                                    <i class="bi bi-receipt"></i>
-                                </a>
-                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                                    <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this voucher? This will revert account and party balances.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Voucher">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                    @if($isTrashView)
+                        <tr class="table-light">
+                            <td class="text-muted small">{{ $transactions->firstItem() + $index }}</td>
+                            <td class="small fw-semibold text-dark">{{ $trx->date->format('d M Y') }}</td>
+                            <td>{!! $trx->type_badge !!}</td>
+                            <td>
+                                @if($trx->party)
+                                    <div class="fw-semibold text-dark">{{ $trx->party->name }}</div>
+                                    <small class="text-muted">{!! $trx->party->type_badge !!}</small>
+                                @elseif($trx->category)
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ $trx->category->name }}</span>
+                                @else
+                                    <span class="text-muted small">Direct Cash Flow</span>
                                 @endif
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                            <td>
+                                @if($trx->account)
+                                    <div class="small fw-semibold text-dark">{{ $trx->account->name }}</div>
+                                    <small class="text-muted">{!! $trx->account->type_badge !!}</small>
+                                @else
+                                    <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-clock-history me-1"></i>Credit Purchase</span>
+                                @endif
+                            </td>
+                            <td class="small font-monospace text-secondary">
+                                {{ $trx->bill_no ?? '-' }}
+                            </td>
+                            <td class="small text-muted text-truncate" style="max-width: 220px;" title="{{ $trx->description }}">
+                                {{ $trx->description ?? '-' }}
+                            </td>
+                            <td class="text-end font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : ($trx->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}">
+                                {{ $trx->type == 'payment_in' ? '+' : ($trx->type == 'purchase_bill' ? '•' : '-') }}Rs. {{ number_format($trx->amount, 2) }}
+                            </td>
+                            <td class="small text-danger font-monospace">
+                                <i class="bi bi-calendar-x me-1"></i>{{ $trx->deleted_at ? $trx->deleted_at->format('d M Y, h:i A') : '-' }}
+                            </td>
+                            <td class="small text-dark fw-semibold">
+                                <i class="bi bi-person-badge me-1 text-danger"></i>{{ $trx->deletedBy->name ?? 'Admin' }}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-danger btn-sm py-1 px-2" title="Inspect Deleted Voucher">
+                                    <i class="bi bi-file-earmark-lock me-1"></i> Audit Voucher
+                                </a>
+                            </td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="text-muted small">{{ $transactions->firstItem() + $index }}</td>
+                            <td class="small fw-semibold text-dark">{{ $trx->date->format('d M Y') }}</td>
+                            <td>{!! $trx->type_badge !!}</td>
+                            <td>
+                                @if($trx->party)
+                                    <div class="fw-semibold text-dark">{{ $trx->party->name }}</div>
+                                    <small class="text-muted">{!! $trx->party->type_badge !!}</small>
+                                @elseif($trx->category)
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-tag me-1"></i>{{ $trx->category->name }}</span>
+                                @else
+                                    <span class="text-muted small">Direct Cash Flow</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($trx->account)
+                                    <div class="small fw-semibold text-dark">{{ $trx->account->name }}</div>
+                                    <small class="text-muted">{!! $trx->account->type_badge !!}</small>
+                                @else
+                                    <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-clock-history me-1"></i>Credit Purchase</span>
+                                @endif
+                            </td>
+                            <td class="small font-monospace text-secondary">
+                                {{ $trx->bill_no ?? '-' }}
+                            </td>
+                            <td class="small text-muted text-truncate" style="max-width: 220px;" title="{{ $trx->description }}">
+                                {{ $trx->description ?? '-' }}
+                            </td>
+                            <td class="text-end font-monospace fw-bold {{ $trx->type == 'payment_in' ? 'text-success' : ($trx->type == 'purchase_bill' ? 'text-warning-emphasis' : 'text-danger') }}">
+                                {{ $trx->type == 'payment_in' ? '+' : ($trx->type == 'purchase_bill' ? '•' : '-') }}Rs. {{ number_format($trx->amount, 2) }}
+                            </td>
+                            <td class="text-center">{!! $trx->status_badge !!}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" title="View & Print Voucher">
+                                        <i class="bi bi-receipt"></i>
+                                    </a>
+                                    @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                        @if($trx->status === 'locked')
+                                            <form action="{{ route('transactions.unlock', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Unlock this voucher to allow modifications or deletion?');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-warning btn-sm py-1 px-2" title="Unlock Voucher">
+                                                    <i class="bi bi-unlock"></i>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('transactions.lock', $trx->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Lock Voucher">
+                                                    <i class="bi bi-lock"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endif
+                                    @if(auth()->user()->isOwner())
+                                        @if($trx->status === 'locked')
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 disabled opacity-50" title="Voucher is locked. Unlock before deleting." disabled>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        @else
+                                            <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this voucher? This will revert account and party balances.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Voucher">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @endif
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center py-5 text-muted small">
-                            <i class="bi bi-receipt-cutoff fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                            No transactions found. Use <strong>"Payment In"</strong> or <strong>"Payment Out"</strong> buttons above to record receipts and payouts.
+                        <td colspan="{{ $isTrashView ? 11 : 10 }}" class="text-center py-5 text-muted small">
+                            @if($isTrashView)
+                                <i class="bi bi-trash3 fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                                No deleted vouchers in trash archive.
+                            @else
+                                <i class="bi bi-receipt-cutoff fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                                No transactions found. Use <strong>"Payment In"</strong> or <strong>"Payment Out"</strong> buttons above to record receipts and payouts.
+                            @endif
                         </td>
                     </tr>
                 @endforelse
@@ -221,7 +344,7 @@
     <div class="d-block d-md-none p-2 p-sm-3">
         <div class="d-flex flex-column gap-2">
             @forelse($transactions as $trx)
-                <div class="p-3 rounded-3 border bg-white shadow-xs">
+                <div class="p-3 rounded-3 border bg-white shadow-xs {{ $isTrashView ? 'border-danger-subtle bg-danger bg-opacity-10' : '' }}">
                     <!-- Top Row: Ref #, Date & Type Badge -->
                     <div class="d-flex align-items-center justify-content-between gap-1 mb-2">
                         <div class="d-flex align-items-center gap-1.5 min-w-0">
@@ -229,10 +352,21 @@
                             <span class="text-muted small">·</span>
                             <span class="fw-semibold text-dark small">{{ $trx->date->format('d M Y') }}</span>
                         </div>
-                        <div class="flex-shrink-0">
+                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
                             {!! $trx->type_badge !!}
+                            @if($isTrashView)
+                                <span class="badge bg-danger-subtle text-danger border border-danger"><i class="bi bi-trash3 me-1"></i>Deleted</span>
+                            @else
+                                {!! $trx->status_badge !!}
+                            @endif
                         </div>
                     </div>
+
+                    @if($isTrashView)
+                        <div class="small text-danger pb-2 border-bottom mb-2 font-monospace" style="font-size: 0.74rem;">
+                            <i class="bi bi-calendar-x me-1"></i>Deleted: {{ $trx->deleted_at ? $trx->deleted_at->format('d M Y, h:i A') : '-' }} &bull; By: {{ $trx->deletedBy->name ?? 'Admin' }}
+                        </div>
+                    @endif
 
                     <!-- Party / Payee & Channel Row -->
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
@@ -279,25 +413,60 @@
 
                     <!-- Actions Row -->
                     <div class="d-flex align-items-center gap-1.5 pt-1">
-                        <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-primary btn-sm flex-fill py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;">
-                            <i class="bi bi-receipt me-1"></i> View Voucher
-                        </a>
+                        @if($isTrashView)
+                            <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-danger btn-sm flex-fill py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;">
+                                <i class="bi bi-file-earmark-lock me-1"></i> Audit Deleted Voucher
+                            </a>
+                        @else
+                            <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-primary btn-sm flex-fill py-1.5 px-2 rounded-2 fw-semibold" style="font-size: 0.76rem;">
+                                <i class="bi bi-receipt me-1"></i> View Voucher
+                            </a>
 
-                        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                            <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to delete this voucher? This will revert account and party balances.');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Voucher">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                            @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                @if($trx->status === 'locked')
+                                    <form action="{{ route('transactions.unlock', $trx->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Unlock this voucher to allow modifications or deletion?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-warning btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Unlock Voucher">
+                                            <i class="bi bi-unlock"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('transactions.lock', $trx->id) }}" method="POST" class="m-0 flex-shrink-0">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Lock Voucher">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
+
+                            @if(auth()->user()->isOwner())
+                                @if($trx->status === 'locked')
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 rounded-2 disabled opacity-50 flex-shrink-0" style="font-size: 0.76rem;" title="Voucher is locked. Unlock before deleting." disabled>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                @else
+                                    <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to delete this voucher? This will revert account and party balances.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Voucher">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
                         @endif
                     </div>
                 </div>
             @empty
                 <div class="text-center py-4 text-muted small">
-                    <i class="bi bi-receipt-cutoff fs-3 d-block text-secondary opacity-50 mb-2"></i>
-                    No transactions found. Use <strong>"Payment In"</strong> or <strong>"Payment Out"</strong> buttons above to record receipts and payouts.
+                    @if($isTrashView)
+                        <i class="bi bi-trash3 fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                        No deleted vouchers in trash archive.
+                    @else
+                        <i class="bi bi-receipt-cutoff fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                        No transactions found. Use <strong>"Payment In"</strong> or <strong>"Payment Out"</strong> buttons above to record receipts and payouts.
+                    @endif
                 </div>
             @endforelse
         </div>
@@ -333,7 +502,8 @@
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Date <span class="text-danger">*</span></label>
-                            <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                            <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                            <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Deposit Into Account <span class="text-danger">*</span></label>
@@ -411,7 +581,8 @@
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Date <span class="text-danger">*</span></label>
-                            <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                            <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                            <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Pay From Account <span class="text-danger">*</span></label>
@@ -469,89 +640,6 @@
     </div>
 </div>
 
-<!-- ==================== RECORD EXPENSE MODAL ==================== -->
-<div class="modal fade" id="recordExpenseModal" tabindex="-1" aria-labelledby="recordExpenseLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg text-start">
-            <div class="modal-header border-bottom py-3 text-white" style="background-color: #be123c;">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-receipt-cutoff fs-5"></i>
-                    <div>
-                        <h6 class="modal-title fw-bold text-white mb-0" id="recordExpenseLabel">Record Business Expense</h6>
-                        <small class="text-white-50" style="font-size: 0.75rem;">Rent, refreshments, utilities, maintenance & petty cash</small>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <form action="{{ route('transactions.store') }}" method="POST">
-                @csrf
-                <input type="hidden" name="type" value="payment_out">
-                <input type="hidden" name="party_id" value="">
-
-                <div class="modal-body p-3 p-sm-4 text-start">
-                    <div class="row g-2 mb-3">
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Expense Date <span class="text-danger">*</span></label>
-                            <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Pay From Account <span class="text-danger">*</span></label>
-                            <select name="account_id" id="expenseAccountSelect" class="form-select form-select-sm py-2" required>
-                                <option value="" disabled selected>-- Select Account --</option>
-                                @foreach($accounts->filter(fn($a) => $a->isActive()) as $acc)
-                                    <option value="{{ $acc->id }}" data-balance="{{ (float) $acc->current_balance }}">{{ $acc->name }} (Rs. {{ number_format($acc->current_balance, 2) }})</option>
-                                @endforeach
-                            </select>
-                            <div id="expenseBalanceFeedback" class="small mt-1" style="font-size: 0.75rem;"></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Expense Category <span class="text-danger">*</span></label>
-                        <select name="category_id" class="form-select form-select-sm py-2" required>
-                            <option value="" disabled selected>-- Select Expense Category --</option>
-                            @foreach($expenseCategories as $cat)
-                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                            @endforeach
-                        </select>
-                        <div class="d-flex justify-content-between align-items-center mt-1">
-                            <span class="text-muted small" style="font-size: 0.72rem;">Operational expense category</span>
-                            <a href="{{ route('expense-categories.index', ['tab' => 'expense']) }}" class="small text-decoration-none" style="font-size: 0.72rem;">+ Manage Categories</a>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Expense Amount (Rs.) <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light fw-bold text-danger">PKR</span>
-                            <input type="text" inputmode="decimal" name="amount" id="expenseAmountInput" class="form-control form-control-sm py-2 fw-bold fs-6 text-danger amount-format" placeholder="0.00" autocomplete="off" required>
-                        </div>
-                        <div id="expenseAmountWarning" class="text-danger small fw-semibold mt-1" style="display: none; font-size: 0.75rem;"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Receipt / Bill / Invoice #</label>
-                        <input type="text" name="bill_no" class="form-control form-control-sm py-2" placeholder="e.g. REC-1029, Utility Bill #">
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold text-secondary">Description / Remarks</label>
-                        <textarea name="description" class="form-control form-control-sm py-2" rows="2" placeholder="Details about this expense (e.g. Office tea, shop repairs, generator fuel)..."></textarea>
-                    </div>
-                </div>
-
-                <div class="modal-footer border-top py-2 bg-light">
-                    <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn text-white btn-sm px-4 fw-semibold shadow-sm" style="background-color: #be123c;">
-                        <i class="bi bi-check-circle me-1"></i> Save Expense
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- ==================== TRANSFER FUNDS MODAL ==================== -->
 <div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -572,7 +660,8 @@
                 <div class="modal-body p-3 p-sm-4 text-start">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Transfer Date <span class="text-danger">*</span></label>
-                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                        <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -660,7 +749,8 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Bill Date <span class="text-danger">*</span></label>
-                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" required>
+                        <input type="date" name="date" class="form-control form-control-sm py-2" value="{{ date('Y-m-d') }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                        <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
                     </div>
 
                     <div class="mb-3">
@@ -784,7 +874,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupBalanceCheck('payOutAccountSelect', 'payOutAmountInput', 'payOutBalanceFeedback', 'payOutAmountWarning');
-    setupBalanceCheck('expenseAccountSelect', 'expenseAmountInput', 'expenseBalanceFeedback', 'expenseAmountWarning');
     setupBalanceCheck('transferFromAccountSelect', 'transferAmountInput', 'transferBalanceFeedback', 'transferAmountWarning');
 });
 </script>

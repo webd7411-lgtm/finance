@@ -34,7 +34,9 @@ return new class extends Migration
     {
         Schema::table('shift_closings', function (Blueprint $table) {
             if (Schema::hasColumn('shift_closings', 'deleted_by')) {
-                $table->dropForeign(['deleted_by']);
+                if (Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                    $table->dropForeign(['deleted_by']);
+                }
                 $table->dropColumn('deleted_by');
             }
             if (Schema::hasColumn('shift_closings', 'deleted_at')) {

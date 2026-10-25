@@ -204,16 +204,29 @@
                         </h6>
                     </div>
 
-                    <!-- Gross Sale -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary mb-1">
-                            Total Shift Gross Sale (Rs.) <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light fw-bold text-dark">Rs.</span>
-                            <input type="text" inputmode="decimal" class="form-control fw-bold fs-5 text-dark amount-format" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required placeholder="0.00" autocomplete="off">
+                    <!-- Gross Sale & Net Sale Row -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold text-secondary mb-1">
+                                Total Shift Gross Sale (Rs.) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light fw-bold text-dark">Rs.</span>
+                                <input type="text" inputmode="decimal" class="form-control fw-bold fs-5 text-dark amount-format" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required placeholder="0.00" autocomplete="off">
+                            </div>
+                            <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
                         </div>
-                        <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold text-secondary mb-1">
+                                Shift Net Sale (Rs.) <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1" style="font-size: 0.68rem;">Gross - Return</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light fw-bold text-success">Rs.</span>
+                                <input type="text" class="form-control fw-bold fs-5 text-success bg-light" id="net_sale_display" value="0.00" readonly tabindex="-1">
+                            </div>
+                            <small class="text-muted" style="font-size: 0.72rem;">Net sales after subtracting sale returns</small>
+                        </div>
                     </div>
 
                     <!-- Sale Returns Card (Optional) -->
@@ -350,9 +363,14 @@
                                 <i class="bi bi-cash-coin text-danger me-1"></i> Cash Paid to Parties / Suppliers (Outflow)
                             </h6>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="addPartyPayment">
-                            <i class="bi bi-plus-lg me-1"></i> Add Row
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#quickAddPartyModal">
+                                <i class="bi bi-person-plus me-1"></i> Add Party
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="addPartyPayment">
+                                <i class="bi bi-plus-lg me-1"></i> Add Row
+                            </button>
+                        </div>
                     </div>
                     <small class="text-muted d-block mb-3" style="font-size: 0.75rem;">
                         Instant cash payments given to suppliers or staff directly from register cash during this shift.
@@ -581,6 +599,91 @@
         </div>
     </div>
 </form>
+
+<!-- Quick Add Party Modal -->
+<div class="modal fade" id="quickAddPartyModal" tabindex="-1" aria-labelledby="quickAddPartyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow text-start">
+            <div class="modal-header border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success p-2 rounded-circle">
+                        <i class="bi bi-person-plus-fill fs-5"></i>
+                    </span>
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark m-0" id="quickAddPartyModalLabel">Register New Party</h6>
+                        <small class="text-muted" style="font-size: 0.78rem;">Quick add supplier, trader, or payee for cash outflow</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickAddPartyForm">
+                <div class="modal-body p-3 p-sm-4 text-start">
+                    <div id="quickPartyErrorAlert" class="alert alert-danger py-2 small d-none" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="quickPartyName" class="form-label small fw-semibold text-secondary">Party / Payee Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm py-2" id="quickPartyName" name="name" placeholder="e.g. Al-Madina Traders / Haji Rashid" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="quickPartyType" class="form-label small fw-semibold text-secondary">Party Type <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm py-2" id="quickPartyType" name="type" required>
+                                <option value="supplier" selected>Supplier</option>
+                                <option value="trader">Trader</option>
+                                <option value="staff">Staff (Advance)</option>
+                                <option value="customer">Customer</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="quickPartyPhone" class="form-label small fw-semibold text-secondary">Phone Number</label>
+                            <input type="text" class="form-control form-control-sm py-2" id="quickPartyPhone" name="phone" placeholder="0300-1234567">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quickPartyAddress" class="form-label small fw-semibold text-secondary">Address / Location</label>
+                        <input type="text" class="form-control form-control-sm py-2" id="quickPartyAddress" name="address" placeholder="Shop / Market / City address">
+                    </div>
+
+                    <!-- Dealing Terms / Mode (Credit & Cash) -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary d-flex justify-content-between align-items-center mb-1">
+                            <span>Dealing Mode <span class="text-danger">*</span></span>
+                            <span class="text-muted fw-normal" style="font-size: 0.72rem;">Credit, Cash, or both</span>
+                        </label>
+                        <div class="p-2.5 rounded-3 bg-light border d-flex align-items-center gap-4">
+                            <div class="form-check m-0">
+                                <input class="form-check-input" type="checkbox" id="quickPartyCredit" value="1" checked>
+                                <label class="form-check-label small fw-semibold text-dark user-select-none" for="quickPartyCredit">
+                                    <i class="bi bi-credit-card text-primary me-1"></i> Credit
+                                </label>
+                            </div>
+                            <div class="form-check m-0">
+                                <input class="form-check-input" type="checkbox" id="quickPartyCash" value="1">
+                                <label class="form-check-label small fw-semibold text-dark user-select-none" for="quickPartyCash">
+                                    <i class="bi bi-cash-stack text-success me-1"></i> Cash
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="quickPartyOpeningBalance" class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
+                        <input type="number" step="0.01" class="form-control form-control-sm py-2" id="quickPartyOpeningBalance" name="opening_balance" value="0.00">
+                        <small class="text-muted" style="font-size: 0.72rem;">Starting ledger balance if already owed or paid.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 bg-light">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4 fw-semibold rounded-3 shadow-sm" id="btnSubmitQuickParty">
+                        <i class="bi bi-check-lg me-1"></i> Save Party
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -634,7 +737,10 @@ function calculateReturnInvoiceCount() {
 
 let partyPaymentIndex = 1;
 const partyPaymentRows = document.getElementById('partyPaymentRows');
-const partyOptions = Array.from(document.querySelectorAll('#shiftClosingPartyList option'));
+
+function getPartyOptions() {
+    return Array.from(document.querySelectorAll('#shiftClosingPartyList option'));
+}
 
 function bindPartyPaymentRow(row) {
     const partyInput = row.querySelector('[data-party-search]');
@@ -642,6 +748,7 @@ function bindPartyPaymentRow(row) {
     const amtInput = row.querySelector('.shift-party-payment-amount');
 
     partyInput.addEventListener('input', function () {
+        const partyOptions = getPartyOptions();
         const matchedParty = partyOptions.find(function (option) { return option.value === partyInput.value; });
         partyIdInput.value = matchedParty ? matchedParty.dataset.partyId : '';
         calculateClosing();
@@ -688,10 +795,7 @@ document.getElementById('addPartyPayment').addEventListener('click', function ()
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white text-muted">Rs.</span>
-                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[${partyPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
-                </div>
+                <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[${partyPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
@@ -707,6 +811,113 @@ document.getElementById('addPartyPayment').addEventListener('click', function ()
     bindPartyPaymentRow(row);
     partyPaymentIndex++;
 });
+
+// Quick Add Party AJAX handling
+const quickAddPartyForm = document.getElementById('quickAddPartyForm');
+const quickPartyModalEl = document.getElementById('quickAddPartyModal');
+const btnSubmitQuickParty = document.getElementById('btnSubmitQuickParty');
+const quickPartyErrorAlert = document.getElementById('quickPartyErrorAlert');
+
+if (quickAddPartyForm) {
+    quickAddPartyForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        quickPartyErrorAlert.classList.add('d-none');
+        quickPartyErrorAlert.innerText = '';
+
+        const originalBtnHtml = btnSubmitQuickParty.innerHTML;
+        btnSubmitQuickParty.disabled = true;
+        btnSubmitQuickParty.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
+
+        const formData = {
+            name: document.getElementById('quickPartyName').value.trim(),
+            type: document.getElementById('quickPartyType').value,
+            is_credit: document.getElementById('quickPartyCredit')?.checked ?? true,
+            is_cash: document.getElementById('quickPartyCash')?.checked ?? false,
+            phone: document.getElementById('quickPartyPhone').value.trim(),
+            address: document.getElementById('quickPartyAddress').value.trim(),
+            opening_balance: document.getElementById('quickPartyOpeningBalance').value.trim() || '0'
+        };
+
+        try {
+            const response = await fetch("{{ route('parties.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                let errorMsg = data.message || 'Error creating party.';
+                if (data.errors) {
+                    const firstErr = Object.values(data.errors)[0];
+                    if (Array.isArray(firstErr) && firstErr.length > 0) {
+                        errorMsg = firstErr[0];
+                    }
+                }
+                quickPartyErrorAlert.innerText = errorMsg;
+                quickPartyErrorAlert.classList.remove('d-none');
+                btnSubmitQuickParty.disabled = false;
+                btnSubmitQuickParty.innerHTML = originalBtnHtml;
+                return;
+            }
+
+            // Party created successfully
+            const party = data.party;
+            const partyTypeCapitalized = party.type.charAt(0).toUpperCase() + party.type.slice(1);
+            const partyLabel = `${party.name}${party.phone ? ' (' + party.phone + ')' : ''} [${partyTypeCapitalized}] #${party.id}`;
+
+            // Add to datalist
+            const datalist = document.getElementById('shiftClosingPartyList');
+            const newOption = document.createElement('option');
+            newOption.value = partyLabel;
+            newOption.dataset.partyId = party.id;
+            datalist.appendChild(newOption);
+
+            // Auto-fill into first empty row or the last row
+            const rows = partyPaymentRows.querySelectorAll('[data-party-payment-row]');
+            let targetRow = null;
+            for (let i = 0; i < rows.length; i++) {
+                const searchInp = rows[i].querySelector('[data-party-search]');
+                if (searchInp && !searchInp.value) {
+                    targetRow = rows[i];
+                    break;
+                }
+            }
+            if (!targetRow && rows.length > 0) {
+                targetRow = rows[rows.length - 1];
+            }
+
+            if (targetRow) {
+                const partyInput = targetRow.querySelector('[data-party-search]');
+                const partyIdInput = targetRow.querySelector('[data-party-id]');
+                if (partyInput && partyIdInput) {
+                    partyInput.value = partyLabel;
+                    partyIdInput.value = party.id;
+                    calculateClosing();
+                }
+            }
+
+            // Reset form & close modal
+            quickAddPartyForm.reset();
+            document.getElementById('quickPartyOpeningBalance').value = '0.00';
+            const modalInstance = bootstrap.Modal.getInstance(quickPartyModalEl) || new bootstrap.Modal(quickPartyModalEl);
+            modalInstance.hide();
+
+        } catch (err) {
+            quickPartyErrorAlert.innerText = 'Network error occurred. Please try again.';
+            quickPartyErrorAlert.classList.remove('d-none');
+        } finally {
+            btnSubmitQuickParty.disabled = false;
+            btnSubmitQuickParty.innerHTML = originalBtnHtml;
+        }
+    });
+}
 
 let accountPaymentIndex = 1;
 const accountPaymentRows = document.getElementById('accountPaymentRows');
@@ -914,6 +1125,13 @@ function calculateClosing() {
     const totalSale = parseAmount(document.getElementById('total_sale').value);
     const returns   = parseAmount(document.getElementById('returns_amount').value);
     const expenses  = parseAmount(document.getElementById('expenses_amount').value);
+
+    // Calculate Net Sale (Total Gross Sale minus Sale Returns)
+    const netSale = totalSale - returns;
+    const netSaleDisplay = document.getElementById('net_sale_display');
+    if (netSaleDisplay) {
+        netSaleDisplay.value = formatWithCommas(netSale.toFixed(2));
+    }
 
     // 3. Party Payments
     let totalPartyPayments = 0;

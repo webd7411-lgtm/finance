@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Step 2: Master Setup (Parties, Accounts, Categories)
+    Route::get('parties/check-duplicate', [PartyController::class, 'checkDuplicate'])->name('parties.check-duplicate');
     Route::resource('parties', PartyController::class);
     Route::resource('accounts', AccountController::class);
     Route::post('accounts/{account}/toggle-status', [AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
@@ -49,6 +50,8 @@ Route::middleware('auth')->group(function () {
 
     // Step 4: Daily Vouchers (Payment In & Payment Out)
     Route::post('transactions/transfer', [TransactionController::class, 'transfer'])->name('transactions.transfer');
+    Route::post('transactions/{transaction}/unlock', [TransactionController::class, 'unlock'])->name('transactions.unlock');
+    Route::post('transactions/{transaction}/lock', [TransactionController::class, 'lock'])->name('transactions.lock');
     Route::resource('transactions', TransactionController::class)->except(['edit', 'update', 'create']);
 
     // Step 5: Day Closing Module (Dono Shifts Merge & Auto Opening)
@@ -64,7 +67,6 @@ Route::middleware('auth')->group(function () {
     Route::get('reports/daily-register', [ReportController::class, 'dailyRegister'])->name('reports.daily-register');
     Route::get('reports/daily-register/export', [ReportController::class, 'exportDailyRegisterCsv'])->name('reports.daily-register.export');
     Route::get('reports/total-sale-summary', [ReportController::class, 'totalSaleSummary'])->name('reports.total-sale-summary');
-    Route::get('reports/variance', [ReportController::class, 'varianceAudit'])->name('reports.variance');
     Route::get('reports/expenses', [ReportController::class, 'expenseReport'])->name('reports.expenses');
 
     // Step 7: Audit Trail & Logs (Owner & Incharge)

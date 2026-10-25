@@ -29,7 +29,9 @@ return new class extends Migration
     {
         Schema::table('shift_closing_party_payments', function (Blueprint $table) {
             if (Schema::hasColumn('shift_closing_party_payments', 'expense_category_id')) {
-                $table->dropForeign(['expense_category_id']);
+                if (Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                    $table->dropForeign(['expense_category_id']);
+                }
                 $table->dropColumn('expense_category_id');
             }
         });

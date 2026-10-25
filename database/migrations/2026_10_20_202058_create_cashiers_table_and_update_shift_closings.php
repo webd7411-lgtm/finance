@@ -60,13 +60,15 @@ return new class extends Migration
         }
 
         // Drop foreign key to users so cashier_id can link to cashiers
-        Schema::table('shift_closings', function (Blueprint $table) {
-            try {
-                $table->dropForeign(['cashier_id']);
-            } catch (\Throwable $e) {
-                // foreign key may not exist or named differently
-            }
-        });
+        if (Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+            Schema::table('shift_closings', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['cashier_id']);
+                } catch (\Throwable $e) {
+                    // foreign key may not exist or named differently
+                }
+            });
+        }
     }
 
     /**

@@ -344,53 +344,6 @@ class ReportController extends Controller
     }
 
     /**
-     * Cash Variance & Difference Audit Report
-     */
-    public function varianceAudit(Request $request)
-    {
-        $fromDate = $request->input('from_date', Carbon::today()->subDays(30)->toDateString());
-        $toDate = $request->input('to_date', Carbon::today()->toDateString());
-        $shiftType = $request->input('shift_type'); // morning, evening, or all
-        $filterMode = $request->input('filter_mode', 'discrepancy_only'); // discrepancy_only or all
-
-        $query = ShiftClosing::whereDate('date', '>=', $fromDate)
-            ->whereDate('date', '<=', $toDate)
-            ->with(['cashier', 'closer']);
-
-        if ($filterMode === 'discrepancy_only') {
-            $query->where('difference', '!=', 0);
-        }
-
-        if (!empty($shiftType) && in_array($shiftType, ['morning', 'evening'])) {
-            $query->where('shift_type', $shiftType);
-        }
-
-        $records = $query->orderBy('date', 'desc')->orderBy('shift_type', 'asc')->get();
-
-        // Calculate Variance Statistics
-        $totalShortages = $records->where('difference', '<', 0)->sum('difference');
-        $shortageCount = $records->where('difference', '<', 0)->count();
-
-        $totalSurpluses = $records->where('difference', '>', 0)->sum('difference');
-        $surplusCount = $records->where('difference', '>', 0)->count();
-
-        $netVariance = $totalSurpluses + $totalShortages; // shortages are negative
-
-        return view('reports.variance', compact(
-            'records',
-            'fromDate',
-            'toDate',
-            'shiftType',
-            'filterMode',
-            'totalShortages',
-            'shortageCount',
-            'totalSurpluses',
-            'surplusCount',
-            'netVariance'
-        ));
-    }
-
-    /**
      * Expense Detailed Audit & Analytics Report
      */
     public function expenseReport(Request $request)

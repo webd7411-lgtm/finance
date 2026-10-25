@@ -440,11 +440,6 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.variance') }}">
-                                        <i class="bi bi-shield-exclamation text-danger"></i> Discrepancy Audit
-                                    </a>
-                                </li>
-                                <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.expenses') ? 'active' : '' }}" href="{{ route('reports.expenses') }}">
                                         <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
                                     </a>
@@ -558,12 +553,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.variance') }}">
-                                        <i class="bi bi-shield-exclamation text-danger"></i> Discrepancy Audit
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('reports.expenses') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.expenses') ? 'active' : '' }}" href="{{ route('reports.expenses') }}">
                                         <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
                                     </a>
                                 </li>
@@ -747,9 +737,6 @@
                 </a>
                 <a href="{{ route('reports.daily-closing') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.daily-closing') ? 'active' : '' }}">
                     <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
-                </a>
-                <a href="{{ route('reports.variance') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.variance') ? 'active' : '' }}">
-                    <i class="bi bi-shield-exclamation text-danger"></i> Discrepancy Audit
                 </a>
                 <a href="{{ route('reports.expenses') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.expenses') ? 'active' : '' }}">
                     <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports

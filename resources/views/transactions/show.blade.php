@@ -14,7 +14,7 @@
         <button type="button" class="btn btn-primary btn-sm rounded-3 px-3 shadow-sm" onclick="window.print()">
             <i class="bi bi-printer me-1"></i> Print Voucher (80mm)
         </button>
-        <a href="{{ route('transactions.index') }}" class="btn btn-light btn-sm rounded-3 border">
+        <a href="{{ route('transactions.index', $transaction->trashed() ? ['view' => 'trash'] : []) }}" class="btn btn-light btn-sm rounded-3 border">
             <i class="bi bi-arrow-left me-1"></i> Back to Journal
         </a>
     </div>
@@ -182,7 +182,12 @@
 @endpush
 
 @section('content')
-<div class="thermal-preview-container">
+<div class="thermal-preview-container flex-column align-items-center">
+    @if($transaction->trashed())
+        <div class="alert alert-danger mb-3 p-2.5 small border-danger no-print w-100 shadow-xs" style="max-width: 380px;">
+            <i class="bi bi-trash3-fill me-1"></i> <strong>Audit Record:</strong> This voucher was deleted on {{ $transaction->deleted_at ? $transaction->deleted_at->format('d M Y, h:i A') : '-' }} by {{ $transaction->deletedBy->name ?? 'Admin' }}. Account and party balances were safely reversed at the time of deletion.
+        </div>
+    @endif
     <div id="printableVoucher" class="thermal-receipt">
 
         <!-- Business Header -->

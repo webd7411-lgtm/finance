@@ -15,7 +15,15 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaction::with(['party', 'account', 'category', 'creator'])->latest('date')->latest('id');
+        $isTrashView = $request->get('view') === 'trash';
+        $activeCount = Transaction::count();
+        $trashCount = Transaction::onlyTrashed()->count();
+
+        if ($isTrashView) {
+            $query = Transaction::onlyTrashed()->with(['party', 'account', 'category', 'creator', 'deletedBy'])->latest('deleted_at');
+        } else {
+            $query = Transaction::with(['party', 'account', 'category', 'creator'])->latest('date')->latest('id');
+        }
 
         if ($request->filled('type')) {
             if ($request->type === 'expense') {
@@ -51,6 +59,10 @@ class TransactionController extends Controller
             $query->whereDate('date', '<=', $request->to_date);
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         $transactions = $query->paginate(15)->withQueryString();
 
         // Metrics for summary
@@ -73,7 +85,10 @@ class TransactionController extends Controller
             'accounts',
             'categories',
             'expenseCategories',
-            'purchaseCategories'
+            'purchaseCategories',
+            'isTrashView',
+            'activeCount',
+            'trashCount'
         ));
     }
 
@@ -84,8 +99,11 @@ class TransactionController extends Controller
             $request->merge(['amount' => is_string($val) ? str_replace(',', '', $val) : $val]);
         }
 
+        $yesterday = now()->subDay()->toDateString();
+        $today = now()->toDateString();
+
         $validated = $request->validate([
-            'date' => ['required', 'date'],
+            'date' => ['required', 'date', "after_or_equal:{$yesterday}", "before_or_equal:{$today}"],
             'type' => ['required', Rule::in(['payment_in', 'payment_out', 'purchase_bill'])],
             'account_id' => [Rule::requiredIf(fn() => $request->type !== 'purchase_bill'), 'nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -93,6 +111,9 @@ class TransactionController extends Controller
             'category_id' => ['nullable', 'exists:expense_categories,id'],
             'bill_no' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
+        ], [
+            'date.after_or_equal' => 'Date cannot be earlier than yesterday.',
+            'date.before_or_equal' => 'Date cannot be in the future.',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -194,14 +215,19 @@ class TransactionController extends Controller
             $request->merge(['amount' => is_string($val) ? str_replace(',', '', $val) : $val]);
         }
 
+        $yesterday = now()->subDay()->toDateString();
+        $today = now()->toDateString();
+
         $validated = $request->validate([
-            'date' => ['required', 'date'],
+            'date' => ['required', 'date', "after_or_equal:{$yesterday}", "before_or_equal:{$today}"],
             'from_account_id' => ['required', 'exists:accounts,id'],
             'to_account_id' => ['required', 'exists:accounts,id', 'different:from_account_id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'reference' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
         ], [
+            'date.after_or_equal' => 'Transfer date cannot be earlier than yesterday.',
+            'date.before_or_equal' => 'Transfer date cannot be in the future.',
             'to_account_id.different' => 'Transfer From and Transfer To accounts must be different.',
         ]);
 
@@ -277,16 +303,48 @@ class TransactionController extends Controller
         return back()->with('success', "Rs. " . number_format($amount, 2) . " transferred successfully from {$fromAccount->name} to {$toAccount->name}.");
     }
 
-    public function show(Transaction $transaction)
+    public function show($id)
     {
-        $transaction->load(['party', 'account', 'category', 'creator']);
+        $transaction = Transaction::withTrashed()->with(['party', 'account', 'category', 'creator', 'deletedBy'])->findOrFail($id);
         return view('transactions.show', compact('transaction'));
+    }
+
+    public function unlock(Transaction $transaction)
+    {
+        if (!auth()->user()->isOwner() && !auth()->user()->isIncharge()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $transaction->status = 'submitted';
+        $transaction->save();
+
+        ActivityLog::log('Unlocked', 'Transaction', "Unlocked transaction voucher #{$transaction->id}");
+
+        return back()->with('success', 'Transaction unlocked.');
+    }
+
+    public function lock(Transaction $transaction)
+    {
+        if (!auth()->user()->isOwner() && !auth()->user()->isIncharge()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $transaction->status = 'locked';
+        $transaction->save();
+
+        ActivityLog::log('Locked', 'Transaction', "Locked transaction voucher #{$transaction->id}");
+
+        return back()->with('success', 'Transaction locked.');
     }
 
     public function destroy(Transaction $transaction)
     {
-        if (!auth()->user()->isOwner() && !auth()->user()->isIncharge()) {
-            abort(403, 'Only Owner or Incharge can delete financial transactions.');
+        if (!auth()->user()->isOwner()) {
+            abort(403, 'Only Owner can delete financial transactions.');
+        }
+
+        if ($transaction->status === 'locked') {
+            return back()->with('error', 'This transaction is locked to prevent unauthorized deletion. Please unlock it before deleting.');
         }
 
         $txDate = $transaction->date;
@@ -328,6 +386,8 @@ class TransactionController extends Controller
                 default => 'Payment Out',
             };
 
+            $transaction->deleted_by = auth()->id();
+            $transaction->save();
             $transaction->delete();
 
             ActivityLog::log(
@@ -340,6 +400,6 @@ class TransactionController extends Controller
         \App\Models\Account::syncCashAccountBalance();
         \App\Models\DayClosing::autoSyncDay($txDate);
 
-        return redirect()->route('transactions.index')->with('success', 'Transaction deleted and balances reverted successfully.');
+        return redirect()->route('transactions.index')->with('success', "Transaction voucher #{$transaction->id} deleted and safely archived in Deleted Vouchers audit.");
     }
 }

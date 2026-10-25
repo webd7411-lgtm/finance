@@ -168,16 +168,21 @@
 <div class="card-custom p-3 mb-3 mb-md-4 no-print">
     <form method="GET" action="{{ route('ledgers.cash-book') }}" class="row g-2 align-items-end">
         <div class="col-12 col-md-4">
-            <label class="form-label text-muted small fw-semibold mb-1">System Cash Account</label>
-            <div class="d-flex align-items-center justify-content-between p-2 px-3 bg-light rounded-3 border" style="height: 38px;">
-                <div class="d-flex align-items-center gap-2 min-w-0">
-                    <i class="bi bi-cash-stack text-success fs-5"></i>
-                    <div class="min-w-0">
-                        <span class="fw-bold text-dark d-block text-truncate small">{{ $cashAccount->name }}</span>
-                    </div>
-                </div>
-                <span class="badge bg-success-subtle text-success border border-success small">Auto Cash</span>
-            </div>
+            <label class="form-label text-muted small fw-semibold mb-1">
+                <i class="bi bi-wallet2 text-primary me-1"></i>Account / Report Mode
+            </label>
+            <select name="account_id" class="form-select form-select-sm py-2 fw-semibold" onchange="this.form.submit()">
+                <option value="whole_shop" {{ ($isWholeShop ?? false) ? 'selected' : '' }} class="fw-bold text-primary">
+                    🏢 Whole Shop (All Accounts &amp; Sales Report)
+                </option>
+                <optgroup label="Individual Account Ledgers">
+                    @foreach($allAccounts as $acc)
+                        <option value="{{ $acc->id }}" {{ (!($isWholeShop ?? false) && (($selectedAccountId == $acc->id) || ($selectedAccountId === 'cash' && $acc->isCash()))) ? 'selected' : '' }}>
+                            {{ $acc->isCash() ? '💵 ' : ($acc->type === 'bank' ? '🏦 ' : '📱 ') }}{{ $acc->name }} ({{ ucfirst($acc->type) }})
+                        </option>
+                    @endforeach
+                </optgroup>
+            </select>
         </div>
         <div class="col-6 col-md-3">
             <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
@@ -210,20 +215,22 @@
             </div>
             <div class="text-end">
                 <div class="badge bg-dark text-white text-uppercase px-2 py-1 mb-1" style="font-size: 8.5pt;">Official Statement</div>
-                <div class="fw-bold" style="font-size: 11pt; color: #0f172a;">CASH BOOK &amp; LIQUIDITY STATEMENT</div>
+                <div class="fw-bold" style="font-size: 11pt; color: #0f172a;">
+                    {{ ($isWholeShop ?? false) ? 'WHOLE SHOP FINANCIAL & LIQUIDITY MATRIX' : 'CASH BOOK & LIQUIDITY STATEMENT' }}
+                </div>
                 <div class="small text-muted" style="font-size: 8pt;">Statement Date: {{ now()->format('d M, Y h:i A') }}</div>
             </div>
         </div>
 
         <div class="row mt-2 py-1 text-dark" style="font-size: 8.5pt;">
             <div class="col-6">
-                <div><strong>Cash Account:</strong> {{ $cashAccount->name }} (System Cash Journal)</div>
+                <div><strong>Account Scope:</strong> {{ ($isWholeShop ?? false) ? 'Whole Shop (All Accounts & Sales)' : ($cashAccount->name . ' Register') }}</div>
                 <div><strong>Statement Period:</strong> {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} &ndash; {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</div>
                 <div><strong>Base Currency:</strong> PKR (Pakistani Rupee)</div>
             </div>
             <div class="col-6 text-end">
                 <div><strong>Audited By:</strong> {{ auth()->user()->name }} ({{ ucfirst(auth()->user()->role) }})</div>
-                <div><strong>System Reference:</strong> CB-{{ date('Ymd') }}-{{ str_pad($cashAccount->id, 3, '0', STR_PAD_LEFT) }}</div>
+                <div><strong>System Reference:</strong> {{ ($isWholeShop ?? false) ? 'WS-' : 'CB-' }}{{ date('Ymd') }}-{{ str_pad($cashAccount->id, 3, '0', STR_PAD_LEFT) }}</div>
             </div>
         </div>
     </div>
@@ -232,18 +239,32 @@
     <table class="bank-summary-table d-none d-print-table mb-3">
         <thead>
             <tr>
-                <th class="text-start" style="width: 25%;">Opening Cash Balance</th>
-                <th class="text-end" style="width: 25%;">(+) Total Cash Inflows</th>
-                <th class="text-end" style="width: 25%;">(-) Total Cash Outflows</th>
-                <th class="text-end" style="width: 25%;">(=) Ending Cash-in-Hand</th>
+                @if($isWholeShop ?? false)
+                    <th class="text-start" style="width: 25%;">Total Net Sale</th>
+                    <th class="text-end" style="width: 25%;">(+) Total Inflows</th>
+                    <th class="text-end" style="width: 25%;">(-) Total Outflows</th>
+                    <th class="text-end" style="width: 25%;">(=) Ending Total Liquidity</th>
+                @else
+                    <th class="text-start" style="width: 25%;">Opening Cash Balance</th>
+                    <th class="text-end" style="width: 25%;">(+) Total Cash Inflows</th>
+                    <th class="text-end" style="width: 25%;">(-) Total Cash Outflows</th>
+                    <th class="text-end" style="width: 25%;">(=) Ending Cash-in-Hand</th>
+                @endif
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td class="text-start font-monospace">Rs. {{ number_format($openingBalance, 2) }}</td>
-                <td class="text-end font-monospace text-success">+ Rs. {{ number_format($totalIn, 2) }}</td>
-                <td class="text-end font-monospace text-danger">- Rs. {{ number_format($totalOut, 2) }}</td>
-                <td class="text-end font-monospace fw-bold text-dark">Rs. {{ number_format($closingBalance, 2) }}</td>
+                @if($isWholeShop ?? false)
+                    <td class="text-start font-monospace fw-bold">Rs. {{ number_format($totalNetSale, 2) }}</td>
+                    <td class="text-end font-monospace text-success">+ Rs. {{ number_format($totalInAllAccounts, 2) }}</td>
+                    <td class="text-end font-monospace text-danger">- Rs. {{ number_format($totalOutAllAccounts, 2) }}</td>
+                    <td class="text-end font-monospace fw-bold text-dark">Rs. {{ number_format($totalClosingAllAccounts, 2) }}</td>
+                @else
+                    <td class="text-start font-monospace">Rs. {{ number_format($openingBalance, 2) }}</td>
+                    <td class="text-end font-monospace text-success">+ Rs. {{ number_format($totalIn, 2) }}</td>
+                    <td class="text-end font-monospace text-danger">- Rs. {{ number_format($totalOut, 2) }}</td>
+                    <td class="text-end font-monospace fw-bold text-dark">Rs. {{ number_format($closingBalance, 2) }}</td>
+                @endif
             </tr>
         </tbody>
     </table>
@@ -254,8 +275,13 @@
             <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
             <div>
                 <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
-                <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Cash Book & Liquidity Statement</h5>
-                <small class="text-muted">{{ $cashAccount->name }} Register &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                @if($isWholeShop ?? false)
+                    <h5 class="text-primary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Whole Shop Financial &amp; Liquidity Report</h5>
+                    <small class="text-muted">Consolidated Daily Sales &amp; All Account Ledgers &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                @else
+                    <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Cash Book &amp; Liquidity Statement</h5>
+                    <small class="text-muted">{{ $cashAccount->name }} Register &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                @endif
             </div>
         </div>
         <div class="text-start text-md-end">
@@ -269,215 +295,348 @@
 
     <!-- Executive Metric Cards -->
     <div class="row g-2 g-md-3 mb-3 mb-md-4 d-print-none">
-        <div class="col-6 col-md-3">
-            <div class="p-3 bg-light rounded-3 border h-100">
-                <span class="text-muted small d-block mb-1 kpi-title">Opening Cash Balance</span>
-                <h5 class="fw-bold font-monospace text-dark m-0 kpi-amount">Rs. {{ number_format($openingBalance, 2) }}</h5>
-                <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</small>
+        @if($isWholeShop ?? false)
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary-subtle h-100">
+                    <span class="text-primary small fw-semibold d-block mb-1 kpi-title">Total Net Sale (Period)</span>
+                    <h5 class="fw-bold font-monospace text-primary m-0 kpi-amount">Rs. {{ number_format($totalNetSale, 2) }}</h5>
+                    <small class="text-muted" style="font-size: 0.7rem;">Gross Sale minus Returns</small>
+                </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
-                <span class="text-success small fw-semibold d-block mb-1 kpi-title">(+) Total Cash Inflows</span>
-                <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">+ Rs. {{ number_format($totalIn, 2) }}</h5>
-                <small class="text-success-emphasis" style="font-size: 0.7rem;">Customer Collections & Sales</small>
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
+                    <span class="text-success small fw-semibold d-block mb-1 kpi-title">(+) Total Inflows (All Accounts)</span>
+                    <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">+ Rs. {{ number_format($totalInAllAccounts, 2) }}</h5>
+                    <small class="text-success-emphasis" style="font-size: 0.7rem;">Cash &amp; Digital Collections</small>
+                </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
-                <span class="text-danger small fw-semibold d-block mb-1 kpi-title">(-) Total Cash Outflows</span>
-                <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">- Rs. {{ number_format($totalOut, 2) }}</h5>
-                <small class="text-danger-emphasis" style="font-size: 0.7rem;">Supplier & Expense Payments</small>
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
+                    <span class="text-danger small fw-semibold d-block mb-1 kpi-title">(-) Total Outflows (All Accounts)</span>
+                    <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">- Rs. {{ number_format($totalOutAllAccounts, 2) }}</h5>
+                    <small class="text-danger-emphasis" style="font-size: 0.7rem;">Supplier &amp; Expense Payouts</small>
+                </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="p-3 bg-primary text-white rounded-3 shadow-sm h-100">
-                <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">(=) Ending Cash-in-Hand</span>
-                <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format($closingBalance, 2) }}</h5>
-                <small class="text-white-50" style="font-size: 0.7rem;">As of {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</small>
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-dark text-white rounded-3 shadow-sm h-100">
+                    <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">(=) Ending Total Liquidity</span>
+                    <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format($totalClosingAllAccounts, 2) }}</h5>
+                    <small class="text-white-50" style="font-size: 0.7rem;">Combined Balances of All Accounts</small>
+                </div>
             </div>
-        </div>
+        @else
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <span class="text-muted small d-block mb-1 kpi-title">Opening Balance</span>
+                    <h5 class="fw-bold font-monospace text-dark m-0 kpi-amount">Rs. {{ number_format($openingBalance, 2) }}</h5>
+                    <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
+                    <span class="text-success small fw-semibold d-block mb-1 kpi-title">(+) Total Inflows</span>
+                    <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">+ Rs. {{ number_format($totalIn, 2) }}</h5>
+                    <small class="text-success-emphasis" style="font-size: 0.7rem;">Collections &amp; Receipts</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
+                    <span class="text-danger small fw-semibold d-block mb-1 kpi-title">(-) Total Outflows</span>
+                    <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">- Rs. {{ number_format($totalOut, 2) }}</h5>
+                    <small class="text-danger-emphasis" style="font-size: 0.7rem;">Payments &amp; Disbursements</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 bg-primary text-white rounded-3 shadow-sm h-100">
+                    <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">(=) Ending Balance</span>
+                    <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format($closingBalance, 2) }}</h5>
+                    <small class="text-white-50" style="font-size: 0.7rem;">As of {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</small>
+                </div>
+            </div>
+        @endif
     </div>
 
-    <!-- Desktop View: Table -->
-    <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
-        <table class="table table-sm table-bordered table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 105px;">Date</th>
-                    <th style="width: 110px;">Voucher #</th>
-                    <th>Account</th>
-                    <th>Party / Payee</th>
-                    <th>Particulars / Details</th>
-                    <th class="text-end" style="width: 130px;">Cash In (+)</th>
-                    <th class="text-end" style="width: 130px;">Cash Out (-)</th>
-                    <th class="text-end" style="width: 150px;">Running Cash (Rs.)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Opening Balance Row -->
-                <tr class="table-secondary bg-opacity-25 fw-semibold">
-                    <td>{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
-                    <td class="font-monospace text-muted">-</td>
-                    <td class="text-muted">{{ $cashAccount->name }}</td>
-                    <td class="text-muted">Opening Balance</td>
-                    <td class="text-muted">Cash brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
-                    <td class="text-end font-monospace text-muted">-</td>
-                    <td class="text-end font-monospace text-muted">-</td>
-                    <td class="text-end font-monospace fw-bold text-dark">
-                        Rs. {{ number_format($openingBalance, 2) }}
-                    </td>
-                </tr>
-
-                @forelse($transactions as $entry)
+    @if($isWholeShop ?? false)
+        <!-- Whole Shop Matrix Table: Net Sale + 3 columns (In, Out, Running) per Account with Horizontal Scroll -->
+        <div class="table-responsive mb-4 shadow-xs border rounded-3" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="table table-sm table-bordered table-hover align-middle mb-0 text-nowrap" style="font-size: 0.83rem;">
+                <thead class="table-light">
                     <tr>
-                        <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
-                        <td class="font-monospace fw-bold">
-                            @if(str_starts_with((string)$entry->id, 'shift-'))
-                                <a href="{{ route('shift-closings.show', str_replace('shift-', '', $entry->id)) }}" class="text-decoration-none" target="_blank">
-                                    #{{ $entry->voucher_no }}
-                                </a>
-                            @else
-                                <a href="{{ route('transactions.show', $entry->id) }}" class="text-decoration-none" target="_blank">
-                                    #{{ $entry->voucher_no }}
-                                </a>
-                            @endif
-                            @if($entry->bill_no)
-                                <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
-                            @endif
+                        <th rowspan="2" class="align-middle text-center bg-light fw-bold" style="min-width: 110px; border-bottom: 2px solid #cbd5e1;">Date</th>
+                        <th rowspan="2" class="align-middle text-end bg-primary-subtle text-primary fw-bold" style="min-width: 125px; border-bottom: 2px solid #cbd5e1;">Net Sale</th>
+                        @foreach($accounts as $acc)
+                            <th colspan="3" class="text-center fw-bold py-2 border-start {{ $acc->isCash() ? 'bg-success-subtle text-success' : ($acc->type === 'bank' ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-dark') }}" style="border-bottom: 1px solid #cbd5e1;">
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="bi {{ $acc->isCash() ? 'bi-cash-stack' : ($acc->type === 'bank' ? 'bi-bank' : 'bi-phone') }}"></i>
+                                    {{ $acc->name }}
+                                </span>
+                                <span class="badge bg-white text-secondary border ms-1" style="font-size: 0.68rem;">{{ ucfirst($acc->type) }}</span>
+                            </th>
+                        @endforeach
+                    </tr>
+                    <tr>
+                        @foreach($accounts as $acc)
+                            <th class="text-end small border-start fw-semibold py-1.5" style="min-width: 95px; font-size: 0.75rem;">In (+)</th>
+                            <th class="text-end small fw-semibold py-1.5" style="min-width: 95px; font-size: 0.75rem;">Out (-)</th>
+                            <th class="text-end small bg-light fw-bold py-1.5" style="min-width: 115px; font-size: 0.75rem;">Running</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Opening Balance Row (Prior to From Date) -->
+                    <tr class="table-secondary bg-opacity-25 fw-semibold">
+                        <td class="text-center font-monospace">
+                            <span class="badge bg-secondary text-white">Opening</span>
                         </td>
-                        <td>
-                            <span class="badge bg-light text-dark border px-2 py-1">
+                        <td class="text-end text-muted font-monospace">-</td>
+                        @foreach($accounts as $acc)
+                            <td class="text-end font-monospace text-muted border-start">-</td>
+                            <td class="text-end font-monospace text-muted">-</td>
+                            <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50">
+                                {{ number_format($initialBalances[$acc->id] ?? 0, 2) }}
+                            </td>
+                        @endforeach
+                    </tr>
+
+                    <!-- Daily Date Rows -->
+                    @forelse($rows as $row)
+                        <tr class="{{ $row['has_activity'] ? '' : 'text-muted' }}">
+                            <td class="text-center font-monospace {{ $row['has_activity'] ? 'fw-bold text-dark' : 'text-muted' }}">
+                                {{ $row['date'] }}
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">{{ $row['day_name'] }}</small>
+                            </td>
+                            <td class="text-end font-monospace fw-bold {{ $row['net_sale'] > 0 ? 'text-primary' : 'text-muted' }}">
+                                {{ $row['net_sale'] > 0 ? number_format($row['net_sale'], 2) : '-' }}
+                            </td>
+                            @foreach($accounts as $acc)
+                                @php
+                                    $accData = $row['accounts'][$acc->id] ?? ['in' => 0, 'out' => 0, 'running' => 0];
+                                @endphp
+                                <td class="text-end font-monospace border-start {{ $accData['in'] > 0 ? 'text-success fw-semibold' : 'text-muted' }}">
+                                    {{ $accData['in'] > 0 ? number_format($accData['in'], 2) : '-' }}
+                                </td>
+                                <td class="text-end font-monospace {{ $accData['out'] > 0 ? 'text-danger fw-semibold' : 'text-muted' }}">
+                                    {{ $accData['out'] > 0 ? number_format($accData['out'], 2) : '-' }}
+                                </td>
+                                <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50">
+                                    {{ number_format($accData['running'], 2) }}
+                                </td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ 2 + count($accounts) * 3 }}" class="text-center py-4 text-muted">
+                                No transactions recorded for the selected period.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                <tfoot class="table-dark">
+                    <tr class="fw-bold align-middle">
+                        <td class="text-center text-uppercase">Total</td>
+                        <td class="text-end font-monospace text-warning fs-6">
+                            {{ number_format($totalNetSale, 2) }}
+                        </td>
+                        @foreach($accounts as $acc)
+                            <td class="text-end font-monospace text-success border-start">
+                                {{ number_format($accountTotals[$acc->id]['in'] ?? 0, 2) }}
+                            </td>
+                            <td class="text-end font-monospace text-danger">
+                                {{ number_format($accountTotals[$acc->id]['out'] ?? 0, 2) }}
+                            </td>
+                            <td class="text-end font-monospace text-white bg-dark">
+                                {{ number_format($runningBalances[$acc->id] ?? 0, 2) }}
+                            </td>
+                        @endforeach
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="text-muted small d-flex align-items-center gap-1 mb-3 no-print">
+            <i class="bi bi-arrows-expand-vertical text-secondary" style="transform: rotate(90deg);"></i>
+            <span>Whole Shop matrix has 3 columns (In, Out, Running) per account. Scroll horizontally or swipe on touchscreens to view all accounts.</span>
+        </div>
+    @else
+        <!-- Desktop View: Single Account Register Table -->
+        <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
+            <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 105px;">Date</th>
+                        <th style="width: 110px;">Voucher #</th>
+                        <th>Account</th>
+                        <th>Party / Payee</th>
+                        <th>Particulars / Details</th>
+                        <th class="text-end" style="width: 130px;">Cash In (+)</th>
+                        <th class="text-end" style="width: 130px;">Cash Out (-)</th>
+                        <th class="text-end" style="width: 150px;">Running Balance (Rs.)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Opening Balance Row -->
+                    <tr class="table-secondary bg-opacity-25 fw-semibold">
+                        <td>{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
+                        <td class="font-monospace text-muted">-</td>
+                        <td class="text-muted">{{ $cashAccount->name }}</td>
+                        <td class="text-muted">Opening Balance</td>
+                        <td class="text-muted">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
+                        <td class="text-end font-monospace text-muted">-</td>
+                        <td class="text-end font-monospace text-muted">-</td>
+                        <td class="text-end font-monospace fw-bold text-dark">
+                            Rs. {{ number_format($openingBalance, 2) }}
+                        </td>
+                    </tr>
+
+                    @forelse($transactions as $entry)
+                        <tr>
+                            <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
+                            <td class="font-monospace fw-bold">
+                                @if(str_starts_with((string)$entry->id, 'shift-'))
+                                    <a href="{{ route('shift-closings.show', str_replace('shift-', '', $entry->id)) }}" class="text-decoration-none" target="_blank">
+                                        #{{ $entry->voucher_no }}
+                                    </a>
+                                @else
+                                    <a href="{{ route('transactions.show', $entry->id) }}" class="text-decoration-none" target="_blank">
+                                        #{{ $entry->voucher_no }}
+                                    </a>
+                                @endif
+                                @if($entry->bill_no)
+                                    <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    {{ $entry->account }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold text-dark">{{ $entry->party }}</td>
+                            <td>
+                                <div>{{ $entry->description ?? '-' }}</div>
+                                @if($entry->category !== '-')
+                                    <span class="badge bg-light text-muted border px-1" style="font-size: 0.7rem;">{{ $entry->category }}</span>
+                                @endif
+                            </td>
+                            <td class="text-end font-monospace {{ $entry->in > 0 ? 'text-success fw-bold' : 'text-muted' }}">
+                                {{ $entry->in > 0 ? '+ ' . number_format($entry->in, 2) : '-' }}
+                            </td>
+                            <td class="text-end font-monospace {{ $entry->out > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                {{ $entry->out > 0 ? '- ' . number_format($entry->out, 2) : '-' }}
+                            </td>
+                            <td class="text-end font-monospace fw-bold text-dark">
+                                Rs. {{ number_format($entry->running_balance, 2) }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                                No transactions recorded for {{ $cashAccount->name }} within the selected period.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td colspan="5" class="text-end">Total Movement &amp; Closing Position:</td>
+                        <td class="text-end font-monospace text-success">+ Rs. {{ number_format($totalIn, 2) }}</td>
+                        <td class="text-end font-monospace text-danger">- Rs. {{ number_format($totalOut, 2) }}</td>
+                        <td class="text-end font-monospace text-primary fs-6">Rs. {{ number_format($closingBalance, 2) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Mobile View: Clean Responsive Cards (Zero Horizontal Scroll for single account) -->
+        <div class="d-block d-md-none mb-3 d-print-none">
+            <!-- Opening Balance Card -->
+            <div class="p-2.5 rounded-3 border bg-light mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold text-secondary small">Opening Balance</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</small>
+                    </div>
+                    <div class="font-monospace fw-bold text-dark">
+                        Rs. {{ number_format($openingBalance, 2) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Cards -->
+            <div class="d-flex flex-column gap-2">
+                @forelse($transactions as $entry)
+                    <div class="p-3 rounded-3 border bg-white shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
+                            <div class="d-flex align-items-center gap-1.5 min-w-0">
+                                <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
+                                @if(str_starts_with((string)$entry->id, 'shift-'))
+                                    <a href="{{ route('shift-closings.show', str_replace('shift-', '', $entry->id)) }}" class="text-decoration-none font-monospace small" target="_blank">
+                                        #{{ $entry->voucher_no }}
+                                    </a>
+                                @else
+                                    <a href="{{ route('transactions.show', $entry->id) }}" class="text-decoration-none font-monospace small" target="_blank">
+                                        #{{ $entry->voucher_no }}
+                                    </a>
+                                @endif
+                            </div>
+                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
                                 {{ $entry->account }}
                             </span>
-                        </td>
-                        <td class="fw-semibold text-dark">{{ $entry->party }}</td>
-                        <td>
-                            <div>{{ $entry->description ?? '-' }}</div>
-                            @if($entry->category !== '-')
-                                <span class="badge bg-light text-muted border px-1" style="font-size: 0.7rem;">{{ $entry->category }}</span>
-                            @endif
-                        </td>
-                        <td class="text-end font-monospace {{ $entry->in > 0 ? 'text-success fw-bold' : 'text-muted' }}">
-                            {{ $entry->in > 0 ? '+ ' . number_format($entry->in, 2) : '-' }}
-                        </td>
-                        <td class="text-end font-monospace {{ $entry->out > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
-                            {{ $entry->out > 0 ? '- ' . number_format($entry->out, 2) : '-' }}
-                        </td>
-                        <td class="text-end font-monospace fw-bold text-dark">
-                            Rs. {{ number_format($entry->running_balance, 2) }}
-                        </td>
-                    </tr>
+                        </div>
+
+                        <div class="fw-semibold text-dark small text-truncate mb-1">
+                            {{ $entry->party }}
+                        </div>
+
+                        @if($entry->description || $entry->category !== '-')
+                            <div class="text-muted small text-truncate mb-2" style="font-size: 0.74rem;">
+                                {{ $entry->description ?? '' }}
+                                @if($entry->category !== '-')
+                                    <span class="badge bg-light text-muted border px-1" style="font-size: 0.68rem;">{{ $entry->category }}</span>
+                                @endif
+                            </div>
+                        @endif
+
+                        <!-- Amount Strip -->
+                        <div class="p-2 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
+                            <div>
+                                @if($entry->in > 0)
+                                    <span class="text-success fw-bold font-monospace">+Rs. {{ number_format($entry->in, 2) }}</span>
+                                @elseif($entry->out > 0)
+                                    <span class="text-danger fw-bold font-monospace">-Rs. {{ number_format($entry->out, 2) }}</span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </div>
+                            <div class="text-end">
+                                <span class="text-muted d-block" style="font-size: 0.65rem;">Running Balance</span>
+                                <span class="font-monospace fw-bold text-dark">Rs. {{ number_format($entry->running_balance, 2) }}</span>
+                            </div>
+                        </div>
+                    </div>
                 @empty
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-3 d-block mb-1"></i>
-                            No cash transactions recorded within the selected period.
-                        </td>
-                    </tr>
+                    <div class="text-center text-muted py-4 small">
+                        No transactions recorded within the selected period.
+                    </div>
                 @endforelse
-            </tbody>
-            <tfoot class="table-light">
-                <tr class="fw-bold">
-                    <td colspan="5" class="text-end">Total Cash Movement & Closing Position:</td>
-                    <td class="text-end font-monospace text-success">+ Rs. {{ number_format($totalIn, 2) }}</td>
-                    <td class="text-end font-monospace text-danger">- Rs. {{ number_format($totalOut, 2) }}</td>
-                    <td class="text-end font-monospace text-primary fs-6">Rs. {{ number_format($closingBalance, 2) }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+            </div>
 
-    <!-- Mobile View: Clean Responsive Cards (Zero Horizontal Scroll) -->
-    <div class="d-block d-md-none mb-3 d-print-none">
-        <!-- Opening Balance Card -->
-        <div class="p-2.5 rounded-3 border bg-light mb-2">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fw-semibold text-secondary small">Opening Cash</div>
-                    <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</small>
+            <!-- Mobile Totals Card -->
+            <div class="p-3 rounded-3 border bg-success bg-opacity-10 mt-2">
+                <div class="d-flex justify-content-between align-items-center small py-1">
+                    <span class="text-success fw-semibold">(+) Total Inflows:</span>
+                    <span class="font-monospace fw-bold text-success">+Rs. {{ number_format($totalIn, 2) }}</span>
                 </div>
-                <div class="font-monospace fw-bold text-dark">
-                    Rs. {{ number_format($openingBalance, 2) }}
+                <div class="d-flex justify-content-between align-items-center small py-1">
+                    <span class="text-danger fw-semibold">(-) Total Outflows:</span>
+                    <span class="font-monospace fw-bold text-danger">-Rs. {{ number_format($totalOut, 2) }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
+                    <span class="fw-bold text-dark">Ending Balance:</span>
+                    <span class="font-monospace fw-bold fs-6 text-primary">Rs. {{ number_format($closingBalance, 2) }}</span>
                 </div>
             </div>
         </div>
-
-        <!-- Transactions Cards -->
-        <div class="d-flex flex-column gap-2">
-            @forelse($transactions as $entry)
-                <div class="p-3 rounded-3 border bg-white shadow-xs">
-                    <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
-                        <div class="d-flex align-items-center gap-1.5 min-w-0">
-                            <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
-                            @if(str_starts_with((string)$entry->id, 'shift-'))
-                                <a href="{{ route('shift-closings.show', str_replace('shift-', '', $entry->id)) }}" class="text-decoration-none font-monospace small" target="_blank">
-                                    #{{ $entry->voucher_no }}
-                                </a>
-                            @else
-                                <a href="{{ route('transactions.show', $entry->id) }}" class="text-decoration-none font-monospace small" target="_blank">
-                                    #{{ $entry->voucher_no }}
-                                </a>
-                            @endif
-                        </div>
-                        <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
-                            {{ $entry->account }}
-                        </span>
-                    </div>
-
-                    <div class="fw-semibold text-dark small text-truncate mb-1">
-                        {{ $entry->party }}
-                    </div>
-
-                    @if($entry->description || $entry->category !== '-')
-                        <div class="text-muted small text-truncate mb-2" style="font-size: 0.74rem;">
-                            {{ $entry->description ?? '' }}
-                            @if($entry->category !== '-')
-                                <span class="badge bg-light text-muted border px-1" style="font-size: 0.68rem;">{{ $entry->category }}</span>
-                            @endif
-                        </div>
-                    @endif
-
-                    <!-- Amount Strip -->
-                    <div class="p-2 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
-                        <div>
-                            @if($entry->in > 0)
-                                <span class="text-success fw-bold font-monospace">+Rs. {{ number_format($entry->in, 2) }}</span>
-                            @elseif($entry->out > 0)
-                                <span class="text-danger fw-bold font-monospace">-Rs. {{ number_format($entry->out, 2) }}</span>
-                            @else
-                                <span class="text-muted">-</span>
-                            @endif
-                        </div>
-                        <div class="text-end">
-                            <span class="text-muted d-block" style="font-size: 0.65rem;">Running Cash</span>
-                            <span class="font-monospace fw-bold text-dark">Rs. {{ number_format($entry->running_balance, 2) }}</span>
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <div class="text-center text-muted py-4 small">
-                    No cash transactions recorded within the selected period.
-                </div>
-            @endforelse
-        </div>
-
-        <!-- Mobile Totals Card -->
-        <div class="p-3 rounded-3 border bg-success bg-opacity-10 mt-2">
-            <div class="d-flex justify-content-between align-items-center small py-1">
-                <span class="text-success fw-semibold">(+) Total Inflows:</span>
-                <span class="font-monospace fw-bold text-success">+Rs. {{ number_format($totalIn, 2) }}</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center small py-1">
-                <span class="text-danger fw-semibold">(-) Total Outflows:</span>
-                <span class="font-monospace fw-bold text-danger">-Rs. {{ number_format($totalOut, 2) }}</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
-                <span class="fw-bold text-dark">Ending Cash-in-Hand:</span>
-                <span class="font-monospace fw-bold fs-6 text-primary">Rs. {{ number_format($closingBalance, 2) }}</span>
-            </div>
-        </div>
-    </div>
+    @endif
 
     <!-- Official Bank Statement Signatures (Visible on Print) -->
     <div class="statement-signatures pt-4 mt-4">

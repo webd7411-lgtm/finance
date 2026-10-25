@@ -12,6 +12,8 @@ class Party extends Model
     protected $fillable = [
         'name',
         'type',
+        'is_credit',
+        'is_cash',
         'phone',
         'address',
         'opening_balance',
@@ -19,6 +21,8 @@ class Party extends Model
     ];
 
     protected $casts = [
+        'is_credit' => 'boolean',
+        'is_cash' => 'boolean',
         'opening_balance' => 'decimal:2',
         'current_balance' => 'decimal:2',
     ];
@@ -32,6 +36,21 @@ class Party extends Model
             'customer' => '<span class="badge bg-success-subtle text-success border border-success">Customer</span>',
             default    => '<span class="badge bg-secondary">' . ucfirst($this->type) . '</span>',
         };
+    }
+
+    public function getDealingBadgesAttribute(): string
+    {
+        $badges = [];
+        if ($this->is_credit) {
+            $badges[] = '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1.5 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-credit-card me-1"></i>Credit</span>';
+        }
+        if ($this->is_cash) {
+            $badges[] = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size: 0.68rem;"><i class="bi bi-cash-stack me-1"></i>Cash</span>';
+        }
+        if (empty($badges)) {
+            return '<span class="badge bg-light text-muted border px-1.5 py-0.5" style="font-size: 0.68rem;">None</span>';
+        }
+        return implode(' ', $badges);
     }
 
     public function transactions()
