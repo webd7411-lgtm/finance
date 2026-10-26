@@ -137,6 +137,13 @@
             color: #0f172a !important;
         }
 
+        .table tfoot td,
+        .table tfoot th {
+            background-color: #f8fafc !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+        }
+
         .badge {
             border: 1px solid #94a3b8 !important;
             background: transparent !important;
@@ -357,13 +364,16 @@
     </div>
 
     @if($isWholeShop ?? false)
-        <!-- Whole Shop Matrix Table: Net Sale + 3 columns (In, Out, Running) per Account with Horizontal Scroll -->
+        <!-- Whole Shop Matrix Table: Detailed Ledger with Date, Voucher #, Party, Details, Net Sale + 3 columns per Account with Horizontal Scroll -->
         <div class="table-responsive mb-4 shadow-xs border rounded-3" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table class="table table-sm table-bordered table-hover align-middle mb-0 text-nowrap" style="font-size: 0.83rem;">
                 <thead class="table-light">
                     <tr>
-                        <th rowspan="2" class="align-middle text-center bg-light fw-bold" style="min-width: 110px; border-bottom: 2px solid #cbd5e1;">Date</th>
-                        <th rowspan="2" class="align-middle text-end bg-primary-subtle text-primary fw-bold" style="min-width: 125px; border-bottom: 2px solid #cbd5e1;">Net Sale</th>
+                        <th rowspan="2" class="align-middle text-center bg-light fw-bold" style="width: 105px; min-width: 105px; border-bottom: 2px solid #cbd5e1;">Date</th>
+                        <th rowspan="2" class="align-middle text-center bg-light fw-bold" style="width: 120px; min-width: 120px; border-bottom: 2px solid #cbd5e1;">Voucher #</th>
+                        <th rowspan="2" class="align-middle bg-light fw-bold" style="min-width: 180px; border-bottom: 2px solid #cbd5e1;">Party / Payee</th>
+                        <th rowspan="2" class="align-middle bg-light fw-bold" style="min-width: 220px; border-bottom: 2px solid #cbd5e1;">Particulars / Details</th>
+                        <th rowspan="2" class="align-middle text-end bg-primary-subtle text-primary fw-bold" style="width: 125px; min-width: 125px; border-bottom: 2px solid #cbd5e1;">Net Sale</th>
                         @foreach($accounts as $acc)
                             <th colspan="3" class="text-center fw-bold py-2 border-start {{ $acc->isCash() ? 'bg-success-subtle text-success' : ($acc->type === 'bank' ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-dark') }}" style="border-bottom: 1px solid #cbd5e1;">
                                 <span class="d-inline-flex align-items-center gap-1">
@@ -385,9 +395,10 @@
                 <tbody>
                     <!-- Opening Balance Row (Prior to From Date) -->
                     <tr class="table-secondary bg-opacity-25 fw-semibold">
-                        <td class="text-center font-monospace">
-                            <span class="badge bg-secondary text-white">Opening</span>
-                        </td>
+                        <td class="text-center font-monospace">{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
+                        <td class="text-center font-monospace text-muted">-</td>
+                        <td class="text-muted fw-bold">Opening Balance</td>
+                        <td class="text-muted">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
                         <td class="text-end text-muted font-monospace">-</td>
                         @foreach($accounts as $acc)
                             <td class="text-end font-monospace text-muted border-start">-</td>
@@ -398,12 +409,34 @@
                         @endforeach
                     </tr>
 
-                    <!-- Daily Date Rows -->
+                    <!-- Transaction Detail Rows -->
                     @forelse($rows as $row)
-                        <tr class="{{ $row['has_activity'] ? '' : 'text-muted' }}">
-                            <td class="text-center font-monospace {{ $row['has_activity'] ? 'fw-bold text-dark' : 'text-muted' }}">
+                        <tr>
+                            <td class="text-center font-monospace text-dark fw-semibold">
                                 {{ $row['date'] }}
-                                <small class="text-muted d-block" style="font-size: 0.7rem;">{{ $row['day_name'] }}</small>
+                            </td>
+                            <td class="font-monospace text-center">
+                                @if($row['is_shift'])
+                                    <a href="{{ route('shift-closings.show', $row['shift_id']) }}" class="text-decoration-none fw-bold" target="_blank">
+                                        #{{ $row['voucher_no'] }}
+                                    </a>
+                                @else
+                                    <a href="{{ route('transactions.show', $row['tx_id']) }}" class="text-decoration-none fw-bold" target="_blank">
+                                        #{{ $row['voucher_no'] }}
+                                    </a>
+                                @endif
+                                @if($row['bill_no'] && $row['bill_no'] !== '-')
+                                    <span class="d-block text-muted small" style="font-size: 0.7rem;">Bill: {{ $row['bill_no'] }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-dark">{{ $row['party'] }}</span>
+                            </td>
+                            <td>
+                                <div>{{ $row['description'] ?? '-' }}</div>
+                                @if($row['category'] && $row['category'] !== '-')
+                                    <span class="badge bg-light text-muted border px-1" style="font-size: 0.68rem;">{{ $row['category'] }}</span>
+                                @endif
                             </td>
                             <td class="text-end font-monospace fw-bold {{ $row['net_sale'] > 0 ? 'text-primary' : 'text-muted' }}">
                                 {{ $row['net_sale'] > 0 ? number_format($row['net_sale'], 2) : '-' }}
@@ -412,11 +445,11 @@
                                 @php
                                     $accData = $row['accounts'][$acc->id] ?? ['in' => 0, 'out' => 0, 'running' => 0];
                                 @endphp
-                                <td class="text-end font-monospace border-start {{ $accData['in'] > 0 ? 'text-success fw-semibold' : 'text-muted' }}">
-                                    {{ $accData['in'] > 0 ? number_format($accData['in'], 2) : '-' }}
+                                <td class="text-end font-monospace border-start {{ $accData['in'] > 0 ? 'text-success fw-bold' : 'text-muted' }}">
+                                    {{ $accData['in'] > 0 ? '+ ' . number_format($accData['in'], 2) : '-' }}
                                 </td>
-                                <td class="text-end font-monospace {{ $accData['out'] > 0 ? 'text-danger fw-semibold' : 'text-muted' }}">
-                                    {{ $accData['out'] > 0 ? number_format($accData['out'], 2) : '-' }}
+                                <td class="text-end font-monospace {{ $accData['out'] > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                    {{ $accData['out'] > 0 ? '- ' . number_format($accData['out'], 2) : '-' }}
                                 </td>
                                 <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50">
                                     {{ number_format($accData['running'], 2) }}
@@ -425,26 +458,26 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ 2 + count($accounts) * 3 }}" class="text-center py-4 text-muted">
+                            <td colspan="{{ 5 + count($accounts) * 3 }}" class="text-center py-4 text-muted">
                                 No transactions recorded for the selected period.
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
-                <tfoot class="table-dark">
-                    <tr class="fw-bold align-middle">
-                        <td class="text-center text-uppercase">Total</td>
-                        <td class="text-end font-monospace text-warning fs-6">
+                <tfoot class="table-light border-top border-2 border-secondary">
+                    <tr class="fw-bold align-middle text-dark">
+                        <td colspan="4" class="text-end text-uppercase pe-3 text-dark">Total Period Movement:</td>
+                        <td class="text-end font-monospace text-primary fs-6">
                             {{ number_format($totalNetSale, 2) }}
                         </td>
                         @foreach($accounts as $acc)
                             <td class="text-end font-monospace text-success border-start">
-                                {{ number_format($accountTotals[$acc->id]['in'] ?? 0, 2) }}
+                                + {{ number_format($accountTotals[$acc->id]['in'] ?? 0, 2) }}
                             </td>
                             <td class="text-end font-monospace text-danger">
-                                {{ number_format($accountTotals[$acc->id]['out'] ?? 0, 2) }}
+                                - {{ number_format($accountTotals[$acc->id]['out'] ?? 0, 2) }}
                             </td>
-                            <td class="text-end font-monospace text-white bg-dark">
+                            <td class="text-end font-monospace fw-bold text-dark bg-secondary bg-opacity-10">
                                 {{ number_format($runningBalances[$acc->id] ?? 0, 2) }}
                             </td>
                         @endforeach
@@ -454,7 +487,7 @@
         </div>
         <div class="text-muted small d-flex align-items-center gap-1 mb-3 no-print">
             <i class="bi bi-arrows-expand-vertical text-secondary" style="transform: rotate(90deg);"></i>
-            <span>Whole Shop matrix has 3 columns (In, Out, Running) per account. Scroll horizontally or swipe on touchscreens to view all accounts.</span>
+            <span>Whole Shop matrix shows full transaction details (Date, Voucher #, Party, Details, Net Sale) alongside 3 columns (In, Out, Running) per account. Scroll horizontally or swipe on touchscreens to view all accounts.</span>
         </div>
     @else
         <!-- Desktop View: Single Account Register Table -->
@@ -491,7 +524,11 @@
                         <tr>
                             <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
                             <td class="font-monospace fw-bold">
-                                @if(str_starts_with((string)$entry->id, 'shift-'))
+                                @if(!empty($entry->shift_id))
+                                    <a href="{{ route('shift-closings.show', $entry->shift_id) }}" class="text-decoration-none" target="_blank">
+                                        #{{ $entry->voucher_no }}
+                                    </a>
+                                @elseif(str_starts_with((string)$entry->id, 'shift-'))
                                     <a href="{{ route('shift-closings.show', str_replace('shift-', '', $entry->id)) }}" class="text-decoration-none" target="_blank">
                                         #{{ $entry->voucher_no }}
                                     </a>
@@ -568,7 +605,11 @@
                         <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
                             <div class="d-flex align-items-center gap-1.5 min-w-0">
                                 <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
-                                @if(str_starts_with((string)$entry->id, 'shift-'))
+                                @if(!empty($entry->shift_id))
+                                    <a href="{{ route('shift-closings.show', $entry->shift_id) }}" class="text-decoration-none font-monospace small" target="_blank">
+                                        #{{ $entry->voucher_no }}
+                                    </a>
+                                @elseif(str_starts_with((string)$entry->id, 'shift-'))
                                     <a href="{{ route('shift-closings.show', str_replace('shift-', '', $entry->id)) }}" class="text-decoration-none font-monospace small" target="_blank">
                                         #{{ $entry->voucher_no }}
                                     </a>

@@ -1008,6 +1008,132 @@
                 }
             });
         });
+
+        // ==========================================
+        // GLOBAL FORM ENTER NAVIGATION (ENTER AS TAB)
+        // ==========================================
+        function submitFormHelper(form) {
+            if (!form) return;
+            let submitBtn = form.querySelector('button[type="submit"]:not([disabled]), input[type="submit"]:not([disabled])');
+            if (!submitBtn && form.id) {
+                submitBtn = document.querySelector(`button[type="submit"][form="${form.id}"]:not([disabled]), input[type="submit"][form="${form.id}"]:not([disabled])`);
+            }
+            if (!submitBtn) {
+                const modal = form.closest('.modal');
+                if (modal) {
+                    submitBtn = modal.querySelector('.modal-footer button.btn-primary:not([disabled]), .modal-footer button.btn-success:not([disabled])');
+                }
+            }
+            if (submitBtn) {
+                submitBtn.click();
+            } else if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+        }
+
+        function getFocusableFormFields(form) {
+            if (!form) return [];
+            const selector = 'input:not([type="hidden"]):not([type="button"]):not([type="reset"]), select, textarea, button[type="submit"]';
+            const elements = Array.from(form.querySelectorAll(selector));
+
+            let submitBtn = form.querySelector('button[type="submit"]:not([disabled])');
+            if (!submitBtn && form.id) {
+                submitBtn = document.querySelector(`button[type="submit"][form="${form.id}"]:not([disabled])`);
+            }
+            if (!submitBtn) {
+                const modal = form.closest('.modal');
+                if (modal) {
+                    submitBtn = modal.querySelector('.modal-footer button.btn-primary:not([disabled]), .modal-footer button.btn-success:not([disabled])');
+                }
+            }
+            if (submitBtn && !elements.includes(submitBtn)) {
+                elements.push(submitBtn);
+            }
+
+            return elements.filter(function(el) {
+                if (el.disabled) return false;
+                if (el.type === 'hidden') return false;
+                if (el.getAttribute('tabindex') === '-1' && el.type !== 'submit' && el.tagName.toLowerCase() !== 'button') return false;
+                if (el.offsetParent === null && window.getComputedStyle(el).position !== 'fixed') {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' || e.isComposing || e.defaultPrevented) return;
+
+            const target = e.target;
+            if (!target) return;
+
+            const tag = target.tagName ? target.tagName.toLowerCase() : '';
+
+            // Allow normal click if focused on a non-submit button or a link
+            if (tag === 'button' && target.type !== 'submit') return;
+            if (tag === 'a') return;
+
+            const form = target.form || target.closest('form');
+            if (!form) return;
+
+            // Quick Submit on Ctrl+Enter or Cmd+Enter from any field
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                submitFormHelper(form);
+                return;
+            }
+
+            // If focus is directly on the submit button, hitting Enter triggers native submit
+            if (tag === 'button' && target.type === 'submit') {
+                return;
+            }
+
+            // Textarea: Shift + Enter inserts a newline
+            if (tag === 'textarea') {
+                if (e.shiftKey) {
+                    return; // Allow multiline break
+                }
+            } else if (tag === 'input') {
+                const type = (target.type || 'text').toLowerCase();
+                if (['button', 'submit', 'reset', 'file'].includes(type)) {
+                    return;
+                }
+            } else if (tag !== 'select') {
+                return;
+            }
+
+            // Prevent default form submit on Enter
+            e.preventDefault();
+
+            const fields = getFocusableFormFields(form);
+            const currentIndex = fields.indexOf(target);
+
+            // Shift+Enter on non-textarea moves backward
+            if (e.shiftKey && tag !== 'textarea') {
+                if (currentIndex > 0) {
+                    const prevField = fields[currentIndex - 1];
+                    prevField.focus();
+                    if (typeof prevField.select === 'function' && ['text', 'search', 'number', 'tel', 'email', 'password'].includes((prevField.type || '').toLowerCase())) {
+                        prevField.select();
+                    }
+                }
+                return;
+            }
+
+            // Plain Enter moves to next focusable field
+            if (currentIndex !== -1 && currentIndex + 1 < fields.length) {
+                const nextField = fields[currentIndex + 1];
+                nextField.focus();
+                if (typeof nextField.select === 'function' && ['text', 'search', 'number', 'tel', 'email', 'password'].includes((nextField.type || '').toLowerCase())) {
+                    nextField.select();
+                }
+            } else {
+                // At the last field: submit the form
+                submitFormHelper(form);
+            }
+        });
     </script>
     @stack('scripts')
 </body>

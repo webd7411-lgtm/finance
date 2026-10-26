@@ -76,8 +76,8 @@ class ExpenseCategoryController extends Controller
 
     public function destroy(ExpenseCategory $expenseCategory)
     {
-        if ($expenseCategory->transactions()->exists()) {
-            return back()->with('error', 'Cannot delete this category because it is linked to existing transactions.');
+        if ($expenseCategory->transactions()->exists() || $expenseCategory->shiftClosingPartyPayments()->exists()) {
+            return back()->with('error', 'Cannot delete this category because it is linked to existing transactions or shift payments.');
         }
 
         $type = $expenseCategory->type;

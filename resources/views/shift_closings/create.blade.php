@@ -152,14 +152,14 @@
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
                     <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                        <i class="bi bi-hash text-primary me-1"></i>Start Invoice
+                        <i class="bi bi-receipt text-primary me-1"></i>Start Invoice
                     </label>
                     @if(!empty($suggestedInvoiceStart))
-                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next serial after #{{ $suggestedInvoiceStart - 1 }}">Auto #{{ $suggestedInvoiceStart }}</span>
+                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next serial after {{ number_format($suggestedInvoiceStart - 1) }}">Auto {{ number_format($suggestedInvoiceStart) }}</span>
                     @endif
                 </div>
                 <div class="input-group input-group-sm" style="height: 36px;">
-                    <span class="input-group-text bg-light text-muted fw-bold h-100">#</span>
+                    <span class="input-group-text bg-light text-muted h-100"><i class="bi bi-hash"></i></span>
                     <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm fw-bold font-monospace h-100 {{ !empty($suggestedInvoiceStart) ? 'bg-light text-muted' : '' }}" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()" {{ !empty($suggestedInvoiceStart) ? 'readonly' : '' }}>
                 </div>
             </div>
@@ -167,11 +167,11 @@
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
                     <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                        <i class="bi bi-hash text-primary me-1"></i>End Invoice
+                        <i class="bi bi-receipt text-primary me-1"></i>End Invoice
                     </label>
                 </div>
                 <div class="input-group input-group-sm" style="height: 36px;">
-                    <span class="input-group-text bg-light text-muted fw-bold h-100">#</span>
+                    <span class="input-group-text bg-light text-muted h-100"><i class="bi bi-hash"></i></span>
                     <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm fw-bold font-monospace h-100" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()">
                 </div>
             </div>
@@ -241,25 +241,25 @@
                             <div class="col-6 col-sm-6 col-md-3">
                                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
                                     <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                                        <i class="bi bi-hash text-danger me-1"></i>Return Start #
+                                        <i class="bi bi-receipt text-danger me-1"></i>Return Start
                                     </label>
                                     @if(!empty($suggestedReturnInvoiceStart))
-                                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next return serial after #{{ $suggestedReturnInvoiceStart - 1 }}">Auto #{{ $suggestedReturnInvoiceStart }}</span>
+                                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next return serial after {{ number_format($suggestedReturnInvoiceStart - 1) }}">Auto {{ number_format($suggestedReturnInvoiceStart) }}</span>
                                     @endif
                                 </div>
                                 <div class="input-group input-group-sm" style="height: 34px;">
-                                    <span class="input-group-text bg-white text-muted fw-bold h-100">#</span>
+                                    <span class="input-group-text bg-white text-muted h-100"><i class="bi bi-hash"></i></span>
                                     <input type="number" min="1" id="return_invoice_start" name="return_invoice_start" class="form-control form-control-sm font-monospace h-100 {{ !empty($suggestedReturnInvoiceStart) ? 'bg-light text-muted' : '' }}" placeholder="e.g. 15" value="{{ old('return_invoice_start', $suggestedReturnInvoiceStart ?? '') }}" oninput="calculateReturnInvoiceCount()" {{ !empty($suggestedReturnInvoiceStart) ? 'readonly' : '' }}>
                                 </div>
                             </div>
                             <div class="col-6 col-sm-6 col-md-3">
                                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
                                     <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                                        <i class="bi bi-hash text-danger me-1"></i>Return End #
+                                        <i class="bi bi-receipt text-danger me-1"></i>Return End
                                     </label>
                                 </div>
                                 <div class="input-group input-group-sm" style="height: 34px;">
-                                    <span class="input-group-text bg-white text-muted fw-bold h-100">#</span>
+                                    <span class="input-group-text bg-white text-muted h-100"><i class="bi bi-hash"></i></span>
                                     <input type="number" min="1" id="return_invoice_end" name="return_invoice_end" class="form-control form-control-sm font-monospace h-100" placeholder="e.g. 18" value="{{ old('return_invoice_end', '') }}" oninput="calculateReturnInvoiceCount()">
                                 </div>
                             </div>
@@ -1324,11 +1324,11 @@ function validateShiftAvailability() {
 document.getElementById('closing_date')?.addEventListener('change', validateShiftAvailability);
 document.getElementById('shift_type_select')?.addEventListener('change', validateShiftAvailability);
 
-// Keyboard shortcuts: pressing Enter in note inputs moves to next note input
+// Keyboard shortcuts: pressing Enter in note inputs moves to next note input (Ctrl+Enter submits form)
 const noteInputs = Array.from(document.querySelectorAll('.note-input'));
 noteInputs.forEach(function(input, index) {
     input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             if (index + 1 < noteInputs.length) {
                 noteInputs[index + 1].focus();

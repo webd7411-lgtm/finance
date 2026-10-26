@@ -351,6 +351,7 @@ class ShiftClosingController extends Controller
                 'date' => $validated['date'],
                 'shift_type' => $validated['shift_type'],
                 'cashier_id' => $cashierId,
+                'closed_by' => auth()->id() ?? $cashierId,
                 'total_invoices' => $invoiceCount,
                 'invoice_start' => $validated['invoice_start'] ?? null,
                 'invoice_end' => $validated['invoice_end'] ?? null,
@@ -448,7 +449,7 @@ class ShiftClosingController extends Controller
     public function show($id)
     {
         $shiftClosing = ShiftClosing::withTrashed()
-            ->with(['cashier', 'verifier', 'deletedBy', 'partyPayments.party', 'partyPayments.expenseCategory', 'transactions.account'])
+            ->with(['cashier', 'closedBy', 'verifier', 'deletedBy', 'partyPayments.party', 'partyPayments.expenseCategory', 'transactions.account'])
             ->findOrFail($id);
 
         return view('shift_closings.show', compact('shiftClosing'));

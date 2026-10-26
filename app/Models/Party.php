@@ -57,4 +57,62 @@ class Party extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Recomputes current balance dynamically from opening balance, transactions, and shift payments
+     */
+    public function recalculateCurrentBalance(): float
+    {
+        $balance = (float) $this->opening_balance;
+
+        $transactions = $this->transactions()
+            ->whereNull('deleted_at')
+            ->get();
+
+        $shiftPayments = ShiftClosingPartyPayment::where('party_id', $this->id)
+            ->whereHas('shiftClosing', function ($q) {
+                $q->whereNull('deleted_at');
+            })
+            ->get();
+
+        if ($this->type === 'customer' || $this->type === 'staff') {
+            foreach ($transactions as $tx) {
+                if ($tx->type === 'payment_in') {
+                    $balance -= (float) $tx->amount;
+                } else {
+                    $balance += (float) $tx->amount;
+                }
+            }
+            foreach ($shiftPayments as $sp) {
+                $balance += (float) $sp->amount;
+            }
+        } else {
+            // supplier or trader
+            foreach ($transactions as $tx) {
+                if ($tx->type === 'payment_out') {
+                    $balance -= (float) $tx->amount;
+                } else {
+                    $balance += (float) $tx->amount;
+                }
+            }
+            foreach ($shiftPayments as $sp) {
+                $balance -= (float) $sp->amount;
+            }
+        }
+
+        $this->current_balance = $balance;
+        $this->saveQuietly();
+
+        return $balance;
+    }
+
+    /**
+     * Synchronize current balances for all parties
+     */
+    public static function syncAllBalances(): void
+    {
+        foreach (static::all() as $party) {
+            $party->recalculateCurrentBalance();
+        }
+    }
 }

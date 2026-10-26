@@ -26,5 +26,53 @@
                 {{ $slot }}
             </div>
         </div>
+
+        <script>
+            // Enter key navigation (Enter moves to next field, last field/button submits)
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter' || e.isComposing || e.defaultPrevented) return;
+                const target = e.target;
+                if (!target) return;
+                const tag = target.tagName ? target.tagName.toLowerCase() : '';
+                if (tag === 'button' && target.type !== 'submit') return;
+                if (tag === 'a') return;
+
+                const form = target.form || target.closest('form');
+                if (!form) return;
+
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const submitBtn = form.querySelector('button[type="submit"]:not([disabled])');
+                    if (submitBtn) submitBtn.click();
+                    return;
+                }
+
+                if (tag === 'button' && target.type === 'submit') return;
+
+                if (tag === 'input') {
+                    const type = (target.type || 'text').toLowerCase();
+                    if (['button', 'submit', 'reset', 'file'].includes(type)) return;
+                } else if (tag !== 'select' && tag !== 'textarea') {
+                    return;
+                }
+
+                e.preventDefault();
+                const selector = 'input:not([type="hidden"]):not([type="button"]):not([type="reset"]), select, textarea, button[type="submit"]';
+                const fields = Array.from(form.querySelectorAll(selector)).filter(el => !el.disabled && el.offsetParent !== null);
+                const currentIndex = fields.indexOf(target);
+
+                if (e.shiftKey && currentIndex > 0) {
+                    fields[currentIndex - 1].focus();
+                    return;
+                }
+
+                if (currentIndex !== -1 && currentIndex + 1 < fields.length) {
+                    fields[currentIndex + 1].focus();
+                } else {
+                    const submitBtn = form.querySelector('button[type="submit"]:not([disabled])');
+                    if (submitBtn) submitBtn.click();
+                }
+            });
+        </script>
     </body>
 </html>

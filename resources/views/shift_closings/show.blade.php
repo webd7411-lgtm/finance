@@ -72,6 +72,7 @@
                         <div><strong>Shift:</strong> {{ strtoupper($shiftClosing->shift_type) }} SHIFT &nbsp;|&nbsp; <strong>Status:</strong> {{ strtoupper($shiftClosing->status) }}</div>
                         <div><strong>Closing Time:</strong> {{ $shiftClosing->created_at->format('h:i A') }}</div>
                         <div><strong>Cashier:</strong> {{ $shiftClosing->cashier->name ?? 'User #' . $shiftClosing->cashier_id }}</div>
+                        <div><strong>Closed By:</strong> {{ $shiftClosing->closedBy->name ?? ($shiftClosing->cashier->name ?? 'Admin Owner') }}</div>
                     </div>
                 </div>
             </div>
@@ -92,6 +93,7 @@
                         <div class="small fw-bold text-dark">Date: {{ $shiftClosing->date->format('d F, Y') }}</div>
                         <div class="small text-muted">Submitted: {{ $shiftClosing->created_at->format('h:i A') }}</div>
                         <div class="small text-muted">Cashier: <strong>{{ $shiftClosing->cashier->name ?? 'User #' . $shiftClosing->cashier_id }}</strong></div>
+                        <div class="small text-muted">Closed By: <strong>{{ $shiftClosing->closedBy->name ?? ($shiftClosing->cashier->name ?? 'Admin Owner') }}</strong></div>
                     </div>
                 </div>
             </div>
@@ -202,9 +204,9 @@
                             <tr>
                                 <td class="text-muted">Invoice Range / Count:</td>
                                 <td class="text-end font-monospace fw-bold">
-                                    {{ $shiftClosing->total_invoices }} bills
+                                    {{ number_format($shiftClosing->total_invoices) }} bills
                                     @if($shiftClosing->invoice_start && $shiftClosing->invoice_end)
-                                        <small class="d-block text-muted">#{{ $shiftClosing->invoice_start }} - #{{ $shiftClosing->invoice_end }}</small>
+                                        <small class="d-block text-muted">{{ number_format($shiftClosing->invoice_start) }} - {{ number_format($shiftClosing->invoice_end) }}</small>
                                     @endif
                                 </td>
                             </tr>
@@ -217,10 +219,20 @@
                                 <td class="text-end font-monospace text-danger">
                                     - Rs. {{ number_format($shiftClosing->returns_amount, 2) }}
                                     @if($shiftClosing->return_invoice_start && $shiftClosing->return_invoice_end)
-                                        <small class="d-block text-muted">Invoices #{{ $shiftClosing->return_invoice_start }} - #{{ $shiftClosing->return_invoice_end }} ({{ $shiftClosing->total_return_invoices }} bills)</small>
+                                        <small class="d-block text-muted">Invoices {{ number_format($shiftClosing->return_invoice_start) }} - {{ number_format($shiftClosing->return_invoice_end) }} ({{ number_format($shiftClosing->total_return_invoices) }} bills)</small>
                                     @elseif($shiftClosing->return_invoice_number)
                                         <small class="d-block text-muted">Invoice: {{ $shiftClosing->return_invoice_number }}</small>
                                     @endif
+                                </td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="fw-bold text-success">
+                                    Shift Net Sale:
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1 ms-1" style="font-size: 0.68rem;">Gross - Return</span>
+                                    <small class="d-block text-muted fw-normal" style="font-size: 0.72rem;">Net sales after subtracting sale returns</small>
+                                </td>
+                                <td class="text-end font-monospace fw-bold text-success fs-6">
+                                    Rs. {{ number_format($shiftClosing->net_sale, 2) }}
                                 </td>
                             </tr>
                             @foreach($shiftClosing->partyPayments as $payment)
@@ -237,6 +249,17 @@
                                     </td>
                                 </tr>
                             @endforeach
+                            @if($shiftClosing->partyPayments->isEmpty() && $shiftClosing->expenses_amount > 0)
+                                <tr>
+                                    <td class="text-muted">(-) Shift Cash Expenses:</td>
+                                    <td class="text-end font-monospace text-danger">
+                                        - Rs. {{ number_format($shiftClosing->expenses_amount, 2) }}
+                                        @if($shiftClosing->expenses_details)
+                                            <small class="d-block text-muted">{{ $shiftClosing->expenses_details }}</small>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endif
                             <tr class="table-light total-row">
                                 <th class="text-secondary">Expected Net Cash:</th>
                                 <th class="text-end font-monospace text-secondary fs-6">Rs. {{ number_format($shiftClosing->expected_cash, 2) }}</th>
@@ -249,19 +272,24 @@
             <!-- Final Reconciliation Banner Box -->
             <div class="p-3 rounded-3 mb-4 statement-recon-box {{ $shiftClosing->difference < 0 ? 'bg-danger bg-opacity-10 border border-danger' : ($shiftClosing->difference > 0 ? 'bg-info bg-opacity-10 border border-info' : 'bg-success bg-opacity-10 border border-success') }}">
                 <div class="row align-items-center text-center text-md-start g-2">
-                    <div class="col-6 col-md-3 mb-2 mb-md-0 statement-recon-cell">
+                    <div class="col-6 col-md mb-2 mb-md-0 statement-recon-cell">
+                        <div class="small text-muted fw-semibold recon-label">SHIFT NET SALE</div>
+                        <div class="fs-5 fw-bold text-success recon-val">Rs. {{ number_format($shiftClosing->net_sale, 2) }}</div>
+                        <div style="font-size: 0.72rem;" class="text-muted recon-sub">Gross - Return</div>
+                    </div>
+                    <div class="col-6 col-md mb-2 mb-md-0 statement-recon-cell">
                         <div class="small text-muted fw-semibold recon-label">EXPECTED TO RECEIVE</div>
                         <div class="fs-5 fw-bold text-dark recon-val">Rs. {{ number_format($shiftClosing->expected_cash, 2) }}</div>
                     </div>
-                    <div class="col-6 col-md-3 mb-2 mb-md-0 statement-recon-cell">
+                    <div class="col-6 col-md mb-2 mb-md-0 statement-recon-cell">
                         <div class="small text-muted fw-semibold recon-label">TOTAL CASH COLLECTED</div>
                         <div class="fs-5 fw-bold text-dark recon-val">Rs. {{ number_format($shiftClosing->total_counted_cash, 2) }}</div>
                     </div>
-                    <div class="col-6 col-md-3 mb-2 mb-md-0 statement-recon-cell">
+                    <div class="col-6 col-md mb-2 mb-md-0 statement-recon-cell">
                         <div class="small text-muted fw-semibold recon-label">ACTUALLY COLLECTED</div>
                         <div class="fs-5 fw-bold text-dark recon-val">Rs. {{ number_format($shiftClosing->total_actual_received, 2) }}</div>
                     </div>
-                    <div class="col-6 col-md-3 text-center text-md-end statement-recon-cell statement-recon-last">
+                    <div class="col-12 col-md text-center text-md-end statement-recon-cell statement-recon-last">
                         <div class="small text-muted fw-semibold recon-label">SHIFT VARIANCE</div>
                         <div class="fs-5 fw-bold recon-variance {{ $shiftClosing->difference < 0 ? 'text-danger' : ($shiftClosing->difference > 0 ? 'text-info' : 'text-success') }}">
                             {{ $shiftClosing->difference > 0 ? '+' : '' }}Rs. {{ number_format($shiftClosing->difference, 2) }}
@@ -466,8 +494,8 @@
         align-items: center !important;
     }
     .statement-recon-cell {
-        flex: 1 1 25% !important;
-        width: 25% !important;
+        flex: 1 1 20% !important;
+        width: 20% !important;
         text-align: left !important;
         padding: 0 4px !important;
     }

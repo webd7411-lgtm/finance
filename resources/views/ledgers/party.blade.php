@@ -193,38 +193,39 @@
     <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_credit', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
        class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'btn-primary text-white fw-bold shadow-xs' : 'btn-outline-primary' }}" 
        style="font-size: 0.78rem;">
-        <i class="bi bi-credit-card me-1"></i> All Credit Parties (Combined) <span class="badge bg-primary-subtle text-primary ms-1">{{ $creditPartiesCount ?? 0 }}</span>
+        <i class="bi bi-credit-card me-1"></i> All Credit Parties (Grouped) <span class="badge bg-primary-subtle text-primary ms-1">{{ $creditPartiesCount ?? 0 }}</span>
     </a>
     <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_cash', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
        class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'btn-success text-white fw-bold shadow-xs' : 'btn-outline-success' }}" 
        style="font-size: 0.78rem;">
-        <i class="bi bi-cash-stack me-1"></i> All Cash Parties (Combined) <span class="badge bg-success-subtle text-success ms-1">{{ $cashPartiesCount ?? 0 }}</span>
+        <i class="bi bi-cash-stack me-1"></i> All Cash Parties (Grouped) <span class="badge bg-success-subtle text-success ms-1">{{ $cashPartiesCount ?? 0 }}</span>
     </a>
 </div>
 
 <!-- Filter & Selection Bar (No-Print) -->
 <div class="card-custom p-3 mb-3 mb-md-4 no-print">
-    <form method="GET" action="{{ route('ledgers.party') }}" class="row g-2 align-items-end">
+    <form method="GET" action="{{ route('ledgers.party') }}" id="partyLedgerFilterForm" class="row g-2 align-items-end">
         <div class="col-12 col-md-5">
-            <label for="partySearch" class="form-label text-muted small fw-semibold mb-1">Select Counterparty / Group Ledger</label>
+            <label for="partySearch" class="form-label text-muted small fw-semibold mb-1">Select Counterparty / Multi-Party Ledger</label>
             <div id="partyCombobox" class="position-relative">
-                <input type="search" id="partySearch" class="form-control form-control-sm py-2" placeholder="Search or select a party / group..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
-                <input type="hidden" name="party_id" id="partyId" value="{{ ($ledgerScope ?? 'single') === 'all_credit' ? 'all_credit' : (($ledgerScope ?? 'single') === 'all_cash' ? 'all_cash' : ($party->id ?? '')) }}">
-                <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox">
+                <input type="search" id="partySearch" class="form-control form-control-sm py-2" placeholder="Search or select parties..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
+                <input type="hidden" name="party_id" id="partyId" value="{{ in_array($ledgerScope ?? 'single', ['all_credit', 'all_cash', 'all']) ? $ledgerScope : (($ledgerScope ?? 'single') === 'single' ? ($party->id ?? '') : '') }}">
+                
+                <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 440px; overflow-y: auto;">
                     <!-- Quick Combined Ledger Options -->
                     <div class="px-2 py-1 text-muted fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.4px;">Combined Statements</div>
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="all_credit" data-display-title="All Credit Parties (Combined)">
-                        <span><i class="bi bi-credit-card me-1 text-primary"></i> <strong>All Credit Parties</strong> (Combined Statement)</span>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="all_credit" data-display-title="All Credit Parties (Grouped Statement)">
+                        <span><i class="bi bi-credit-card me-1 text-primary"></i> <strong>All Credit Parties</strong> (Grouped Statement)</span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border' }}">{{ $creditPartiesCount ?? 0 }}</span>
                     </button>
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'active bg-success text-white' : '' }}" role="option" data-party-id="all_cash" data-display-title="All Cash Parties (Combined)">
-                        <span><i class="bi bi-cash-stack me-1 text-success"></i> <strong>All Cash Parties</strong> (Combined Statement)</span>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'active bg-success text-white' : '' }}" role="option" data-party-id="all_cash" data-display-title="All Cash Parties (Grouped Statement)">
+                        <span><i class="bi bi-cash-stack me-1 text-success"></i> <strong>All Cash Parties</strong> (Grouped Statement)</span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'bg-white text-success' : 'bg-success-subtle text-success border' }}">{{ $cashPartiesCount ?? 0 }}</span>
                     </button>
                     
                     <div class="dropdown-divider my-1"></div>
                     <div class="px-2 py-1 text-muted fw-bold text-uppercase d-flex justify-content-between align-items-center" style="font-size: 0.65rem; letter-spacing: 0.4px;">
-                        <span>Individual Parties</span>
+                        <span>Select Parties (Multi-Select)</span>
                         <div class="btn-group btn-group-sm" id="comboboxModeFilter">
                             <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 active" data-filter-mode="all" style="font-size: 0.65rem;">All</button>
                             <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5" data-filter-mode="credit" style="font-size: 0.65rem;">Credit</button>
@@ -232,15 +233,41 @@
                         </div>
                     </div>
 
-                @foreach($allParties as $p)
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 party-item" role="option" data-party-id="{{ $p->id }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span>[{{ ucfirst($p->type) }}] {{ $p->name }} ({{ $p->phone ?? 'No Phone' }})</span>
-                            <span class="ms-1">{!! $p->dealing_badges !!}</span>
+                    <div class="px-2 py-1 bg-light border-bottom d-flex justify-content-between align-items-center small">
+                        <span class="text-secondary fw-semibold" style="font-size: 0.68rem;">Check multiple parties:</span>
+                        <div class="d-flex gap-1.5">
+                            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none fw-semibold" id="selectAllVisibleBtn" style="font-size: 0.68rem;">Select Visible</button>
+                            <span class="text-muted">|</span>
+                            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger fw-semibold" id="clearAllSelectedBtn" style="font-size: 0.68rem;">Clear</button>
                         </div>
-                    </button>
-                @endforeach
+                    </div>
+
+                    <div id="partiesCheckboxList" style="max-height: 220px; overflow-y: auto;">
+                        @php
+                            $requestedPartyIds = array_map('strval', (array) request('party_ids', []));
+                        @endphp
+                        @foreach($allParties as $p)
+                            @php
+                                $isChecked = in_array((string)$p->id, $requestedPartyIds) || (($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id);
+                            @endphp
+                            <div class="dropdown-item rounded-1 small py-1.5 px-2 party-item d-flex align-items-center gap-2 cursor-pointer" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
+                                <input type="checkbox" name="party_ids[]" value="{{ $p->id }}" class="form-check-input mt-0 party-check" id="partyCheck_{{ $p->id }}" {{ $isChecked ? 'checked' : '' }}>
+                                <label for="partyCheck_{{ $p->id }}" class="flex-grow-1 d-flex justify-content-between align-items-center mb-0 cursor-pointer user-select-none">
+                                    <span>[{{ ucfirst($p->type) }}] <strong>{{ $p->name }}</strong> <small class="text-muted">({{ $p->phone ?? 'No Phone' }})</small></span>
+                                    <span class="ms-1">{!! $p->dealing_badges !!}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+
                     <div id="partySearchEmpty" class="dropdown-item small text-muted" aria-live="polite" hidden>No matching party found.</div>
+
+                    <div class="p-2 border-top bg-light d-flex justify-content-between align-items-center mt-1">
+                        <span class="small text-muted fw-semibold" id="selectedCountBadge" style="font-size: 0.72rem;">0 selected</span>
+                        <button type="button" class="btn btn-primary btn-xs py-1 px-3 fw-bold rounded-pill shadow-xs" id="applyMultiSelectBtn" style="font-size: 0.75rem;">
+                            <i class="bi bi-check2-circle me-1"></i> View Selected
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -433,200 +460,342 @@
             </div>
         </div>
 
-        <!-- Desktop View: Full Ledger Table -->
-        <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
-            <table class="table table-sm table-bordered table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 105px;">Date</th>
-                        @if(($ledgerScope ?? 'single') !== 'single')
-                            <th>Counterparty</th>
-                        @endif
-                        <th style="width: 110px;">Ref / Voucher</th>
-                        <th>Account / Mode</th>
-                        <th>Description / Details</th>
-                        <th class="text-end" style="width: 130px;">Debit (Rs.)</th>
-                        <th class="text-end" style="width: 130px;">Credit (Rs.)</th>
-                        <th class="text-end" style="width: 150px;">Balance (Rs.)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Opening Balance Row -->
-                    <tr class="table-secondary bg-opacity-25 fw-semibold">
-                        <td>{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
-                        @if(($ledgerScope ?? 'single') !== 'single')
-                            <td class="font-monospace text-muted">-</td>
-                        @endif
-                        <td class="font-monospace text-muted">-</td>
-                        <td class="text-muted">Opening Balance</td>
-                        <td class="text-muted">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
-                        <td class="text-end font-monospace text-muted">-</td>
-                        <td class="text-end font-monospace text-muted">-</td>
-                        <td class="text-end font-monospace fw-bold text-dark">
-                            Rs. {{ number_format($openingBalance, 2) }}
-                        </td>
-                    </tr>
-
-                    @forelse($transactions as $entry)
+        @if(($ledgerScope ?? 'single') === 'single')
+            <!-- Desktop View: Single Party Ledger Table -->
+            <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
+                <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
-                            @if(($ledgerScope ?? 'single') !== 'single')
-                                <td>
-                                    <a href="{{ route('ledgers.party', ['party_id' => $entry->party_id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fw-semibold text-dark text-decoration-none" title="View individual party ledger">
-                                        {{ $entry->party_name }}
-                                    </a>
-                                    @if($entry->party_type)
-                                        <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.65rem;">{{ $entry->party_type }}</span>
+                            <th style="width: 105px;">Date</th>
+                            <th style="width: 110px;">Ref / Voucher</th>
+                            <th>Account / Mode</th>
+                            <th>Description / Details</th>
+                            <th class="text-end" style="width: 130px;">Debit (Rs.)</th>
+                            <th class="text-end" style="width: 130px;">Credit (Rs.)</th>
+                            <th class="text-end" style="width: 150px;">Balance (Rs.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Opening Balance Row -->
+                        <tr class="table-secondary bg-opacity-25 fw-semibold">
+                            <td>{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
+                            <td class="font-monospace text-muted">-</td>
+                            <td class="text-muted">Opening Balance</td>
+                            <td class="text-muted">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
+                            <td class="text-end font-monospace text-muted">-</td>
+                            <td class="text-end font-monospace text-muted">-</td>
+                            <td class="text-end font-monospace fw-bold text-dark">
+                                Rs. {{ number_format($openingBalance, 2) }}
+                            </td>
+                        </tr>
+
+                        @forelse($transactions as $entry)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
+                                <td class="font-monospace fw-bold">
+                                    @if($entry->transaction_id)
+                                        <a href="{{ route('transactions.show', $entry->transaction_id) }}" class="text-decoration-none" target="_blank">
+                                            #{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}
+                                        </a>
+                                    @else
+                                        {{ $entry->bill_no }}
+                                    @endif
+                                    @if($entry->bill_no)
+                                        <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
                                     @endif
                                 </td>
-                            @endif
-                            <td class="font-monospace fw-bold">
-                                @if($entry->transaction_id)
-                                    <a href="{{ route('transactions.show', $entry->transaction_id) }}" class="text-decoration-none" target="_blank">
-                                        #{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}
-                                    </a>
-                                @else
-                                    {{ $entry->bill_no }}
-                                @endif
-                                @if($entry->bill_no)
-                                    <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark border px-2 py-1">
+                                <td>
+                                    <span class="badge bg-light text-dark border px-2 py-1">
+                                        {{ $entry->account_name }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div>{{ $entry->description ?? 'Financial Transaction' }}</div>
+                                    <small class="text-muted" style="font-size: 0.72rem;">User: {{ $entry->creator }}</small>
+                                </td>
+                                <td class="text-end font-monospace {{ $entry->debit > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                    {{ $entry->debit > 0 ? number_format($entry->debit, 2) : '-' }}
+                                </td>
+                                <td class="text-end font-monospace {{ $entry->credit > 0 ? 'text-success fw-bold' : 'text-muted' }}">
+                                    {{ $entry->credit > 0 ? number_format($entry->credit, 2) : '-' }}
+                                </td>
+                                <td class="text-end font-monospace fw-bold text-dark">
+                                    Rs. {{ number_format($entry->running_balance, 2) }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                                    No ledger transactions found for this party within the selected date range.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="4" class="text-end">Period Totals & Ending Balance:</td>
+                            <td class="text-end font-monospace text-danger">Rs. {{ number_format($totalDebit, 2) }}</td>
+                            <td class="text-end font-monospace text-success">Rs. {{ number_format($totalCredit, 2) }}</td>
+                            <td class="text-end font-monospace text-primary fs-6">Rs. {{ number_format($closingBalance, 2) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Mobile View: Single Party -->
+            <div class="d-block d-md-none mb-3 d-print-none">
+                <!-- Opening Balance Card -->
+                <div class="p-2.5 rounded-3 border bg-light mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold text-secondary small">Opening Balance</div>
+                            <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</small>
+                        </div>
+                        <div class="font-monospace fw-bold text-dark">
+                            Rs. {{ number_format($openingBalance, 2) }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Entries -->
+                <div class="d-flex flex-column gap-2">
+                    @forelse($transactions as $entry)
+                        <div class="p-3 rounded-3 border bg-white shadow-xs">
+                            <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
+                                <div class="d-flex align-items-center gap-1.5 min-w-0">
+                                    <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
+                                    @if($entry->transaction_id)
+                                        <span class="font-monospace text-muted small">#{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}</span>
+                                    @endif
+                                </div>
+                                <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
                                     {{ $entry->account_name }}
                                 </span>
-                            </td>
-                            <td>
-                                <div>{{ $entry->description ?? 'Financial Transaction' }}</div>
-                                <small class="text-muted" style="font-size: 0.72rem;">User: {{ $entry->creator }}</small>
-                            </td>
-                            <td class="text-end font-monospace {{ $entry->debit > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
-                                {{ $entry->debit > 0 ? number_format($entry->debit, 2) : '-' }}
-                            </td>
-                            <td class="text-end font-monospace {{ $entry->credit > 0 ? 'text-success fw-bold' : 'text-muted' }}">
-                                {{ $entry->credit > 0 ? number_format($entry->credit, 2) : '-' }}
-                            </td>
-                            <td class="text-end font-monospace fw-bold text-dark">
-                                Rs. {{ number_format($entry->running_balance, 2) }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ ($ledgerScope ?? 'single') !== 'single' ? 8 : 7 }}" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox fs-3 d-block mb-1"></i>
-                                No ledger transactions found for {{ ($ledgerScope ?? 'single') !== 'single' ? 'the selected parties' : 'this party' }} within the selected date range.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-                <tfoot class="table-light">
-                    <tr class="fw-bold">
-                        <td colspan="{{ ($ledgerScope ?? 'single') !== 'single' ? 5 : 4 }}" class="text-end">Period Totals & Ending Balance:</td>
-                        <td class="text-end font-monospace text-danger">Rs. {{ number_format($totalDebit, 2) }}</td>
-                        <td class="text-end font-monospace text-success">Rs. {{ number_format($totalCredit, 2) }}</td>
-                        <td class="text-end font-monospace text-primary fs-6">Rs. {{ number_format($closingBalance, 2) }}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+                            </div>
 
-        <!-- Mobile View: Clean Responsive Cards (Zero Horizontal Scroll) -->
-        <div class="d-block d-md-none mb-3 d-print-none">
-            <!-- Opening Balance Card -->
-            <div class="p-2.5 rounded-3 border bg-light mb-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fw-semibold text-secondary small">Opening Balance</div>
-                        <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</small>
+                            @if($entry->description)
+                                <div class="text-muted small text-truncate mb-2" style="font-size: 0.74rem;">
+                                    {{ $entry->description }}
+                                </div>
+                            @endif
+
+                            <div class="p-2 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
+                                <div>
+                                    @if($entry->debit > 0)
+                                        <span class="text-danger fw-bold font-monospace">Dr: -Rs. {{ number_format($entry->debit, 2) }}</span>
+                                    @elseif($entry->credit > 0)
+                                        <span class="text-success fw-bold font-monospace">Cr: +Rs. {{ number_format($entry->credit, 2) }}</span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-muted d-block" style="font-size: 0.65rem;">Balance</span>
+                                    <span class="font-monospace fw-bold text-dark">Rs. {{ number_format($entry->running_balance, 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-muted py-4 small">
+                            No ledger transactions found for this party within the selected date range.
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Mobile Totals Card -->
+                <div class="p-3 rounded-3 border bg-primary bg-opacity-10 mt-2">
+                    <div class="d-flex justify-content-between align-items-center small py-1">
+                        <span class="text-danger fw-semibold">Total Debits:</span>
+                        <span class="font-monospace fw-bold text-danger">Rs. {{ number_format($totalDebit, 2) }}</span>
                     </div>
-                    <div class="font-monospace fw-bold text-dark">
-                        Rs. {{ number_format($openingBalance, 2) }}
+                    <div class="d-flex justify-content-between align-items-center small py-1">
+                        <span class="text-success fw-semibold">Total Credits:</span>
+                        <span class="font-monospace fw-bold text-success">Rs. {{ number_format($totalCredit, 2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
+                        <span class="fw-bold text-dark">Net Ending Balance:</span>
+                        <span class="font-monospace fw-bold fs-6 text-primary">Rs. {{ number_format($closingBalance, 2) }}</span>
                     </div>
                 </div>
             </div>
+        @else
+            <!-- Multi-Party / Combined Groups: Each Party in its own Group Table -->
+            <div class="party-groups-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark m-0">
+                        <i class="bi bi-collection me-1.5 text-primary"></i>Party-Wise Statements ({{ count($partyGroups) }} {{ count($partyGroups) === 1 ? 'Party' : 'Parties' }})
+                    </h6>
+                    <span class="text-muted small">Each party displayed in an individual group with its own opening &amp; closing balance</span>
+                </div>
 
-            <!-- Transaction Entries -->
-            <div class="d-flex flex-column gap-2">
-                @forelse($transactions as $entry)
-                    <div class="p-3 rounded-3 border bg-white shadow-xs">
-                        @if(($ledgerScope ?? 'single') !== 'single')
-                            <div class="mb-1.5 pb-1.5 border-bottom d-flex align-items-center justify-content-between">
-                                <a href="{{ route('ledgers.party', ['party_id' => $entry->party_id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fw-bold text-primary small text-decoration-none">
-                                    <i class="bi bi-person me-1"></i>{{ $entry->party_name }}
-                                </a>
-                                @if($entry->party_type)
-                                    <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;">{{ $entry->party_type }}</span>
-                                @endif
-                            </div>
-                        @endif
-                        <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
-                            <div class="d-flex align-items-center gap-1.5 min-w-0">
-                                <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
-                                @if($entry->transaction_id)
-                                    <span class="font-monospace text-muted small">#{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}</span>
-                                @endif
-                            </div>
-                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
-                                {{ $entry->account_name }}
-                            </span>
-                        </div>
-                                <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
-                                @if($entry->transaction_id)
-                                    <span class="font-monospace text-muted small">#{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}</span>
-                                @endif
-                            </div>
-                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
-                                {{ $entry->account_name }}
-                            </span>
-                        </div>
-
-                        @if($entry->description)
-                            <div class="text-muted small text-truncate mb-2" style="font-size: 0.74rem;">
-                                {{ $entry->description }}
-                            </div>
-                        @endif
-
-                        <!-- Money Movement Strip -->
-                        <div class="p-2 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
+                @forelse($partyGroups as $index => $group)
+                    <div class="card-custom p-3 p-md-4 mb-4 bg-white border shadow-xs party-statement-block" style="page-break-inside: avoid;">
+                        <!-- Party Group Header -->
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-2 mb-3 border-bottom">
                             <div>
-                                @if($entry->debit > 0)
-                                    <span class="text-danger fw-bold font-monospace">Dr: -Rs. {{ number_format($entry->debit, 2) }}</span>
-                                @elseif($entry->credit > 0)
-                                    <span class="text-success fw-bold font-monospace">Cr: +Rs. {{ number_format($entry->credit, 2) }}</span>
-                                @else
-                                    <span class="text-muted">-</span>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge bg-dark text-white rounded-circle px-2 py-1" style="font-size: 0.72rem;">#{{ $index + 1 }}</span>
+                                    <a href="{{ route('ledgers.party', ['party_id' => $group->party->id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fs-5 fw-bold text-dark text-decoration-none" title="Click to view dedicated single statement">
+                                        {{ $group->party->name }}
+                                    </a>
+                                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-0.5" style="font-size: 0.7rem;">{{ ucfirst($group->party->type) }}</span>
+                                    {!! $group->party->dealing_badges !!}
+                                    @if($group->party->phone)
+                                        <span class="text-muted small ms-1"><i class="bi bi-telephone me-1"></i>{{ $group->party->phone }}</span>
+                                    @endif
+                                </div>
+                                @if($group->party->address)
+                                    <small class="text-muted d-block mt-0.5" style="font-size: 0.75rem;"><i class="bi bi-geo-alt me-1"></i>{{ $group->party->address }}</small>
                                 @endif
                             </div>
-                            <div class="text-end">
-                                <span class="text-muted d-block" style="font-size: 0.65rem;">Balance</span>
-                                <span class="font-monospace fw-bold text-dark">Rs. {{ number_format($entry->running_balance, 2) }}</span>
+                            <div class="d-flex gap-3 align-items-center bg-light px-3 py-1.5 rounded-3 border">
+                                <div class="text-end">
+                                    <span class="text-muted small d-block" style="font-size: 0.68rem;">Starting Balance:</span>
+                                    <span class="font-monospace fw-bold text-dark" style="font-size: 0.85rem;">Rs. {{ number_format($group->opening_balance, 2) }}</span>
+                                </div>
+                                <div class="vr my-1"></div>
+                                <div class="text-end">
+                                    <span class="text-muted small d-block" style="font-size: 0.68rem;">Closing Balance:</span>
+                                    <span class="font-monospace fw-bold {{ $group->closing_balance > 0 ? 'text-primary' : ($group->closing_balance < 0 ? 'text-danger' : 'text-success') }}" style="font-size: 0.85rem;">
+                                        Rs. {{ number_format(abs($group->closing_balance), 2) }}
+                                        <small style="font-size: 0.65rem;">
+                                            @if($group->party->type === 'customer' || $group->party->type === 'staff')
+                                                {{ $group->closing_balance > 0 ? '(Dr)' : ($group->closing_balance < 0 ? '(Cr)' : '(0)') }}
+                                            @else
+                                                {{ $group->closing_balance > 0 ? '(Cr)' : ($group->closing_balance < 0 ? '(Dr)' : '(0)') }}
+                                            @endif
+                                        </small>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Table for this party -->
+                        <div class="table-responsive statement-desktop-table mb-2">
+                            <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 105px;">Date</th>
+                                        <th style="width: 110px;">Ref / Voucher</th>
+                                        <th>Account / Mode</th>
+                                        <th>Description / Details</th>
+                                        <th class="text-end" style="width: 130px;">Debit (Rs.)</th>
+                                        <th class="text-end" style="width: 130px;">Credit (Rs.)</th>
+                                        <th class="text-end" style="width: 150px;">Balance (Rs.)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="table-secondary bg-opacity-25 fw-semibold">
+                                        <td>{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
+                                        <td class="font-monospace text-muted">-</td>
+                                        <td class="text-muted">Opening Balance</td>
+                                        <td class="text-muted">Balance prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
+                                        <td class="text-end font-monospace text-muted">-</td>
+                                        <td class="text-end font-monospace text-muted">-</td>
+                                        <td class="text-end font-monospace fw-bold text-dark">
+                                            Rs. {{ number_format($group->opening_balance, 2) }}
+                                        </td>
+                                    </tr>
+                                    @forelse($group->transactions as $entry)
+                                        <tr>
+                                            <td>{{ \Carbon\Carbon::parse($entry->date)->format('d-m-Y') }}</td>
+                                            <td class="font-monospace fw-bold">
+                                                @if($entry->transaction_id)
+                                                    <a href="{{ route('transactions.show', $entry->transaction_id) }}" class="text-decoration-none" target="_blank">
+                                                        #{{ str_pad($entry->transaction_id, 5, '0', STR_PAD_LEFT) }}
+                                                    </a>
+                                                @else
+                                                    {{ $entry->bill_no }}
+                                                @endif
+                                                @if($entry->bill_no)
+                                                    <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border px-2 py-1">
+                                                    {{ $entry->account_name }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div>{{ $entry->description ?? 'Financial Transaction' }}</div>
+                                                <small class="text-muted" style="font-size: 0.72rem;">User: {{ $entry->creator }}</small>
+                                            </td>
+                                            <td class="text-end font-monospace {{ $entry->debit > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                                {{ $entry->debit > 0 ? number_format($entry->debit, 2) : '-' }}
+                                            </td>
+                                            <td class="text-end font-monospace {{ $entry->credit > 0 ? 'text-success fw-bold' : 'text-muted' }}">
+                                                {{ $entry->credit > 0 ? number_format($entry->credit, 2) : '-' }}
+                                            </td>
+                                            <td class="text-end font-monospace fw-bold text-dark">
+                                                Rs. {{ number_format($entry->running_balance, 2) }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-3 small">
+                                                <i class="bi bi-info-circle me-1"></i> No transactions recorded during this period. (Carrying forward Opening Balance of Rs. {{ number_format($group->opening_balance, 2) }})
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td colspan="4" class="text-end">{{ $group->party->name }} &ndash; Subtotals:</td>
+                                        <td class="text-end font-monospace text-danger">Rs. {{ number_format($group->total_debit, 2) }}</td>
+                                        <td class="text-end font-monospace text-success">Rs. {{ number_format($group->total_credit, 2) }}</td>
+                                        <td class="text-end font-monospace text-primary">Rs. {{ number_format($group->closing_balance, 2) }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Mobile View for this Group -->
+                        <div class="d-block d-md-none d-print-none mb-2">
+                            <div class="d-flex flex-column gap-2">
+                                @forelse($group->transactions as $entry)
+                                    <div class="p-2.5 rounded-3 border bg-white shadow-xs">
+                                        <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                                            <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
+                                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
+                                                {{ $entry->account_name }}
+                                            </span>
+                                        </div>
+                                        @if($entry->description)
+                                            <div class="text-muted small text-truncate mb-1.5" style="font-size: 0.72rem;">
+                                                {{ $entry->description }}
+                                            </div>
+                                        @endif
+                                        <div class="p-1.5 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                                            <div>
+                                                @if($entry->debit > 0)
+                                                    <span class="text-danger fw-bold font-monospace">Dr: -Rs. {{ number_format($entry->debit, 2) }}</span>
+                                                @elseif($entry->credit > 0)
+                                                    <span class="text-success fw-bold font-monospace">Cr: +Rs. {{ number_format($entry->credit, 2) }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="font-monospace fw-bold text-dark">Rs. {{ number_format($entry->running_balance, 2) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center text-muted py-2 small">
+                                        No transactions recorded.
+                                    </div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
                 @empty
-                    <div class="text-center text-muted py-4 small">
-                        No ledger transactions found for this party within the selected date range.
+                    <div class="card-custom p-4 text-center text-muted">
+                        No parties matched your selection.
                     </div>
                 @endforelse
             </div>
-
-            <!-- Mobile Totals Card -->
-            <div class="p-3 rounded-3 border bg-primary bg-opacity-10 mt-2">
-                <div class="d-flex justify-content-between align-items-center small py-1">
-                    <span class="text-danger fw-semibold">Total Debits:</span>
-                    <span class="font-monospace fw-bold text-danger">Rs. {{ number_format($totalDebit, 2) }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center small py-1">
-                    <span class="text-success fw-semibold">Total Credits:</span>
-                    <span class="font-monospace fw-bold text-success">Rs. {{ number_format($totalCredit, 2) }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
-                    <span class="fw-bold text-dark">Net Ending Balance:</span>
-                    <span class="font-monospace fw-bold fs-6 text-primary">Rs. {{ number_format($closingBalance, 2) }}</span>
-                </div>
-            </div>
-        </div>
+        @endif
 
         <!-- Official Bank Statement Signatures (Visible on Print) -->
         <div class="statement-signatures pt-4 mt-4">
@@ -671,30 +840,47 @@
     const partySearch = document.getElementById('partySearch');
     const partyCombobox = document.getElementById('partyCombobox');
     const partyId = document.getElementById('partyId');
-    const partyOptions = Array.from(document.querySelectorAll('[data-party-id]'));
+    const partyOptions = Array.from(document.querySelectorAll('.combined-scope-btn'));
+    const partyItems = Array.from(document.querySelectorAll('.party-item'));
+    const partyChecks = Array.from(document.querySelectorAll('.party-check'));
     const partyOptionsMenu = document.getElementById('partyOptions');
     const partySearchEmpty = document.getElementById('partySearchEmpty');
     const comboboxModeFilter = document.getElementById('comboboxModeFilter');
+    const selectAllVisibleBtn = document.getElementById('selectAllVisibleBtn');
+    const clearAllSelectedBtn = document.getElementById('clearAllSelectedBtn');
+    const applyMultiSelectBtn = document.getElementById('applyMultiSelectBtn');
+    const selectedCountBadge = document.getElementById('selectedCountBadge');
     let currentDealingFilter = 'all';
 
-    function getOptionDisplayTitle(option) {
-        if (!option) return '';
-        if (option.dataset.displayTitle) return option.dataset.displayTitle;
-        return option.textContent.replace(/\s+/g, ' ').trim();
+    function updateSelectedCount() {
+        const checkedCount = partyChecks.filter(function (cb) { return cb.checked; }).length;
+        if (selectedCountBadge) {
+            selectedCountBadge.textContent = checkedCount + (checkedCount === 1 ? ' party selected' : ' parties selected');
+        }
+        return checkedCount;
     }
 
-    const selectedParty = partyOptions.find(function (option) {
-        return option.dataset.partyId === partyId.value;
-    });
+    // Set initial search input display value based on scope
+    const currentScope = @json($ledgerScope ?? 'single');
+    const selectedCountOnLoad = updateSelectedCount();
 
-    if (selectedParty && partySearch) {
-        partySearch.value = getOptionDisplayTitle(selectedParty);
+    if (partySearch) {
+        if (currentScope === 'all_credit') {
+            partySearch.value = 'All Credit Parties (Grouped Statement)';
+        } else if (currentScope === 'all_cash') {
+            partySearch.value = 'All Cash Parties (Grouped Statement)';
+        } else if (currentScope === 'multiple') {
+            partySearch.value = selectedCountOnLoad + ' Parties Selected';
+        } else if (currentScope === 'single') {
+            const singlePartyName = @json($party->name ?? '');
+            if (singlePartyName) partySearch.value = singlePartyName;
+        }
     }
 
     function closePartyOptions() {
         if (partyOptionsMenu) {
             partyOptionsMenu.classList.remove('show');
-            partySearch.setAttribute('aria-expanded', 'false');
+            if (partySearch) partySearch.setAttribute('aria-expanded', 'false');
         }
     }
 
@@ -702,28 +888,27 @@
         const normalizedQuery = (query || '').trim().toLocaleLowerCase();
         let matchingParties = 0;
 
-        partyOptions.forEach(function (option) {
-            const isCombined = option.dataset.partyId === 'all_credit' || option.dataset.partyId === 'all_cash';
-            const textMatches = option.textContent.toLocaleLowerCase().includes(normalizedQuery);
-            
+        partyOptions.forEach(function (btn) {
+            const matches = btn.textContent.toLocaleLowerCase().includes(normalizedQuery);
             let modeMatches = true;
             if (currentDealingFilter === 'credit') {
-                if (isCombined) {
-                    modeMatches = option.dataset.partyId === 'all_credit';
-                } else {
-                    modeMatches = option.dataset.isCredit === '1';
-                }
+                modeMatches = btn.dataset.partyId === 'all_credit';
             } else if (currentDealingFilter === 'cash') {
-                if (isCombined) {
-                    modeMatches = option.dataset.partyId === 'all_cash';
-                } else {
-                    modeMatches = option.dataset.isCash === '1';
-                }
+                modeMatches = btn.dataset.partyId === 'all_cash';
             }
+            btn.hidden = !(matches && modeMatches);
+        });
 
+        partyItems.forEach(function (item) {
+            const textMatches = item.textContent.toLocaleLowerCase().includes(normalizedQuery);
+            let modeMatches = true;
+            if (currentDealingFilter === 'credit') {
+                modeMatches = item.dataset.isCredit === '1';
+            } else if (currentDealingFilter === 'cash') {
+                modeMatches = item.dataset.isCash === '1';
+            }
             const visible = textMatches && modeMatches;
-            option.hidden = !visible;
-            option.setAttribute('aria-selected', option.dataset.partyId === partyId.value ? 'true' : 'false');
+            item.hidden = !visible;
             if (visible) matchingParties++;
         });
 
@@ -734,8 +919,10 @@
 
     function openPartyOptions(query) {
         filterPartyOptions(query);
-        partyOptionsMenu.classList.add('show');
-        partySearch.setAttribute('aria-expanded', 'true');
+        if (partyOptionsMenu) {
+            partyOptionsMenu.classList.add('show');
+            if (partySearch) partySearch.setAttribute('aria-expanded', 'true');
+        }
     }
 
     if (comboboxModeFilter) {
@@ -749,8 +936,70 @@
                 b.classList.remove('active');
             });
             btn.classList.add('active');
-            filterPartyOptions(partySearch.value);
-            partySearch.focus();
+            filterPartyOptions(partySearch ? partySearch.value : '');
+            if (partySearch) partySearch.focus();
+        });
+    }
+
+    // Combined scope quick buttons click (All Credit / All Cash)
+    partyOptions.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            partyChecks.forEach(function (cb) { cb.checked = false; });
+            if (partyId) partyId.value = this.dataset.partyId;
+            if (partySearch) partySearch.value = this.dataset.displayTitle || this.textContent.trim();
+            partyCombobox.closest('form').submit();
+        });
+    });
+
+    // Checkbox changes
+    partyChecks.forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            if (partyId) partyId.value = '';
+            const count = updateSelectedCount();
+            if (partySearch) {
+                partySearch.value = count === 0 ? '' : (count === 1 ? '1 Party Selected' : count + ' Parties Selected');
+            }
+        });
+    });
+
+    // Select visible parties
+    if (selectAllVisibleBtn) {
+        selectAllVisibleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (partyId) partyId.value = '';
+            partyItems.forEach(function (item) {
+                if (!item.hidden) {
+                    const cb = item.querySelector('.party-check');
+                    if (cb) cb.checked = true;
+                }
+            });
+            const count = updateSelectedCount();
+            if (partySearch) partySearch.value = count + ' Parties Selected';
+        });
+    }
+
+    // Clear all selected parties
+    if (clearAllSelectedBtn) {
+        clearAllSelectedBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (partyId) partyId.value = '';
+            partyChecks.forEach(function (cb) { cb.checked = false; });
+            updateSelectedCount();
+            if (partySearch) partySearch.value = '';
+        });
+    }
+
+    // Apply Multi-Select button
+    if (applyMultiSelectBtn) {
+        applyMultiSelectBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const checkedCount = partyChecks.filter(function (cb) { return cb.checked; }).length;
+            if (checkedCount === 0) {
+                alert('Please select at least one party by checking its checkbox.');
+                return;
+            }
+            if (partyId) partyId.value = '';
+            partyCombobox.closest('form').submit();
         });
     }
 
@@ -761,51 +1010,25 @@
         });
 
         partySearch.addEventListener('input', function () {
-            if (selectedParty && this.value.trim() !== getOptionDisplayTitle(selectedParty)) {
-                partyId.value = '';
-            }
             openPartyOptions(this.value);
         });
 
         partySearch.addEventListener('keydown', function (event) {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                const firstMatch = partyOptions.find(function (option) { return !option.hidden; });
-                if (firstMatch) firstMatch.focus();
-            } else if (event.key === 'Escape') {
+            if (event.key === 'Escape') {
                 closePartyOptions();
             } else if (event.key === 'Enter' && partyOptionsMenu.classList.contains('show')) {
                 event.preventDefault();
-                const selectedMatch = partyOptions.find(function (option) {
-                    return !option.hidden && option.dataset.partyId === partyId.value;
-                });
-                const firstMatch = partyOptions.find(function (option) { return !option.hidden; });
-                const optionToSelect = selectedMatch || firstMatch;
-                if (optionToSelect) optionToSelect.click();
+                applyMultiSelectBtn.click();
             }
         });
     }
 
-    partyOptions.forEach(function (option) {
-        option.addEventListener('click', function () {
-            partySearch.value = getOptionDisplayTitle(this);
-            partyId.value = this.dataset.partyId;
-            partyCombobox.closest('form').submit();
+    // Don't close dropdown on clicking inside menu controls or checkboxes
+    if (partyOptionsMenu) {
+        partyOptionsMenu.addEventListener('click', function (e) {
+            e.stopPropagation();
         });
-
-        option.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape') {
-                closePartyOptions();
-                partySearch.focus();
-            } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                event.preventDefault();
-                const direction = event.key === 'ArrowDown' ? 1 : -1;
-                const visibleOptions = partyOptions.filter(function (item) { return !item.hidden; });
-                const nextOption = visibleOptions[visibleOptions.indexOf(this) + direction];
-                if (nextOption) nextOption.focus();
-            }
-        });
-    });
+    }
 
     document.addEventListener('click', function (event) {
         if (partyCombobox && !partyCombobox.contains(event.target)) closePartyOptions();

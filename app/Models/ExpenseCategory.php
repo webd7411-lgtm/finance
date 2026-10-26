@@ -29,4 +29,9 @@ class ExpenseCategory extends Model
     {
         return $this->hasMany(Transaction::class, 'category_id');
     }
+
+    public function shiftClosingPartyPayments()
+    {
+        return $this->hasMany(ShiftClosingPartyPayment::class, 'expense_category_id');
+    }
 }

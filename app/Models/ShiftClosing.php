@@ -14,6 +14,7 @@ class ShiftClosing extends Model
         'date',
         'shift_type',
         'cashier_id',
+        'closed_by',
         'total_invoices',
         'invoice_start',
         'invoice_end',
@@ -65,6 +66,13 @@ class ShiftClosing extends Model
         ]);
     }
 
+    public function closedBy()
+    {
+        return $this->belongsTo(User::class, 'closed_by')->withDefault([
+            'name' => 'Admin Owner',
+        ]);
+    }
+
     public function verifier()
     {
         return $this->belongsTo(User::class, 'verified_by');
@@ -83,6 +91,11 @@ class ShiftClosing extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function getNetSaleAttribute(): float
+    {
+        return (float) (($this->total_sale ?? 0) - ($this->returns_amount ?? 0));
     }
 
     public function getShiftBadgeAttribute(): string

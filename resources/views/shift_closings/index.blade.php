@@ -177,12 +177,17 @@
                                 <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
                             </td>
                             <td class="text-center small font-monospace">
-                                {{ $c->total_invoices }}
+                                {{ number_format($c->total_invoices) }}
                                 @if($c->invoice_start && $c->invoice_end)
-                                    <small class="d-block text-muted">#{{ $c->invoice_start }}-#{{ $c->invoice_end }}</small>
+                                    <small class="d-block text-muted">{{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }}</small>
                                 @endif
                             </td>
-                            <td class="text-end font-monospace small fw-bold">Rs. {{ number_format($c->total_sale, 2) }}</td>
+                            <td class="text-end font-monospace small fw-bold">
+                                Rs. {{ number_format($c->total_sale, 2) }}
+                                @if($c->returns_amount > 0)
+                                    <small class="d-block text-success fw-normal" style="font-size: 0.68rem;" title="Net Sale (Gross - Returns)">Net: Rs. {{ number_format($c->net_sale, 2) }}</small>
+                                @endif
+                            </td>
                             <td class="text-end font-monospace small text-success">Rs. {{ number_format($c->total_counted_cash, 2) }}</td>
                             <td class="text-center">{!! $c->difference_badge !!}</td>
                             <td class="small text-danger font-monospace">
@@ -206,12 +211,17 @@
                                 <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
                             </td>
                             <td class="text-center small font-monospace">
-                                {{ $c->total_invoices }}
+                                {{ number_format($c->total_invoices) }}
                                 @if($c->invoice_start && $c->invoice_end)
-                                    <small class="d-block text-muted">#{{ $c->invoice_start }}-#{{ $c->invoice_end }}</small>
+                                    <small class="d-block text-muted">{{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }}</small>
                                 @endif
                             </td>
-                            <td class="text-end font-monospace small fw-bold">Rs. {{ number_format($c->total_sale, 2) }}</td>
+                            <td class="text-end font-monospace small fw-bold">
+                                Rs. {{ number_format($c->total_sale, 2) }}
+                                @if($c->returns_amount > 0)
+                                    <small class="d-block text-success fw-normal" style="font-size: 0.68rem;" title="Net Sale (Gross - Returns)">Net: Rs. {{ number_format($c->net_sale, 2) }}</small>
+                                @endif
+                            </td>
                             <td class="text-end font-monospace small text-success">Rs. {{ number_format($c->total_counted_cash, 2) }}</td>
                             <td class="text-end font-monospace small text-primary">Rs. {{ number_format($c->jazzcash_amount + $c->bank_amount, 2) }}</td>
                             <td class="text-end font-monospace small text-secondary">Rs. {{ number_format($c->expected_cash, 2) }}</td>
@@ -300,9 +310,9 @@
                             <i class="bi bi-person me-1 text-secondary"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
                         </span>
                         <span class="font-monospace text-secondary flex-shrink-0">
-                            {{ $c->total_invoices }} Invoices
+                            {{ number_format($c->total_invoices) }} Invoices
                             @if($c->invoice_start && $c->invoice_end)
-                                (#{{ $c->invoice_start }}-{{ $c->invoice_end }})
+                                ({{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }})
                             @endif
                         </span>
                     </div>

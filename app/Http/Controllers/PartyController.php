@@ -10,6 +10,8 @@ class PartyController extends Controller
 {
     public function index(Request $request)
     {
+        Party::syncAllBalances();
+
         $query = Party::query();
 
         if ($request->filled('type')) {

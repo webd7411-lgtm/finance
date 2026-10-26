@@ -335,7 +335,7 @@
             <div class="p-3 bg-light rounded-3 border h-100">
                 <span class="text-muted small d-block mb-1 kpi-title">Shift Counter Expenses</span>
                 <h5 class="fw-bold font-monospace text-warning-emphasis m-0 kpi-amount">Rs. {{ number_format($totalShiftAmount, 2) }}</h5>
-                <small class="text-muted" style="font-size: 0.7rem;">{{ $totalShiftCount }} Shifts with Deductions</small>
+                <small class="text-muted" style="font-size: 0.7rem;">{{ $totalShiftCount }} Shift Records Logged</small>
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -575,18 +575,18 @@
         </div>
     @endif
 
-    <!-- Section 2: Shift Counter Petty Expenses (Cashier Shift Deductions) -->
+    <!-- Section 2: Shift Counter Expenses & Cash Payouts -->
     @if($showShifts)
         <div class="mt-4 pt-2">
             <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                 <div>
                     <h6 class="fw-bold text-dark m-0">
-                        <i class="bi bi-clock-history text-warning me-1"></i> Shift Counter Petty Expenses
+                        <i class="bi bi-clock-history text-warning me-1"></i> Shift Counter Expenses & Cash Payouts
                     </h6>
-                    <small class="text-muted" style="font-size: 0.78rem;">Expenses deducted by cashiers on the spot during morning and evening shift closings</small>
+                    <small class="text-muted" style="font-size: 0.78rem;">Expenses and party cash payouts disbursed directly from cash drawer during shift closings</small>
                 </div>
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning fw-bold">
-                    {{ $shiftExpenses->count() }} Shifts &bull; Rs. {{ number_format($totalShiftAmount, 2) }}
+                    {{ $shiftExpenses->count() }} Records &bull; Rs. {{ number_format($totalShiftAmount, 2) }}
                 </span>
             </div>
 
@@ -596,13 +596,14 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 45px;">#</th>
-                            <th style="width: 105px;">Date</th>
-                            <th style="width: 130px;">Shift</th>
-                            <th>Cashier In-Charge</th>
-                            <th class="text-end">Shift Total Sale</th>
-                            <th class="text-end">Expense Deducted (Rs.)</th>
-                            <th>Expense Details & Particulars</th>
-                            <th class="text-center no-print" style="width: 70px;">Action</th>
+                            <th style="width: 100px;">Date</th>
+                            <th style="width: 120px;">Shift</th>
+                            <th>Category</th>
+                            <th>Payee / Beneficiary</th>
+                            <th>Cashier</th>
+                            <th>Details & Particulars</th>
+                            <th class="text-end">Amount (Rs.)</th>
+                            <th class="text-center no-print" style="width: 80px;">Shift Sheet</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -611,37 +612,51 @@
                                 <td class="text-muted small">{{ $sIndex + 1 }}</td>
                                 <td class="small fw-semibold text-dark">{{ $shift->date->format('d M Y') }}</td>
                                 <td>{!! $shift->shift_badge !!}</td>
-                                <td class="small fw-semibold text-dark">
-                                    <i class="bi bi-person me-1 text-secondary"></i>{{ $shift->cashier->name ?? 'Cashier' }}
+                                <td>
+                                    @if($shift->category)
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning fw-semibold">
+                                            <i class="bi bi-tag-fill me-1"></i>{{ $shift->category->name }}
+                                        </span>
+                                    @else
+                                        <span class="badge bg-light text-secondary border">Uncategorized</span>
+                                    @endif
                                 </td>
-                                <td class="text-end font-monospace small text-muted">
-                                    Rs. {{ number_format($shift->total_sale, 2) }}
+                                <td>
+                                    @if($shift->party)
+                                        <div class="fw-semibold text-dark small">{{ $shift->party->name }}</div>
+                                        <small class="text-muted">{!! $shift->party->type_badge !!}</small>
+                                    @else
+                                        <span class="badge bg-light text-muted border">Direct / Counter Expense</span>
+                                    @endif
                                 </td>
-                                <td class="text-end font-monospace fw-bold text-danger">
-                                    Rs. {{ number_format($shift->expenses_amount, 2) }}
+                                <td class="small text-secondary">
+                                    <i class="bi bi-person me-1"></i>{{ $shift->cashier->name ?? 'Cashier' }}
                                 </td>
-                                <td class="small text-dark" style="max-width: 320px;">
-                                    @if(!empty($shift->expenses_details))
-                                        <div class="fw-semibold text-dark">{{ $shift->expenses_details }}</div>
+                                <td class="small text-dark" style="max-width: 250px;">
+                                    @if(!empty($shift->details))
+                                        <div class="text-break">{{ $shift->details }}</div>
                                     @endif
                                     @if(!empty($shift->remarks))
-                                        <div class="text-muted" style="font-size: 0.74rem;"><i class="bi bi-chat-left-text me-1"></i>Remarks: {{ $shift->remarks }}</div>
+                                        <small class="d-block text-muted" style="font-size: 0.74rem;">Shift Note: {{ $shift->remarks }}</small>
                                     @endif
-                                    @if(empty($shift->expenses_details) && empty($shift->remarks))
-                                        <span class="text-muted fst-italic">Shift counter deduction</span>
+                                    @if(empty($shift->details) && empty($shift->remarks))
+                                        <span class="text-muted fst-italic">Shift cash payout</span>
                                     @endif
                                 </td>
+                                <td class="text-end font-monospace fw-bold text-danger">
+                                    Rs. {{ number_format($shift->amount, 2) }}
+                                </td>
                                 <td class="text-center no-print">
-                                    <a href="{{ route('shift-closings.show', $shift->id) }}" class="btn btn-outline-secondary btn-sm py-0 px-2" title="View Shift Closing Sheet">
-                                        <i class="bi bi-file-earmark-text"></i>
+                                    <a href="{{ route('shift-closings.show', $shift->shift_closing_id) }}" class="btn btn-outline-secondary btn-sm py-0 px-2" title="View Shift Closing Sheet #{{ $shift->shift_closing_id }}">
+                                        <i class="bi bi-file-earmark-text me-1"></i> #{{ str_pad($shift->shift_closing_id, 4, '0', STR_PAD_LEFT) }}
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted small">
+                                <td colspan="9" class="text-center py-4 text-muted small">
                                     <i class="bi bi-check2-circle fs-4 d-block text-success opacity-50 mb-1"></i>
-                                    No counter shift expenses were recorded in this period.
+                                    No counter shift expenses or cash payouts were recorded in this period.
                                 </td>
                             </tr>
                         @endforelse
@@ -649,11 +664,11 @@
                     @if($shiftExpenses->isNotEmpty())
                         <tfoot class="table-light border-top">
                             <tr>
-                                <th colspan="5" class="text-end fw-bold text-dark">Subtotal Shift Counter Expenses:</th>
+                                <th colspan="7" class="text-end fw-bold text-dark">Subtotal Shift Counter Expenses:</th>
                                 <th class="text-end font-monospace fw-bold text-danger fs-6">
                                     Rs. {{ number_format($totalShiftAmount, 2) }}
                                 </th>
-                                <th colspan="2" class="no-print"></th>
+                                <th class="no-print"></th>
                             </tr>
                         </tfoot>
                     @endif
@@ -671,30 +686,43 @@
                                     {!! $shift->shift_badge !!}
                                 </div>
                                 <span class="font-monospace fw-bold text-danger">
-                                    -Rs. {{ number_format($shift->expenses_amount, 2) }}
+                                    -Rs. {{ number_format($shift->amount, 2) }}
                                 </span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <div class="fw-semibold text-dark small">
+                                    {{ $shift->party->name ?? 'Direct Counter Expense' }}
+                                </div>
+                                @if($shift->category)
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning" style="font-size: 0.68rem;">
+                                        {{ $shift->category->name }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-light text-secondary border" style="font-size: 0.68rem;">Uncategorized</span>
+                                @endif
                             </div>
 
                             <div class="small text-muted mb-1">
                                 Cashier: <strong class="text-dark">{{ $shift->cashier->name ?? 'Cashier' }}</strong>
                             </div>
 
-                            @if($shift->expenses_details || $shift->remarks)
+                            @if($shift->details || $shift->remarks)
                                 <div class="p-1.5 rounded-2 bg-light border text-muted small mb-2" style="font-size: 0.72rem;">
-                                    {{ $shift->expenses_details ?? $shift->remarks }}
+                                    {{ $shift->details ?? $shift->remarks }}
                                 </div>
                             @endif
 
                             <div class="d-flex justify-content-between align-items-center pt-1" style="font-size: 0.76rem;">
-                                <span class="text-muted">Sale: Rs. {{ number_format($shift->total_sale, 0) }}</span>
-                                <a href="{{ route('shift-closings.show', $shift->id) }}" class="btn btn-outline-secondary btn-sm py-1 px-2.5 rounded-2" style="font-size: 0.74rem;">
-                                    <i class="bi bi-file-earmark-text me-1"></i> Sheet
+                                <span class="text-muted">Drawer Cash</span>
+                                <a href="{{ route('shift-closings.show', $shift->shift_closing_id) }}" class="btn btn-outline-secondary btn-sm py-1 px-2.5 rounded-2" style="font-size: 0.74rem;">
+                                    <i class="bi bi-file-earmark-text me-1"></i> Sheet #{{ str_pad($shift->shift_closing_id, 4, '0', STR_PAD_LEFT) }}
                                 </a>
                             </div>
                         </div>
                     @empty
                         <div class="text-center py-4 text-muted small">
-                            No counter shift expenses were recorded in this period.
+                            No counter shift expenses or cash payouts were recorded in this period.
                         </div>
                     @endforelse
                 </div>

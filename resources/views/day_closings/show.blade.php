@@ -237,7 +237,7 @@
                                 <td class="fw-bold">
                                     <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1">Morning Shift</span>
                                     @if($morningShift && $morningShift->invoice_start && $morningShift->invoice_end)
-                                        <small class="d-block text-muted mt-1">Invoices #{{ $morningShift->invoice_start }}-#{{ $morningShift->invoice_end }} ({{ $morningShift->total_invoices }})</small>
+                                        <small class="d-block text-muted mt-1">Invoices {{ number_format($morningShift->invoice_start) }} - {{ number_format($morningShift->invoice_end) }} ({{ number_format($morningShift->total_invoices) }})</small>
                                     @endif
                                 </td>
                                 @if($morningShift)
@@ -246,7 +246,7 @@
                                     <td class="text-end font-monospace text-danger">
                                         - Rs. {{ number_format($morningShift->returns_amount, 2) }}
                                         @if($morningShift->return_invoice_start && $morningShift->return_invoice_end)
-                                            <small class="d-block text-muted">Invoices #{{ $morningShift->return_invoice_start }}-#{{ $morningShift->return_invoice_end }}{{ $morningShift->total_return_invoices > 0 ? ' (' . $morningShift->total_return_invoices . ')' : '' }}</small>
+                                            <small class="d-block text-muted">Invoices {{ number_format($morningShift->return_invoice_start) }} - {{ number_format($morningShift->return_invoice_end) }}{{ $morningShift->total_return_invoices > 0 ? ' (' . number_format($morningShift->total_return_invoices) . ')' : '' }}</small>
                                         @elseif($morningShift->return_invoice_number)
                                             <small class="d-block text-muted">Invoice {{ $morningShift->return_invoice_number }}</small>
                                         @endif
@@ -270,7 +270,7 @@
                                 <td class="fw-bold">
                                     <span class="badge bg-indigo-subtle text-indigo-emphasis border px-2 py-1" style="background-color: #ede9fe; color: #4338ca;">Evening Shift</span>
                                     @if($eveningShift && $eveningShift->invoice_start && $eveningShift->invoice_end)
-                                        <small class="d-block text-muted mt-1">Invoices #{{ $eveningShift->invoice_start }}-#{{ $eveningShift->invoice_end }} ({{ $eveningShift->total_invoices }})</small>
+                                        <small class="d-block text-muted mt-1">Invoices {{ number_format($eveningShift->invoice_start) }} - {{ number_format($eveningShift->invoice_end) }} ({{ number_format($eveningShift->total_invoices) }})</small>
                                     @endif
                                 </td>
                                 @if($eveningShift)
@@ -279,7 +279,7 @@
                                     <td class="text-end font-monospace text-danger">
                                         - Rs. {{ number_format($eveningShift->returns_amount, 2) }}
                                         @if($eveningShift->return_invoice_start && $eveningShift->return_invoice_end)
-                                            <small class="d-block text-muted">Invoices #{{ $eveningShift->return_invoice_start }}-#{{ $eveningShift->return_invoice_end }}{{ $eveningShift->total_return_invoices > 0 ? ' (' . $eveningShift->total_return_invoices . ')' : '' }}</small>
+                                            <small class="d-block text-muted">Invoices {{ number_format($eveningShift->return_invoice_start) }} - {{ number_format($eveningShift->return_invoice_end) }}{{ $eveningShift->total_return_invoices > 0 ? ' (' . number_format($eveningShift->total_return_invoices) . ')' : '' }}</small>
                                         @elseif($eveningShift->return_invoice_number)
                                             <small class="d-block text-muted">Invoice {{ $eveningShift->return_invoice_number }}</small>
                                         @endif

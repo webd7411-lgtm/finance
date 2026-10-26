@@ -441,9 +441,9 @@
             @if($morningShift)
                 <div class="row g-2 small text-secondary">
                     <div class="col-6">Cashier Incharge: <strong class="text-dark">{{ $morningShift->cashier->name ?? 'N/A' }}</strong></div>
-                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ $morningShift->total_invoices }} Bills</strong>
+                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ number_format($morningShift->total_invoices) }} Bills</strong>
                         @if($morningShift->invoice_start && $morningShift->invoice_end)
-                            <small class="d-block text-muted font-monospace">#{{ $morningShift->invoice_start }} to #{{ $morningShift->invoice_end }}</small>
+                            <small class="d-block text-muted font-monospace">{{ number_format($morningShift->invoice_start) }} to {{ number_format($morningShift->invoice_end) }}</small>
                         @endif
                     </div>
                     <div class="col-6">Gross Sales Billing: <strong class="text-dark font-monospace">Rs. {{ number_format($morningShift->total_sale, 2) }}</strong></div>
@@ -456,12 +456,12 @@
                         <div class="col-6">Sales Return Bill: 
                             <strong class="text-dark">
                                 @if($morningShift->return_invoice_start && $morningShift->return_invoice_end)
-                                    #{{ $morningShift->return_invoice_start }} to #{{ $morningShift->return_invoice_end }}
+                                    {{ number_format($morningShift->return_invoice_start) }} to {{ number_format($morningShift->return_invoice_end) }}
                                     @if($morningShift->total_return_invoices > 0)
-                                        ({{ $morningShift->total_return_invoices }} bills)
+                                        ({{ number_format($morningShift->total_return_invoices) }} bills)
                                     @endif
                                 @elseif($morningShift->return_invoice_number)
-                                    #{{ $morningShift->return_invoice_number }}
+                                    {{ $morningShift->return_invoice_number }}
                                 @else
                                     -
                                 @endif
@@ -503,9 +503,9 @@
             @if($eveningShift)
                 <div class="row g-2 small text-secondary">
                     <div class="col-6">Cashier Incharge: <strong class="text-dark">{{ $eveningShift->cashier->name ?? 'N/A' }}</strong></div>
-                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ $eveningShift->total_invoices }} Bills</strong>
+                    <div class="col-6 text-end">Invoices: <strong class="text-dark">{{ number_format($eveningShift->total_invoices) }} Bills</strong>
                         @if($eveningShift->invoice_start && $eveningShift->invoice_end)
-                            <small class="d-block text-muted font-monospace">#{{ $eveningShift->invoice_start }} to #{{ $eveningShift->invoice_end }}</small>
+                            <small class="d-block text-muted font-monospace">{{ number_format($eveningShift->invoice_start) }} to {{ number_format($eveningShift->invoice_end) }}</small>
                         @endif
                     </div>
                     <div class="col-6">Gross Sales Billing: <strong class="text-dark font-monospace">Rs. {{ number_format($eveningShift->total_sale, 2) }}</strong></div>
@@ -518,12 +518,12 @@
                         <div class="col-6">Sales Return Bill: 
                             <strong class="text-dark">
                                 @if($eveningShift->return_invoice_start && $eveningShift->return_invoice_end)
-                                    #{{ $eveningShift->return_invoice_start }} to #{{ $eveningShift->return_invoice_end }}
+                                    {{ number_format($eveningShift->return_invoice_start) }} to {{ number_format($eveningShift->return_invoice_end) }}
                                     @if($eveningShift->total_return_invoices > 0)
-                                        ({{ $eveningShift->total_return_invoices }} bills)
+                                        ({{ number_format($eveningShift->total_return_invoices) }} bills)
                                     @endif
                                 @elseif($eveningShift->return_invoice_number)
-                                    #{{ $eveningShift->return_invoice_number }}
+                                    {{ $eveningShift->return_invoice_number }}
                                 @else
                                     -
                                 @endif

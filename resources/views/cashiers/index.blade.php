@@ -110,6 +110,9 @@
                         <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Search">
+                        <i class="bi bi-search"></i>
+                    </button>
                     @if(request('search') || request('status'))
                         <a href="{{ route('cashiers.index') }}" class="btn btn-outline-secondary btn-sm" title="Clear filter">
                             <i class="bi bi-x-lg"></i>

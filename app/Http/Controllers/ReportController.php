@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DayClosing;
 use App\Models\ShiftClosing;
+use App\Models\ShiftClosingPartyPayment;
 use App\Models\Transaction;
 use App\Models\ExpenseCategory;
 use App\Models\Account;
@@ -111,9 +112,9 @@ class ReportController extends Controller
             ->map(function ($sr) {
                 $shiftLabel = $sr->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
                 $shiftDate = $sr->date instanceof Carbon ? $sr->date : Carbon::parse($sr->date);
-                $retCount = $sr->total_return_invoices > 0 ? " ({$sr->total_return_invoices} bills)" : "";
+                $retCount = $sr->total_return_invoices > 0 ? " (" . number_format($sr->total_return_invoices) . " bills)" : "";
                 $retDetails = ($sr->return_invoice_start && $sr->return_invoice_end)
-                    ? "Invoices #{$sr->return_invoice_start} - #{$sr->return_invoice_end}{$retCount}"
+                    ? "Invoices " . number_format($sr->return_invoice_start) . " - " . number_format($sr->return_invoice_end) . $retCount
                     : ($sr->return_invoice_number ? "Invoice {$sr->return_invoice_number}" : "Shift Customer Return Refund");
 
                 return (object) [
@@ -398,30 +399,128 @@ class ReportController extends Controller
 
         $voucherExpenses = $voucherQuery->orderBy('date', 'desc')->orderBy('id', 'desc')->get();
 
-        // Query Shift Counter Expenses (where expenses_amount > 0)
-        $shiftExpensesQuery = ShiftClosing::whereDate('date', '>=', $fromDate)
-            ->whereDate('date', '<=', $toDate)
-            ->where('expenses_amount', '>', 0)
-            ->with(['cashier']);
+        // Cash account check for shift drawer payments
+        $cashAccount = Account::getCashAccount();
+        $isCashAccountSelected = empty($accountId) || ((int) $accountId === (int) $cashAccount->id);
 
-        if (!empty($search)) {
-            $shiftExpensesQuery->where(function ($q) use ($search) {
-                $q->where('remarks', 'like', "%{$search}%")
-                  ->orWhere('expenses_details', 'like', "%{$search}%")
-                  ->orWhereHas('cashier', function ($uq) use ($search) {
-                      $uq->where('name', 'like', "%{$search}%");
-                  });
-            });
+        // Query Shift Counter Expenses and Party Payments
+        $shiftExpenses = collect();
+
+        if ($isCashAccountSelected) {
+            // 1. Shift Party Payments (Cash payouts recorded with party & optional category)
+            $shiftPaymentsQuery = ShiftClosingPartyPayment::whereHas('shiftClosing', function ($q) use ($fromDate, $toDate) {
+                $q->whereNull('deleted_at')
+                  ->whereDate('date', '>=', $fromDate)
+                  ->whereDate('date', '<=', $toDate);
+            })->with(['shiftClosing.cashier', 'party', 'expenseCategory']);
+
+            if (!empty($categoryId)) {
+                if ($categoryId === 'uncategorized') {
+                    $shiftPaymentsQuery->whereNull('expense_category_id');
+                } else {
+                    $shiftPaymentsQuery->where('expense_category_id', $categoryId);
+                }
+            }
+
+            if (!empty($partyId)) {
+                if ($partyId === 'no_party') {
+                    $shiftPaymentsQuery->whereNull('party_id');
+                } else {
+                    $shiftPaymentsQuery->where('party_id', $partyId);
+                }
+            }
+
+            if (!empty($search)) {
+                $shiftPaymentsQuery->where(function ($q) use ($search) {
+                    $q->where('details', 'like', "%{$search}%")
+                      ->orWhere('amount', 'like', "%{$search}%")
+                      ->orWhereHas('party', fn($pq) => $pq->where('name', 'like', "%{$search}%"))
+                      ->orWhereHas('expenseCategory', fn($cq) => $cq->where('name', 'like', "%{$search}%"))
+                      ->orWhereHas('shiftClosing', function ($sq) use ($search) {
+                          $sq->where('remarks', 'like', "%{$search}%")
+                             ->orWhereHas('cashier', fn($uq) => $uq->where('name', 'like', "%{$search}%"));
+                      });
+                });
+            }
+
+            $shiftPayments = $shiftPaymentsQuery->get();
+
+            // 2. Standalone Shift Counter Deductions (legacy or direct deductions on ShiftClosing)
+            $allowStandalone = (empty($categoryId) || $categoryId === 'uncategorized')
+                && (empty($partyId) || $partyId === 'no_party');
+
+            $standaloneShifts = collect();
+            if ($allowStandalone) {
+                $standaloneShiftQuery = ShiftClosing::whereNull('deleted_at')
+                    ->whereDate('date', '>=', $fromDate)
+                    ->whereDate('date', '<=', $toDate)
+                    ->where('expenses_amount', '>', 0)
+                    ->with(['cashier']);
+
+                if (!empty($search)) {
+                    $standaloneShiftQuery->where(function ($q) use ($search) {
+                        $q->where('remarks', 'like', "%{$search}%")
+                          ->orWhere('expenses_details', 'like', "%{$search}%")
+                          ->orWhereHas('cashier', fn($uq) => $uq->where('name', 'like', "%{$search}%"));
+                    });
+                }
+
+                $standaloneShifts = $standaloneShiftQuery->get();
+            }
+
+            $shiftItems = collect();
+
+            foreach ($shiftPayments as $sp) {
+                $shiftItems->push((object) [
+                    'id' => $sp->id,
+                    'type' => 'shift_payment',
+                    'date' => $sp->shiftClosing->date,
+                    'shift_type' => $sp->shiftClosing->shift_type,
+                    'shift_badge' => $sp->shiftClosing->shift_badge,
+                    'shift_closing_id' => $sp->shift_closing_id,
+                    'cashier' => $sp->shiftClosing->cashier,
+                    'party' => $sp->party,
+                    'party_id' => $sp->party_id,
+                    'category' => $sp->expenseCategory,
+                    'category_id' => $sp->expense_category_id,
+                    'amount' => (float) $sp->amount,
+                    'details' => $sp->details,
+                    'remarks' => $sp->shiftClosing->remarks,
+                    'shift_total_sale' => (float) $sp->shiftClosing->total_sale,
+                ]);
+            }
+
+            foreach ($standaloneShifts as $st) {
+                $shiftItems->push((object) [
+                    'id' => $st->id,
+                    'type' => 'shift_deduction',
+                    'date' => $st->date,
+                    'shift_type' => $st->shift_type,
+                    'shift_badge' => $st->shift_badge,
+                    'shift_closing_id' => $st->id,
+                    'cashier' => $st->cashier,
+                    'party' => null,
+                    'party_id' => null,
+                    'category' => null,
+                    'category_id' => null,
+                    'amount' => (float) $st->expenses_amount,
+                    'details' => $st->expenses_details ?? 'Shift counter deduction',
+                    'remarks' => $st->remarks,
+                    'shift_total_sale' => (float) $st->total_sale,
+                ]);
+            }
+
+            $shiftExpenses = $shiftItems->sortByDesc(function ($item) {
+                return $item->date->format('Y-m-d') . '_' . str_pad($item->id, 8, '0', STR_PAD_LEFT);
+            })->values();
         }
-
-        $shiftExpenses = $shiftExpensesQuery->orderBy('date', 'desc')->orderBy('shift_type', 'asc')->get();
 
         // Filter based on expenseSource
         $showVouchers = in_array($expenseSource, ['all', 'vouchers']);
         $showShifts = in_array($expenseSource, ['all', 'shifts']);
 
         $totalVoucherAmount = $showVouchers ? (float) $voucherExpenses->sum('amount') : 0.00;
-        $totalShiftAmount = $showShifts ? (float) $shiftExpenses->sum('expenses_amount') : 0.00;
+        $totalShiftAmount = $showShifts ? (float) $shiftExpenses->sum('amount') : 0.00;
         $grandTotalAmount = $totalVoucherAmount + $totalShiftAmount;
 
         $totalVoucherCount = $showVouchers ? $voucherExpenses->count() : 0;
@@ -432,45 +531,40 @@ class ReportController extends Controller
         $diffDays = max(1, Carbon::parse($fromDate)->diffInDays(Carbon::parse($toDate)) + 1);
         $dailyAverage = $grandTotalAmount / $diffDays;
 
-        // Category-wise Breakdown (from voucher expenses)
+        // Category-wise Breakdown (combining voucher expenses and shift payments)
         $allCategories = ExpenseCategory::expense()->orderBy('name')->get();
         $categoryBreakdown = [];
 
         foreach ($allCategories as $cat) {
-            $catTxns = $voucherExpenses->where('category_id', $cat->id);
-            $sum = (float) $catTxns->sum('amount');
+            $catVouchers = $showVouchers ? $voucherExpenses->where('category_id', $cat->id) : collect();
+            $catShifts = $showShifts ? $shiftExpenses->where('category_id', $cat->id) : collect();
+            $sum = (float) ($catVouchers->sum('amount') + $catShifts->sum('amount'));
+            $count = $catVouchers->count() + $catShifts->count();
+
             if ($sum > 0 || empty($categoryId)) {
                 $categoryBreakdown[] = (object) [
                     'id' => $cat->id,
                     'name' => $cat->name,
-                    'count' => $catTxns->count(),
+                    'count' => $count,
                     'total' => $sum,
                     'percentage' => $grandTotalAmount > 0 ? round(($sum / $grandTotalAmount) * 100, 1) : 0,
                 ];
             }
         }
 
-        // Uncategorized vouchers
-        $uncatTxns = $voucherExpenses->whereNull('category_id');
-        $uncatSum = (float) $uncatTxns->sum('amount');
-        if ($uncatSum > 0) {
+        // Uncategorized expenses (both vouchers and shift payments)
+        $uncatVouchers = $showVouchers ? $voucherExpenses->whereNull('category_id') : collect();
+        $uncatShifts = $showShifts ? $shiftExpenses->whereNull('category_id') : collect();
+        $uncatSum = (float) ($uncatVouchers->sum('amount') + $uncatShifts->sum('amount'));
+        $uncatCount = $uncatVouchers->count() + $uncatShifts->count();
+
+        if ($uncatSum > 0 || $categoryId === 'uncategorized') {
             $categoryBreakdown[] = (object) [
                 'id' => 'uncategorized',
                 'name' => 'General / Uncategorized',
-                'count' => $uncatTxns->count(),
+                'count' => $uncatCount,
                 'total' => $uncatSum,
                 'percentage' => $grandTotalAmount > 0 ? round(($uncatSum / $grandTotalAmount) * 100, 1) : 0,
-            ];
-        }
-
-        // Shift counter expenses in category breakdown if present
-        if ($showShifts && $totalShiftAmount > 0) {
-            $categoryBreakdown[] = (object) [
-                'id' => 'shift_counter',
-                'name' => 'Shift Counter Deductions (Petty Cash)',
-                'count' => $shiftExpenses->count(),
-                'total' => $totalShiftAmount,
-                'percentage' => $grandTotalAmount > 0 ? round(($totalShiftAmount / $grandTotalAmount) * 100, 1) : 0,
             ];
         }
 
@@ -481,17 +575,25 @@ class ReportController extends Controller
         $allAccounts = Account::orderBy('name')->get();
         $accountBreakdown = [];
         foreach ($allAccounts as $acc) {
-            $accTxns = $voucherExpenses->where('account_id', $acc->id);
+            $accTxns = $showVouchers ? $voucherExpenses->where('account_id', $acc->id) : collect();
             $sum = (float) $accTxns->sum('amount');
+            $count = $accTxns->count();
+
+            // Shift drawer payments are cash disbursements out of the drawer cash account
+            if ($acc->id === $cashAccount->id && $showShifts) {
+                $sum += (float) $shiftExpenses->sum('amount');
+                $count += $shiftExpenses->count();
+            }
+
             if ($sum > 0) {
                 $accountBreakdown[] = (object) [
                     'id' => $acc->id,
                     'name' => $acc->name,
                     'type' => $acc->type,
                     'type_badge' => $acc->type_badge,
-                    'count' => $accTxns->count(),
+                    'count' => $count,
                     'total' => $sum,
-                    'percentage' => $totalVoucherAmount > 0 ? round(($sum / $totalVoucherAmount) * 100, 1) : 0,
+                    'percentage' => $grandTotalAmount > 0 ? round(($sum / $grandTotalAmount) * 100, 1) : 0,
                 ];
             }
         }
