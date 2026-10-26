@@ -52,6 +52,10 @@
         max-height: 16rem;
         overflow-y: auto;
     }
+    #partyOptions [hidden],
+    #partyOptions .d-none {
+        display: none !important;
+    }
     @media (max-width: 575.98px) {
         .card-custom {
             border-radius: 10px;
@@ -213,7 +217,7 @@
                 
                 <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 440px; overflow-y: auto;">
                     <!-- Quick Combined Ledger Options -->
-                    <div class="px-2 py-1 text-muted fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.4px;">Combined Statements</div>
+                    <div class="px-2 py-1 text-muted fw-bold text-uppercase combined-header" style="font-size: 0.65rem; letter-spacing: 0.4px;">Combined Statements</div>
                     <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="all_credit" data-display-title="All Credit Parties (Grouped Statement)">
                         <span><i class="bi bi-credit-card me-1 text-primary"></i> <strong>All Credit Parties</strong> (Grouped Statement)</span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border' }}">{{ $creditPartiesCount ?? 0 }}</span>
@@ -223,7 +227,7 @@
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'bg-white text-success' : 'bg-success-subtle text-success border' }}">{{ $cashPartiesCount ?? 0 }}</span>
                     </button>
                     
-                    <div class="dropdown-divider my-1"></div>
+                    <div class="dropdown-divider my-1 combined-divider"></div>
                     <div class="px-2 py-1 text-muted fw-bold text-uppercase d-flex justify-content-between align-items-center" style="font-size: 0.65rem; letter-spacing: 0.4px;">
                         <span>Select Parties (Multi-Select)</span>
                         <div class="btn-group btn-group-sm" id="comboboxModeFilter">
@@ -888,19 +892,35 @@
         const normalizedQuery = (query || '').trim().toLocaleLowerCase();
         let matchingParties = 0;
 
+        let anyCombinedVisible = false;
         partyOptions.forEach(function (btn) {
-            const matches = btn.textContent.toLocaleLowerCase().includes(normalizedQuery);
+            const matches = !normalizedQuery || btn.textContent.toLocaleLowerCase().includes(normalizedQuery);
             let modeMatches = true;
             if (currentDealingFilter === 'credit') {
                 modeMatches = btn.dataset.partyId === 'all_credit';
             } else if (currentDealingFilter === 'cash') {
                 modeMatches = btn.dataset.partyId === 'all_cash';
             }
-            btn.hidden = !(matches && modeMatches);
+            const visible = matches && modeMatches;
+            btn.hidden = !visible;
+            btn.classList.toggle('d-none', !visible);
+            if (visible) anyCombinedVisible = true;
         });
 
+        const combinedHeader = partyOptionsMenu ? partyOptionsMenu.querySelector('.combined-header') : null;
+        const combinedDivider = partyOptionsMenu ? partyOptionsMenu.querySelector('.combined-divider') : null;
+        if (combinedHeader) {
+            combinedHeader.hidden = !anyCombinedVisible;
+            combinedHeader.classList.toggle('d-none', !anyCombinedVisible);
+        }
+        if (combinedDivider) {
+            combinedDivider.hidden = !anyCombinedVisible;
+            combinedDivider.classList.toggle('d-none', !anyCombinedVisible);
+        }
+
         partyItems.forEach(function (item) {
-            const textMatches = item.textContent.toLocaleLowerCase().includes(normalizedQuery);
+            const partyName = (item.dataset.partyName || item.textContent || '').toLocaleLowerCase();
+            const textMatches = !normalizedQuery || partyName.includes(normalizedQuery) || item.textContent.toLocaleLowerCase().includes(normalizedQuery);
             let modeMatches = true;
             if (currentDealingFilter === 'credit') {
                 modeMatches = item.dataset.isCredit === '1';
@@ -909,11 +929,13 @@
             }
             const visible = textMatches && modeMatches;
             item.hidden = !visible;
+            item.classList.toggle('d-none', !visible);
             if (visible) matchingParties++;
         });
 
         if (partySearchEmpty) {
             partySearchEmpty.hidden = matchingParties > 0;
+            partySearchEmpty.classList.toggle('d-none', matchingParties > 0);
         }
     }
 
@@ -968,7 +990,7 @@
             e.stopPropagation();
             if (partyId) partyId.value = '';
             partyItems.forEach(function (item) {
-                if (!item.hidden) {
+                if (!item.hidden && !item.classList.contains('d-none')) {
                     const cb = item.querySelector('.party-check');
                     if (cb) cb.checked = true;
                 }
@@ -1009,7 +1031,17 @@
             openPartyOptions('');
         });
 
+        partySearch.addEventListener('click', function () {
+            if (partyOptionsMenu && !partyOptionsMenu.classList.contains('show')) {
+                openPartyOptions(this.value);
+            }
+        });
+
         partySearch.addEventListener('input', function () {
+            openPartyOptions(this.value);
+        });
+
+        partySearch.addEventListener('search', function () {
             openPartyOptions(this.value);
         });
 
@@ -1018,6 +1050,14 @@
                 closePartyOptions();
             } else if (event.key === 'Enter' && partyOptionsMenu.classList.contains('show')) {
                 event.preventDefault();
+                const visibleItems = partyItems.filter(function (it) {
+                    return !it.hidden && !it.classList.contains('d-none');
+                });
+                const checkedCount = partyChecks.filter(function (cb) { return cb.checked; }).length;
+                if (checkedCount === 0 && visibleItems.length === 1) {
+                    const cb = visibleItems[0].querySelector('.party-check');
+                    if (cb) cb.checked = true;
+                }
                 applyMultiSelectBtn.click();
             }
         });
