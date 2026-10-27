@@ -53,7 +53,9 @@
         overflow-y: auto;
     }
     #partyOptions [hidden],
-    #partyOptions .d-none {
+    #partyOptions .d-none,
+    #singlePartyOptions [hidden],
+    #singlePartyOptions .d-none {
         display: none !important;
     }
     @media (max-width: 575.98px) {
@@ -209,11 +211,34 @@
 <!-- Filter & Selection Bar (No-Print) -->
 <div class="card-custom p-3 mb-3 mb-md-4 no-print">
     <form method="GET" action="{{ route('ledgers.party') }}" id="partyLedgerFilterForm" class="row g-2 align-items-end">
-        <div class="col-12 col-md-5">
+        <input type="hidden" name="party_id" id="partyId" value="{{ in_array($ledgerScope ?? 'single', ['all_credit', 'all_cash', 'all']) ? $ledgerScope : (($ledgerScope ?? 'single') === 'single' ? ($party->id ?? '') : '') }}">
+
+        <!-- 1. Single Party Search Bar -->
+        <div class="col-12 col-md-3">
+            <label for="singlePartySearch" class="form-label text-muted small fw-semibold mb-1">Select Single Party</label>
+            <div id="singlePartyCombobox" class="position-relative">
+                <input type="search" id="singlePartySearch" class="form-control form-control-sm py-2" placeholder="Search single party..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="singlePartyOptions">
+                
+                <div id="singlePartyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 380px; overflow-y: auto;">
+                    <div class="px-2 py-1 text-muted fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.4px;">Individual Parties</div>
+                    @foreach($allParties as $p)
+                        <button type="button" class="dropdown-item rounded-1 small text-start py-2 single-party-option {{ ($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-party-phone="{{ $p->phone ?? '' }}" data-party-type="{{ $p->type }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>[{{ ucfirst($p->type) }}] <strong>{{ $p->name }}</strong> <small class="{{ ($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id ? 'text-white-50' : 'text-muted' }}">({{ $p->phone ?? 'No Phone' }})</small></span>
+                                <span class="ms-1">{!! $p->dealing_badges !!}</span>
+                            </div>
+                        </button>
+                    @endforeach
+                    <div id="singlePartySearchEmpty" class="dropdown-item small text-muted d-none" aria-live="polite">No matching party found.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Multi-Party Ledger Search Bar -->
+        <div class="col-12 col-md-3">
             <label for="partySearch" class="form-label text-muted small fw-semibold mb-1">Select Counterparty / Multi-Party Ledger</label>
             <div id="partyCombobox" class="position-relative">
                 <input type="search" id="partySearch" class="form-control form-control-sm py-2" placeholder="Search or select parties..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
-                <input type="hidden" name="party_id" id="partyId" value="{{ in_array($ledgerScope ?? 'single', ['all_credit', 'all_cash', 'all']) ? $ledgerScope : (($ledgerScope ?? 'single') === 'single' ? ($party->id ?? '') : '') }}">
                 
                 <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 440px; overflow-y: auto;">
                     <!-- Quick Combined Ledger Options -->
@@ -252,7 +277,7 @@
                         @endphp
                         @foreach($allParties as $p)
                             @php
-                                $isChecked = in_array((string)$p->id, $requestedPartyIds) || (($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id);
+                                $isChecked = in_array((string)$p->id, $requestedPartyIds);
                             @endphp
                             <div class="dropdown-item rounded-1 small py-1.5 px-2 party-item d-flex align-items-center gap-2 cursor-pointer" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
                                 <input type="checkbox" name="party_ids[]" value="{{ $p->id }}" class="form-check-input mt-0 party-check" id="partyCheck_{{ $p->id }}" {{ $isChecked ? 'checked' : '' }}>
@@ -275,7 +300,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
             <input type="date" name="from_date" class="form-control form-control-sm py-2" value="{{ $fromDate }}">
         </div>
@@ -841,6 +866,14 @@
 
 @push('scripts')
 <script>
+    // Single Party Search Elements
+    const singlePartySearch = document.getElementById('singlePartySearch');
+    const singlePartyCombobox = document.getElementById('singlePartyCombobox');
+    const singlePartyOptionsMenu = document.getElementById('singlePartyOptions');
+    const singlePartyItems = Array.from(document.querySelectorAll('.single-party-option'));
+    const singlePartySearchEmpty = document.getElementById('singlePartySearchEmpty');
+
+    // Multi-Party Search Elements
     const partySearch = document.getElementById('partySearch');
     const partyCombobox = document.getElementById('partyCombobox');
     const partyId = document.getElementById('partyId');
@@ -864,9 +897,14 @@
         return checkedCount;
     }
 
-    // Set initial search input display value based on scope
+    // Set initial search input display values based on scope
     const currentScope = @json($ledgerScope ?? 'single');
     const selectedCountOnLoad = updateSelectedCount();
+
+    if (singlePartySearch && currentScope === 'single') {
+        const singlePartyName = @json($party->name ?? '');
+        if (singlePartyName) singlePartySearch.value = singlePartyName;
+    }
 
     if (partySearch) {
         if (currentScope === 'all_credit') {
@@ -876,9 +914,117 @@
         } else if (currentScope === 'multiple') {
             partySearch.value = selectedCountOnLoad + ' Parties Selected';
         } else if (currentScope === 'single') {
-            const singlePartyName = @json($party->name ?? '');
-            if (singlePartyName) partySearch.value = singlePartyName;
+            partySearch.value = '';
         }
+    }
+
+    function closeSinglePartyOptions() {
+        if (singlePartyOptionsMenu) {
+            singlePartyOptionsMenu.classList.remove('show');
+            if (singlePartySearch) singlePartySearch.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function filterSinglePartyOptions(query) {
+        const normalizedQuery = (query || '').trim().toLocaleLowerCase();
+        let matches = 0;
+        singlePartyItems.forEach(function (btn) {
+            const name = (btn.dataset.partyName || '').toLocaleLowerCase();
+            const phone = (btn.dataset.partyPhone || '').toLocaleLowerCase();
+            const type = (btn.dataset.partyType || '').toLocaleLowerCase();
+            const isMatch = !normalizedQuery || name.includes(normalizedQuery) || phone.includes(normalizedQuery) || type.includes(normalizedQuery) || btn.textContent.toLocaleLowerCase().includes(normalizedQuery);
+            btn.hidden = !isMatch;
+            btn.classList.toggle('d-none', !isMatch);
+            if (isMatch) matches++;
+        });
+        if (singlePartySearchEmpty) {
+            singlePartySearchEmpty.hidden = matches > 0;
+            singlePartySearchEmpty.classList.toggle('d-none', matches > 0);
+        }
+    }
+
+    function openSinglePartyOptions(query) {
+        closePartyOptions();
+        filterSinglePartyOptions(query);
+        if (singlePartyOptionsMenu) {
+            singlePartyOptionsMenu.classList.add('show');
+            if (singlePartySearch) singlePartySearch.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    if (singlePartySearch) {
+        singlePartySearch.addEventListener('focus', function () {
+            this.select();
+            openSinglePartyOptions('');
+        });
+
+        singlePartySearch.addEventListener('click', function () {
+            if (singlePartyOptionsMenu && !singlePartyOptionsMenu.classList.contains('show')) {
+                openSinglePartyOptions(this.value);
+            }
+        });
+
+        singlePartySearch.addEventListener('input', function () {
+            if (this.value.trim() === '') {
+                if (partyId) partyId.value = '';
+            }
+            openSinglePartyOptions(this.value);
+        });
+
+        singlePartySearch.addEventListener('search', function () {
+            openSinglePartyOptions(this.value);
+        });
+
+        singlePartySearch.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeSinglePartyOptions();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const visible = singlePartyItems.filter(function (it) {
+                    return !it.hidden && !it.classList.contains('d-none');
+                });
+                if (visible.length > 0) {
+                    visible[0].click();
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const visible = singlePartyItems.filter(function (it) {
+                    return !it.hidden && !it.classList.contains('d-none');
+                });
+                if (visible.length > 0) visible[0].focus();
+            }
+        });
+    }
+
+    singlePartyItems.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            partyChecks.forEach(function (cb) { cb.checked = false; });
+            if (partyId) partyId.value = this.dataset.partyId;
+            if (singlePartySearch) singlePartySearch.value = this.dataset.partyName;
+            if (partySearch) partySearch.value = '';
+            document.getElementById('partyLedgerFilterForm').submit();
+        });
+
+        btn.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeSinglePartyOptions();
+                if (singlePartySearch) singlePartySearch.focus();
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const visible = singlePartyItems.filter(function (it) {
+                    return !it.hidden && !it.classList.contains('d-none');
+                });
+                const idx = visible.indexOf(this);
+                const nextIdx = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
+                if (visible[nextIdx]) visible[nextIdx].focus();
+            }
+        });
+    });
+
+    if (singlePartyOptionsMenu) {
+        singlePartyOptionsMenu.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
     }
 
     function closePartyOptions() {
@@ -940,6 +1086,7 @@
     }
 
     function openPartyOptions(query) {
+        closeSinglePartyOptions();
         filterPartyOptions(query);
         if (partyOptionsMenu) {
             partyOptionsMenu.classList.add('show');
@@ -969,6 +1116,7 @@
             partyChecks.forEach(function (cb) { cb.checked = false; });
             if (partyId) partyId.value = this.dataset.partyId;
             if (partySearch) partySearch.value = this.dataset.displayTitle || this.textContent.trim();
+            if (singlePartySearch) singlePartySearch.value = '';
             partyCombobox.closest('form').submit();
         });
     });
@@ -977,6 +1125,7 @@
     partyChecks.forEach(function (cb) {
         cb.addEventListener('change', function () {
             if (partyId) partyId.value = '';
+            if (singlePartySearch) singlePartySearch.value = '';
             const count = updateSelectedCount();
             if (partySearch) {
                 partySearch.value = count === 0 ? '' : (count === 1 ? '1 Party Selected' : count + ' Parties Selected');
@@ -989,6 +1138,7 @@
         selectAllVisibleBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             if (partyId) partyId.value = '';
+            if (singlePartySearch) singlePartySearch.value = '';
             partyItems.forEach(function (item) {
                 if (!item.hidden && !item.classList.contains('d-none')) {
                     const cb = item.querySelector('.party-check');
@@ -1021,6 +1171,7 @@
                 return;
             }
             if (partyId) partyId.value = '';
+            if (singlePartySearch) singlePartySearch.value = '';
             partyCombobox.closest('form').submit();
         });
     }
@@ -1071,6 +1222,7 @@
     }
 
     document.addEventListener('click', function (event) {
+        if (singlePartyCombobox && !singlePartyCombobox.contains(event.target)) closeSinglePartyOptions();
         if (partyCombobox && !partyCombobox.contains(event.target)) closePartyOptions();
     });
 </script>
