@@ -44,15 +44,24 @@
        ========================================================= */
     @media print {
         @page {
-            size: A4 portrait;
-            margin: 10mm 12mm 10mm 12mm;
+            @if($isWholeShop ?? false)
+                size: A4 landscape;
+                margin: 6mm 8mm 6mm 8mm;
+            @else
+                size: A4 portrait;
+                margin: 10mm 12mm 10mm 12mm;
+            @endif
         }
         html, body {
             background: #ffffff !important;
             color: #0f172a !important;
             font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-            font-size: 8.8pt !important;
-            line-height: 1.3 !important;
+            @if($isWholeShop ?? false)
+                font-size: 7.8pt !important;
+            @else
+                font-size: 8.8pt !important;
+            @endif
+            line-height: 1.25 !important;
             width: 100% !important;
             height: auto !important;
             margin: 0 !important;
@@ -166,6 +175,90 @@
             margin: 0 auto;
             padding-top: 4px;
         }
+
+        @if($isWholeShop ?? false)
+        /* =========================================================
+           WHOLE SHOP MULTI-ACCOUNT MATRIX PRINT OPTIMIZATION
+           ========================================================= */
+        .whole-shop-matrix-table.table {
+            width: 100% !important;
+            max-width: 100% !important;
+            table-layout: auto !important;
+            white-space: normal !important;
+        }
+
+        .whole-shop-matrix-table.table th,
+        .whole-shop-matrix-table.table td {
+            border: 1px solid #475569 !important;
+            padding: 2.5px 3px !important;
+            font-size: 7.2pt !important;
+            line-height: 1.2 !important;
+            min-width: 0 !important;
+            word-break: break-word !important;
+            white-space: normal !important;
+        }
+
+        .whole-shop-matrix-table.table thead th {
+            font-size: 7pt !important;
+            padding: 3px 2px !important;
+            letter-spacing: -0.15px;
+        }
+
+        .whole-shop-matrix-table.table .col-date {
+            width: 62px !important;
+            min-width: 62px !important;
+            white-space: nowrap !important;
+            font-size: 7pt !important;
+        }
+
+        .whole-shop-matrix-table.table .col-voucher {
+            width: 66px !important;
+            min-width: 66px !important;
+            white-space: nowrap !important;
+            font-size: 7pt !important;
+        }
+
+        .whole-shop-matrix-table.table .col-party {
+            min-width: 80px !important;
+            max-width: 140px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            font-size: 7.2pt !important;
+        }
+
+        .whole-shop-matrix-table.table .col-details {
+            min-width: 90px !important;
+            max-width: 160px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            font-size: 7pt !important;
+        }
+
+        .whole-shop-matrix-table.table .col-netsale {
+            width: 68px !important;
+            min-width: 60px !important;
+            white-space: nowrap !important;
+            font-size: 7pt !important;
+        }
+
+        .whole-shop-matrix-table.table .col-acc-cell {
+            white-space: nowrap !important;
+            font-size: 6.8pt !important;
+            padding: 2px 2px !important;
+            min-width: 50px !important;
+        }
+
+        .whole-shop-matrix-table.table tfoot td {
+            font-size: 7pt !important;
+            padding: 3px 2px !important;
+        }
+
+        .whole-shop-matrix-table.table .badge {
+            font-size: 6.2pt !important;
+            padding: 0 2px !important;
+            display: inline-block !important;
+        }
+        @endif
     }
 </style>
 @endpush
@@ -366,14 +459,14 @@
     @if($isWholeShop ?? false)
         <!-- Whole Shop Matrix Table: Detailed Ledger with Date, Voucher #, Party, Details, Net Sale + 3 columns per Account with Horizontal Scroll -->
         <div class="table-responsive mb-4 shadow-xs border rounded-3" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            <table class="table table-sm table-bordered table-hover align-middle mb-0 text-nowrap" style="font-size: 0.83rem;">
+            <table class="table table-sm table-bordered table-hover align-middle mb-0 text-nowrap whole-shop-matrix-table" style="font-size: 0.83rem;">
                 <thead class="table-light">
                     <tr>
-                        <th rowspan="2" class="align-middle text-center bg-light fw-bold" style="width: 105px; min-width: 105px; border-bottom: 2px solid #cbd5e1;">Date</th>
-                        <th rowspan="2" class="align-middle text-center bg-light fw-bold" style="width: 120px; min-width: 120px; border-bottom: 2px solid #cbd5e1;">Voucher #</th>
-                        <th rowspan="2" class="align-middle bg-light fw-bold" style="min-width: 180px; border-bottom: 2px solid #cbd5e1;">Party / Payee</th>
-                        <th rowspan="2" class="align-middle bg-light fw-bold" style="min-width: 220px; border-bottom: 2px solid #cbd5e1;">Particulars / Details</th>
-                        <th rowspan="2" class="align-middle text-end bg-primary-subtle text-primary fw-bold" style="width: 125px; min-width: 125px; border-bottom: 2px solid #cbd5e1;">Net Sale</th>
+                        <th rowspan="2" class="align-middle text-center bg-light fw-bold col-date" style="width: 105px; min-width: 105px; border-bottom: 2px solid #cbd5e1;">Date</th>
+                        <th rowspan="2" class="align-middle text-center bg-light fw-bold col-voucher" style="width: 120px; min-width: 120px; border-bottom: 2px solid #cbd5e1;">Voucher #</th>
+                        <th rowspan="2" class="align-middle bg-light fw-bold col-party" style="min-width: 180px; border-bottom: 2px solid #cbd5e1;">Party / Payee</th>
+                        <th rowspan="2" class="align-middle bg-light fw-bold col-details" style="min-width: 220px; border-bottom: 2px solid #cbd5e1;">Particulars / Details</th>
+                        <th rowspan="2" class="align-middle text-end bg-primary-subtle text-primary fw-bold col-netsale" style="width: 125px; min-width: 125px; border-bottom: 2px solid #cbd5e1;">Net Sale</th>
                         @foreach($accounts as $acc)
                             <th colspan="3" class="text-center fw-bold py-2 border-start {{ $acc->isCash() ? 'bg-success-subtle text-success' : ($acc->type === 'bank' ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-dark') }}" style="border-bottom: 1px solid #cbd5e1;">
                                 <span class="d-inline-flex align-items-center gap-1">
@@ -386,24 +479,24 @@
                     </tr>
                     <tr>
                         @foreach($accounts as $acc)
-                            <th class="text-end small border-start fw-semibold py-1.5" style="min-width: 95px; font-size: 0.75rem;">In (+)</th>
-                            <th class="text-end small fw-semibold py-1.5" style="min-width: 95px; font-size: 0.75rem;">Out (-)</th>
-                            <th class="text-end small bg-light fw-bold py-1.5" style="min-width: 115px; font-size: 0.75rem;">Running</th>
+                            <th class="text-end small border-start fw-semibold py-1.5 col-acc-cell" style="min-width: 95px; font-size: 0.75rem;">In (+)</th>
+                            <th class="text-end small fw-semibold py-1.5 col-acc-cell" style="min-width: 95px; font-size: 0.75rem;">Out (-)</th>
+                            <th class="text-end small bg-light fw-bold py-1.5 col-acc-cell" style="min-width: 115px; font-size: 0.75rem;">Running</th>
                         @endforeach
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Opening Balance Row (Prior to From Date) -->
                     <tr class="table-secondary bg-opacity-25 fw-semibold">
-                        <td class="text-center font-monospace">{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
-                        <td class="text-center font-monospace text-muted">-</td>
-                        <td class="text-muted fw-bold">Opening Balance</td>
-                        <td class="text-muted">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
-                        <td class="text-end text-muted font-monospace">-</td>
+                        <td class="text-center font-monospace col-date">{{ \Carbon\Carbon::parse($fromDate)->format('d-m-Y') }}</td>
+                        <td class="text-center font-monospace text-muted col-voucher">-</td>
+                        <td class="text-muted fw-bold col-party">Opening Balance</td>
+                        <td class="text-muted col-details">Balance brought forward prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</td>
+                        <td class="text-end text-muted font-monospace col-netsale">-</td>
                         @foreach($accounts as $acc)
-                            <td class="text-end font-monospace text-muted border-start">-</td>
-                            <td class="text-end font-monospace text-muted">-</td>
-                            <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50">
+                            <td class="text-end font-monospace text-muted border-start col-acc-cell">-</td>
+                            <td class="text-end font-monospace text-muted col-acc-cell">-</td>
+                            <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50 col-acc-cell">
                                 {{ number_format($initialBalances[$acc->id] ?? 0, 2) }}
                             </td>
                         @endforeach
@@ -412,10 +505,10 @@
                     <!-- Transaction Detail Rows -->
                     @forelse($rows as $row)
                         <tr>
-                            <td class="text-center font-monospace text-dark fw-semibold">
+                            <td class="text-center font-monospace text-dark fw-semibold col-date">
                                 {{ $row['date'] }}
                             </td>
-                            <td class="font-monospace text-center">
+                            <td class="font-monospace text-center col-voucher">
                                 @if($row['is_shift'])
                                     <a href="{{ route('shift-closings.show', $row['shift_id']) }}" class="text-decoration-none fw-bold" target="_blank">
                                         #{{ $row['voucher_no'] }}
@@ -429,29 +522,29 @@
                                     <span class="d-block text-muted small" style="font-size: 0.7rem;">Bill: {{ $row['bill_no'] }}</span>
                                 @endif
                             </td>
-                            <td>
+                            <td class="col-party">
                                 <span class="fw-semibold text-dark">{{ $row['party'] }}</span>
                             </td>
-                            <td>
+                            <td class="col-details">
                                 <div>{{ $row['description'] ?? '-' }}</div>
                                 @if($row['category'] && $row['category'] !== '-')
                                     <span class="badge bg-light text-muted border px-1" style="font-size: 0.68rem;">{{ $row['category'] }}</span>
                                 @endif
                             </td>
-                            <td class="text-end font-monospace fw-bold {{ $row['net_sale'] > 0 ? 'text-primary' : 'text-muted' }}">
+                            <td class="text-end font-monospace fw-bold col-netsale {{ $row['net_sale'] > 0 ? 'text-primary' : 'text-muted' }}">
                                 {{ $row['net_sale'] > 0 ? number_format($row['net_sale'], 2) : '-' }}
                             </td>
                             @foreach($accounts as $acc)
                                 @php
                                     $accData = $row['accounts'][$acc->id] ?? ['in' => 0, 'out' => 0, 'running' => 0];
                                 @endphp
-                                <td class="text-end font-monospace border-start {{ $accData['in'] > 0 ? 'text-success fw-bold' : 'text-muted' }}">
+                                <td class="text-end font-monospace border-start col-acc-cell {{ $accData['in'] > 0 ? 'text-success fw-bold' : 'text-muted' }}">
                                     {{ $accData['in'] > 0 ? '+ ' . number_format($accData['in'], 2) : '-' }}
                                 </td>
-                                <td class="text-end font-monospace {{ $accData['out'] > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                <td class="text-end font-monospace col-acc-cell {{ $accData['out'] > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
                                     {{ $accData['out'] > 0 ? '- ' . number_format($accData['out'], 2) : '-' }}
                                 </td>
-                                <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50">
+                                <td class="text-end font-monospace fw-bold text-dark bg-light bg-opacity-50 col-acc-cell">
                                     {{ number_format($accData['running'], 2) }}
                                 </td>
                             @endforeach
@@ -467,17 +560,17 @@
                 <tfoot class="table-light border-top border-2 border-secondary">
                     <tr class="fw-bold align-middle text-dark">
                         <td colspan="4" class="text-end text-uppercase pe-3 text-dark">Total Period Movement:</td>
-                        <td class="text-end font-monospace text-primary fs-6">
+                        <td class="text-end font-monospace text-primary fs-6 col-netsale">
                             {{ number_format($totalNetSale, 2) }}
                         </td>
                         @foreach($accounts as $acc)
-                            <td class="text-end font-monospace text-success border-start">
+                            <td class="text-end font-monospace text-success border-start col-acc-cell">
                                 + {{ number_format($accountTotals[$acc->id]['in'] ?? 0, 2) }}
                             </td>
-                            <td class="text-end font-monospace text-danger">
+                            <td class="text-end font-monospace text-danger col-acc-cell">
                                 - {{ number_format($accountTotals[$acc->id]['out'] ?? 0, 2) }}
                             </td>
-                            <td class="text-end font-monospace fw-bold text-dark bg-secondary bg-opacity-10">
+                            <td class="text-end font-monospace fw-bold text-dark bg-secondary bg-opacity-10 col-acc-cell">
                                 {{ number_format($runningBalances[$acc->id] ?? 0, 2) }}
                             </td>
                         @endforeach

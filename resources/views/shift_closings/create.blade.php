@@ -620,9 +620,16 @@
                 <div class="modal-body p-3 p-sm-4 text-start">
                     <div id="quickPartyErrorAlert" class="alert alert-danger py-2 small d-none" role="alert"></div>
 
-                    <div class="mb-3">
+                    <div class="mb-3 position-relative">
                         <label for="quickPartyName" class="form-label small fw-semibold text-secondary">Party / Payee Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm py-2" id="quickPartyName" name="name" placeholder="e.g. Al-Madina Traders / Haji Rashid" required>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control form-control-sm py-2" id="quickPartyName" name="name" placeholder="e.g. Al-Madina Traders / Haji Rashid" autocomplete="off" required>
+                            <span class="input-group-text bg-white" id="quickPartyNameSpinner" style="display: none;">
+                                <span class="spinner-border spinner-border-sm text-primary" role="status" style="width: 0.9rem; height: 0.9rem;"></span>
+                            </span>
+                        </div>
+                        <!-- Suggestions / Live Duplicate Alert container -->
+                        <div id="quickPartyNameFeedback" class="mt-2" style="display: none;"></div>
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -812,15 +819,236 @@ document.getElementById('addPartyPayment').addEventListener('click', function ()
     partyPaymentIndex++;
 });
 
-// Quick Add Party AJAX handling
+// Quick Add Party AJAX & Live Duplicate Checker handling
 const quickAddPartyForm = document.getElementById('quickAddPartyForm');
 const quickPartyModalEl = document.getElementById('quickAddPartyModal');
 const btnSubmitQuickParty = document.getElementById('btnSubmitQuickParty');
 const quickPartyErrorAlert = document.getElementById('quickPartyErrorAlert');
+const quickPartyNameInput = document.getElementById('quickPartyName');
+const quickPartyNameFeedback = document.getElementById('quickPartyNameFeedback');
+const quickPartyNameSpinner = document.getElementById('quickPartyNameSpinner');
+const checkPartyDuplicateUrl = "{{ route('parties.check-duplicate') }}";
+
+let quickPartyDebounceTimer = null;
+let quickPartyAbortController = null;
+let quickPartyHasExactDuplicate = false;
+
+function resetQuickPartyDuplicateState() {
+    if (quickPartyDebounceTimer) clearTimeout(quickPartyDebounceTimer);
+    if (quickPartyAbortController) quickPartyAbortController.abort();
+    if (quickPartyNameFeedback) {
+        quickPartyNameFeedback.innerHTML = '';
+        quickPartyNameFeedback.style.display = 'none';
+    }
+    if (quickPartyNameInput) {
+        quickPartyNameInput.classList.remove('is-invalid', 'is-valid');
+    }
+    if (quickPartyNameSpinner) {
+        quickPartyNameSpinner.style.display = 'none';
+    }
+    quickPartyHasExactDuplicate = false;
+    if (btnSubmitQuickParty) {
+        btnSubmitQuickParty.disabled = false;
+    }
+}
+
+// Function to select an existing party directly from suggestions
+window.selectQuickParty = function(id, name, type, phone) {
+    const partyTypeCapitalized = type ? (type.charAt(0).toUpperCase() + type.slice(1)) : '';
+    const partyLabel = `${name}${phone ? ' (' + phone + ')' : ''}${partyTypeCapitalized ? ' [' + partyTypeCapitalized + ']' : ''} #${id}`;
+
+    // Ensure party exists in the datalist
+    const datalist = document.getElementById('shiftClosingPartyList');
+    if (datalist && !datalist.querySelector(`option[data-party-id="${id}"]`)) {
+        const newOption = document.createElement('option');
+        newOption.value = partyLabel;
+        newOption.dataset.partyId = id;
+        datalist.appendChild(newOption);
+    }
+
+    // Auto-fill into first empty row or the last row
+    const rows = partyPaymentRows.querySelectorAll('[data-party-payment-row]');
+    let targetRow = null;
+    for (let i = 0; i < rows.length; i++) {
+        const searchInp = rows[i].querySelector('[data-party-search]');
+        if (searchInp && !searchInp.value) {
+            targetRow = rows[i];
+            break;
+        }
+    }
+    if (!targetRow && rows.length > 0) {
+        targetRow = rows[rows.length - 1];
+    }
+
+    if (targetRow) {
+        const partyInput = targetRow.querySelector('[data-party-search]');
+        const partyIdInput = targetRow.querySelector('[data-party-id]');
+        if (partyInput && partyIdInput) {
+            partyInput.value = partyLabel;
+            partyIdInput.value = id;
+            calculateClosing();
+        }
+    }
+
+    // Reset & close modal
+    if (quickAddPartyForm) quickAddPartyForm.reset();
+    document.getElementById('quickPartyOpeningBalance').value = '0.00';
+    resetQuickPartyDuplicateState();
+    const modalInstance = bootstrap.Modal.getInstance(quickPartyModalEl) || new bootstrap.Modal(quickPartyModalEl);
+    modalInstance.hide();
+};
+
+if (quickPartyNameInput && quickPartyNameFeedback) {
+    quickPartyNameInput.addEventListener('input', function() {
+        const query = quickPartyNameInput.value.trim();
+
+        if (quickPartyDebounceTimer) clearTimeout(quickPartyDebounceTimer);
+        if (quickPartyAbortController) quickPartyAbortController.abort();
+
+        if (query.length < 1) {
+            resetQuickPartyDuplicateState();
+            return;
+        }
+
+        if (quickPartyNameSpinner) quickPartyNameSpinner.style.display = 'inline-block';
+
+        quickPartyDebounceTimer = setTimeout(() => {
+            quickPartyAbortController = new AbortController();
+            const url = checkPartyDuplicateUrl + '?name=' + encodeURIComponent(query);
+
+            fetch(url, {
+                signal: quickPartyAbortController.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (quickPartyNameSpinner) quickPartyNameSpinner.style.display = 'none';
+
+                if (data.exact_match && data.exact_party) {
+                    quickPartyHasExactDuplicate = true;
+                    quickPartyNameInput.classList.add('is-invalid');
+                    quickPartyNameInput.classList.remove('is-valid');
+                    if (btnSubmitQuickParty) btnSubmitQuickParty.disabled = true;
+
+                    const safeName = data.exact_party.name.replace(/'/g, "\\'");
+                    const safePhone = data.exact_party.phone && data.exact_party.phone !== 'N/A' ? data.exact_party.phone.replace(/'/g, "\\'") : '';
+
+                    quickPartyNameFeedback.innerHTML = `
+                        <div class="alert alert-danger p-2.5 mb-0 rounded-3 shadow-xs border border-danger-subtle">
+                            <div class="d-flex align-items-center gap-1.5 fw-bold text-danger mb-1" style="font-size: 0.83rem;">
+                                <i class="bi bi-exclamation-octagon-fill text-danger fs-6"></i>
+                                <span>Already Registered! Duplicate not allowed.</span>
+                            </div>
+                            <div class="small text-dark mb-2" style="font-size: 0.8rem;">
+                                A party named <strong class="text-danger">"${data.exact_party.name}"</strong> is already registered as 
+                                <span class="badge bg-secondary">${data.exact_party.type}</span>
+                                ${data.exact_party.phone && data.exact_party.phone !== 'N/A' ? `<span class="text-muted ms-1">(Phone: ${data.exact_party.phone})</span>` : ''}.
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between pt-1.5 border-top border-danger-subtle flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <button type="button" class="btn btn-success btn-xs py-1 px-2 fw-semibold" style="font-size: 0.75rem;" onclick="selectQuickParty(${data.exact_party.id}, '${safeName}', '${data.exact_party.type}', '${safePhone}')">
+                                        <i class="bi bi-check2 me-1"></i> Select Existing Party
+                                    </button>
+                                    <a href="${data.exact_party.ledger_url}" target="_blank" class="btn btn-outline-danger btn-xs py-1 px-2 fw-semibold text-decoration-none" style="font-size: 0.75rem;">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i> View Ledger
+                                    </a>
+                                </div>
+                                <span class="text-muted small" style="font-size: 0.73rem;">Change the name to proceed</span>
+                            </div>
+                        </div>
+                    `;
+                    quickPartyNameFeedback.style.display = 'block';
+                } else if (data.suggestions && data.suggestions.length > 0) {
+                    quickPartyHasExactDuplicate = false;
+                    quickPartyNameInput.classList.remove('is-invalid', 'is-valid');
+                    if (btnSubmitQuickParty) btnSubmitQuickParty.disabled = false;
+
+                    const listItems = data.suggestions.map(item => {
+                        const sName = item.name.replace(/'/g, "\\'");
+                        const sPhone = item.phone && item.phone !== 'N/A' ? item.phone.replace(/'/g, "\\'") : '';
+                        return `
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-1.5 px-2.5 bg-white">
+                                <div class="me-2 text-truncate">
+                                    <span class="fw-semibold text-dark" style="font-size: 0.82rem;">${item.name}</span>
+                                    <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.7rem;">${item.type}</span>
+                                    ${item.phone && item.phone !== 'N/A' ? `<small class="text-muted ms-2"><i class="bi bi-telephone"></i> ${item.phone}</small>` : ''}
+                                </div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-outline-success btn-xs py-0.5 px-1.5 fw-semibold" style="font-size: 0.72rem;" onclick="selectQuickParty(${item.id}, '${sName}', '${item.type}', '${sPhone}')">
+                                        <i class="bi bi-check2"></i> Select
+                                    </button>
+                                    <a href="${item.ledger_url}" target="_blank" class="btn btn-light btn-xs border text-primary fw-semibold py-0.5 px-1.5 text-nowrap" style="font-size: 0.72rem;">
+                                        Ledger <i class="bi bi-box-arrow-up-right ms-0.5"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    quickPartyNameFeedback.innerHTML = `
+                        <div class="card border border-warning-subtle bg-warning bg-opacity-10 rounded-3 shadow-xs p-2 mb-0">
+                            <div class="d-flex align-items-center justify-content-between mb-1.5 px-1">
+                                <span class="small fw-bold text-dark d-flex align-items-center" style="font-size: 0.78rem;">
+                                    <i class="bi bi-search text-warning me-1.5"></i>
+                                    Existing similar parties (${data.suggestions.length} found):
+                                </span>
+                                <small class="text-muted" style="font-size: 0.72rem;">Check to prevent duplicate</small>
+                            </div>
+                            <div class="list-group list-group-flush rounded border overflow-hidden">
+                                ${listItems}
+                            </div>
+                            <div class="text-muted px-1 mt-1.5 small" style="font-size: 0.73rem;">
+                                <i class="bi bi-info-circle text-primary me-1"></i> If you are registering a different party, you can proceed.
+                            </div>
+                        </div>
+                    `;
+                    quickPartyNameFeedback.style.display = 'block';
+                } else {
+                    quickPartyHasExactDuplicate = false;
+                    quickPartyNameInput.classList.remove('is-invalid');
+                    quickPartyNameInput.classList.add('is-valid');
+                    if (btnSubmitQuickParty) btnSubmitQuickParty.disabled = false;
+
+                    quickPartyNameFeedback.innerHTML = `
+                        <div class="text-success small d-flex align-items-center px-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-check-circle-fill me-1.5 text-success"></i>
+                            <span>Party name is unique & available.</span>
+                        </div>
+                    `;
+                    quickPartyNameFeedback.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    if (quickPartyNameSpinner) quickPartyNameSpinner.style.display = 'none';
+                }
+            });
+        }, 250);
+    });
+}
+
+if (quickPartyModalEl) {
+    quickPartyModalEl.addEventListener('hidden.bs.modal', function () {
+        if (quickAddPartyForm) quickAddPartyForm.reset();
+        document.getElementById('quickPartyOpeningBalance').value = '0.00';
+        quickPartyErrorAlert.classList.add('d-none');
+        quickPartyErrorAlert.innerText = '';
+        resetQuickPartyDuplicateState();
+    });
+}
 
 if (quickAddPartyForm) {
     quickAddPartyForm.addEventListener('submit', async function (e) {
         e.preventDefault();
+
+        if (quickPartyHasExactDuplicate) {
+            quickPartyNameInput.focus();
+            alert('A party with this exact name already exists. Please choose a different name.');
+            return;
+        }
 
         quickPartyErrorAlert.classList.add('d-none');
         quickPartyErrorAlert.innerText = '';
@@ -905,6 +1133,7 @@ if (quickAddPartyForm) {
 
             // Reset form & close modal
             quickAddPartyForm.reset();
+            resetQuickPartyDuplicateState();
             document.getElementById('quickPartyOpeningBalance').value = '0.00';
             const modalInstance = bootstrap.Modal.getInstance(quickPartyModalEl) || new bootstrap.Modal(quickPartyModalEl);
             modalInstance.hide();
