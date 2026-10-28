@@ -58,9 +58,6 @@ class LedgerController extends Controller
             if (!$party && $request->filled('party_id') && is_numeric($partyIdParam)) {
                 $party = Party::find($partyIdParam);
             }
-            if (!$party && $allParties->isNotEmpty()) {
-                $party = $allParties->first();
-            }
             $selectedParties = $party ? collect([$party]) : collect();
             $statementTitle = $party ? $party->name : 'Select Party';
         }

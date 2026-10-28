@@ -25,9 +25,11 @@
 
 @section('page_actions')
     <div class="d-flex flex-wrap gap-1 gap-sm-2 w-100 justify-content-start justify-content-sm-end">
-        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 no-print flex-fill flex-sm-grow-0 text-nowrap" onclick="window.print()">
-            <i class="bi bi-printer me-1"></i> Print Statement
-        </button>
+        @if($party || ($ledgerScope ?? 'single') !== 'single')
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 no-print flex-fill flex-sm-grow-0 text-nowrap" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print Statement
+            </button>
+        @endif
         <a href="{{ route('parties.index') }}" class="btn btn-light btn-sm rounded-3 no-print flex-fill flex-sm-grow-0 text-nowrap">
             <i class="bi bi-person-lines-fill me-1"></i> Parties Directory
         </a>
@@ -1218,6 +1220,20 @@
     if (partyOptionsMenu) {
         partyOptionsMenu.addEventListener('click', function (e) {
             e.stopPropagation();
+        });
+    }
+
+    // Prevent submitting filter when no party is selected
+    const partyLedgerFilterForm = document.getElementById('partyLedgerFilterForm');
+    if (partyLedgerFilterForm) {
+        partyLedgerFilterForm.addEventListener('submit', function (e) {
+            const hasPartyId = partyId && partyId.value.trim() !== '';
+            const hasCheckedParty = partyChecks.some(function (cb) { return cb.checked; });
+            if (!hasPartyId && !hasCheckedParty) {
+                e.preventDefault();
+                alert('Please select a party first from the search bar.');
+                if (singlePartySearch) singlePartySearch.focus();
+            }
         });
     }
 
