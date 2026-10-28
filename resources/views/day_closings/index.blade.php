@@ -614,13 +614,6 @@
                                             </button>
                                         </form>
                                     @endif
-                                    <form action="{{ route('day-closings.destroy', $day->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this day closing record?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
                                 @endif
                             </div>
                         </td>
@@ -704,13 +697,6 @@
                                         </button>
                                     </form>
                                 @endif
-                                <form action="{{ route('day-closings.destroy', $day->id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this day closing?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.76rem;">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
                             @endif
                         </div>
                     </div>

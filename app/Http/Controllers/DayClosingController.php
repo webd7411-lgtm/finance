@@ -707,19 +707,6 @@ class DayClosingController extends Controller
 
     public function destroy(DayClosing $dayClosing)
     {
-        if (!auth()->user()->isOwner()) {
-            abort(403, 'Only Owner can delete day closing records.');
-        }
-
-        $dateStr = $dayClosing->date->format('d M, Y');
-        $dayClosing->delete();
-
-        ActivityLog::log(
-            'Deleted',
-            'Day Closing',
-            "Deleted Day Closing record for date {$dateStr}"
-        );
-
-        return redirect()->route('day-closings.index')->with('success', 'Day closing record deleted.');
+        return redirect()->route('day-closings.index')->with('error', 'Deleting day closing records is disabled for financial audit integrity.');
     }
 }
