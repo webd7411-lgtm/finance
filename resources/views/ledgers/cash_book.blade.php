@@ -39,6 +39,67 @@
             border-radius: 10px;
         }
     }
+
+    /* =========================================================
+       FROZEN / STICKY TABLE HEADERS (CASH BOOK & WHOLE SHOP)
+       ========================================================= */
+    .cash-book-scroll-container,
+    .whole-shop-matrix-container {
+        max-height: 72vh;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        position: relative;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    /* Custom Sleek Scrollbar */
+    .cash-book-scroll-container::-webkit-scrollbar,
+    .whole-shop-matrix-container::-webkit-scrollbar {
+        width: 7px;
+        height: 7px;
+    }
+    .cash-book-scroll-container::-webkit-scrollbar-thumb,
+    .whole-shop-matrix-container::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+    }
+    .cash-book-scroll-container::-webkit-scrollbar-thumb:hover,
+    .whole-shop-matrix-container::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+    }
+    .cash-book-scroll-container::-webkit-scrollbar-track,
+    .whole-shop-matrix-container::-webkit-scrollbar-track {
+        background-color: #f8fafc;
+    }
+
+    /* Single Account Table Header Freeze */
+    .cash-book-scroll-container table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 20 !important;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 -2px 0 #cbd5e1, 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        color: #0f172a !important;
+    }
+
+    /* Whole Shop Matrix 2-Tier Header Freeze */
+    .whole-shop-matrix-container table thead tr:first-child th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 25 !important;
+        height: 38px;
+        box-shadow: inset 0 -1px 0 #cbd5e1, 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .whole-shop-matrix-container table thead tr:nth-child(2) th {
+        position: sticky !important;
+        top: 38px !important;
+        z-index: 24 !important;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 -2px 0 #cbd5e1, 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    }
+
     /* =========================================================
        BANK STATEMENT PRINT & PDF STYLES
        ========================================================= */
@@ -111,6 +172,19 @@
         .table-responsive {
             overflow: visible !important;
             display: block !important;
+        }
+        .cash-book-scroll-container,
+        .whole-shop-matrix-container {
+            max-height: none !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .cash-book-scroll-container table thead th,
+        .whole-shop-matrix-container table thead tr:first-child th,
+        .whole-shop-matrix-container table thead tr:nth-child(2) th {
+            position: static !important;
+            box-shadow: none !important;
         }
 
         /* Statement Grid & Tables */
@@ -458,7 +532,7 @@
 
     @if($isWholeShop ?? false)
         <!-- Whole Shop Matrix Table: Detailed Ledger with Date, Voucher #, Party, Details, Net Sale + 3 columns per Account with Horizontal Scroll -->
-        <div class="table-responsive mb-4 shadow-xs border rounded-3" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div class="table-responsive mb-4 shadow-xs whole-shop-matrix-container">
             <table class="table table-sm table-bordered table-hover align-middle mb-0 text-nowrap whole-shop-matrix-table" style="font-size: 0.83rem;">
                 <thead class="table-light">
                     <tr>
@@ -584,7 +658,7 @@
         </div>
     @else
         <!-- Desktop View: Single Account Register Table -->
-        <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
+        <div class="d-none d-md-block statement-desktop-table table-responsive mb-4 cash-book-scroll-container">
             <table class="table table-sm table-bordered table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>

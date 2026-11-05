@@ -206,6 +206,8 @@
                     *** RECEIPT VOUCHER ***
                 @elseif($transaction->type == 'purchase_bill')
                     *** PURCHASE BILL ***
+                @elseif($transaction->type == 'purchase_return')
+                    *** PURCHASE RETURN SLIP ***
                 @elseif(empty($transaction->party_id) && !empty($transaction->category_id))
                     *** EXPENSE VOUCHER ***
                 @else
@@ -237,6 +239,8 @@
                             Payment In (Received)
                         @elseif($transaction->type == 'purchase_bill')
                             Purchase Bill (Credit)
+                        @elseif($transaction->type == 'purchase_return')
+                            Purchase Return (Ledger Deduction)
                         @elseif(empty($transaction->party_id) && !empty($transaction->category_id))
                             Expense Voucher
                         @else
@@ -249,6 +253,8 @@
                     <td class="thermal-value text-end">
                         @if($transaction->account)
                             {{ $transaction->account->name }} <span class="small">({{ ucfirst($transaction->account->type) }})</span>
+                        @elseif($transaction->type == 'purchase_return')
+                            Credit Return (Party Ledger Deducted)
                         @else
                             Credit Purchase (No Cash Deduction)
                         @endif
@@ -256,7 +262,7 @@
                 </tr>
                 @if($transaction->party)
                 <tr>
-                    <td class="thermal-label">{{ $transaction->type == 'payment_in' ? 'Received From:' : ($transaction->type == 'purchase_bill' ? 'Supplier/Vendor:' : 'Paid To:') }}</td>
+                    <td class="thermal-label">{{ $transaction->type == 'payment_in' ? 'Received From:' : ($transaction->type == 'purchase_bill' ? 'Supplier/Vendor:' : ($transaction->type == 'purchase_return' ? 'Returned To Supplier:' : 'Paid To:')) }}</td>
                     <td class="thermal-value text-end fw-bold">
                         {{ $transaction->party->name }}
                         <div class="small fw-normal text-muted" style="font-size: 9.5px;">
@@ -273,8 +279,19 @@
                 @endif
                 @if($transaction->bill_no)
                 <tr>
-                    <td class="thermal-label">Bill / Ref #:</td>
+                    <td class="thermal-label">{{ $transaction->type === 'purchase_return' ? 'Return Slip #:' : 'Bill / Ref #:' }}</td>
                     <td class="thermal-value text-end font-monospace">{{ $transaction->bill_no }}</td>
+                </tr>
+                @endif
+                @if($transaction->type === 'purchase_return' && $transaction->originalTransaction)
+                <tr>
+                    <td class="thermal-label">Against Bill #:</td>
+                    <td class="thermal-value text-end font-monospace fw-bold">
+                        {{ $transaction->originalTransaction->bill_no ?? ('#VCH-' . str_pad($transaction->originalTransaction->id, 6, '0', STR_PAD_LEFT)) }}
+                        <div class="small fw-normal text-muted" style="font-size: 9.5px;">
+                            Orig. Total: Rs. {{ number_format($transaction->originalTransaction->amount, 2) }}
+                        </div>
+                    </td>
                 </tr>
                 @endif
                 @if($transaction->description)

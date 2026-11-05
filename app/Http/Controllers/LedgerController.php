@@ -93,7 +93,7 @@ class LedgerController extends Controller
                             $pOpening += (float) $tx->amount;
                         }
                     } else {
-                        if ($tx->type === 'payment_out') {
+                        if ($tx->type === 'payment_out' || $tx->type === 'purchase_return') {
                             $pOpening -= (float) $tx->amount;
                         } else {
                             $pOpening += (float) $tx->amount;
@@ -111,7 +111,7 @@ class LedgerController extends Controller
                 $periodTransactions = Transaction::where('party_id', $p->id)
                     ->whereDate('date', '>=', $fromDate)
                     ->whereDate('date', '<=', $toDate)
-                    ->with(['party', 'account', 'category', 'creator'])
+                    ->with(['party', 'account', 'category', 'creator', 'originalTransaction'])
                     ->get();
 
                 $periodShiftPayments = ShiftClosingPartyPayment::where('party_id', $p->id)
@@ -175,7 +175,7 @@ class LedgerController extends Controller
                             $pTotalCredit += $credit;
                         }
                     } else {
-                        if ($type === 'payment_out') {
+                        if ($type === 'payment_out' || $type === 'purchase_return') {
                             $debit = $amount;
                             $pRunning -= $debit;
                             $pTotalDebit += $debit;
@@ -193,10 +193,14 @@ class LedgerController extends Controller
                         'party_name' => $p->name,
                         'party_type' => ucfirst($p->type),
                         'party_dealing' => $p->dealing_badges,
-                        'bill_no' => $isShiftPayment ? 'Shift #' . ($record->shift_closing_id ?? $record->shiftClosing->id ?? '') : $record->bill_no,
+                        'bill_no' => $isShiftPayment 
+                            ? 'Shift #' . ($record->shift_closing_id ?? $record->shiftClosing->id ?? '') 
+                            : (($record->type ?? '') === 'purchase_return' && $record->originalTransaction
+                                ? ($record->bill_no ? $record->bill_no . ' (Bill #' . ($record->originalTransaction->bill_no ?? $record->originalTransaction->id) . ')' : 'Against Bill #' . ($record->originalTransaction->bill_no ?? $record->originalTransaction->id))
+                                : $record->bill_no),
                         'type' => $type,
                         'description' => $isShiftPayment ? $record->details : $record->description,
-                        'account_name' => $isShiftPayment ? 'Shift Closing Cash' : (($record->type ?? '') === 'purchase_bill' ? 'Credit Purchase (No Cash)' : ($record->account->name ?? 'Direct Counter')),
+                        'account_name' => $isShiftPayment ? 'Shift Closing Cash' : (($record->type ?? '') === 'purchase_bill' ? 'Credit Purchase (No Cash)' : (($record->type ?? '') === 'purchase_return' ? 'Purchase Return (Ledger Deduction)' : ($record->account->name ?? 'Direct Counter'))),
                         'debit' => $debit,
                         'credit' => $credit,
                         'running_balance' => $pRunning,

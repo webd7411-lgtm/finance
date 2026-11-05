@@ -15,17 +15,25 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $isTrashView = $request->get('view') === 'trash';
-        $activeCount = Transaction::count();
+        $view = $request->get('view');
+        $isTrashView = $view === 'trash';
+        $isReturnsView = $view === 'returns';
+        $activeCount = Transaction::where('type', '!=', 'purchase_return')->count();
+        $returnsCount = Transaction::where('type', 'purchase_return')->count();
         $trashCount = Transaction::onlyTrashed()->count();
 
         if ($isTrashView) {
-            $query = Transaction::onlyTrashed()->with(['party', 'account', 'category', 'creator', 'deletedBy'])->latest('deleted_at');
+            $query = Transaction::onlyTrashed()->with(['party', 'account', 'category', 'creator', 'deletedBy', 'originalTransaction'])->latest('deleted_at');
+        } elseif ($isReturnsView) {
+            $query = Transaction::where('type', 'purchase_return')->with(['party', 'account', 'category', 'creator', 'originalTransaction'])->latest('date')->latest('id');
         } else {
-            $query = Transaction::with(['party', 'account', 'category', 'creator'])->latest('date')->latest('id');
+            $query = Transaction::where('type', '!=', 'purchase_return')
+                ->with(['party', 'account', 'category', 'creator', 'originalTransaction'])
+                ->withSum('returns', 'amount')
+                ->latest('date')->latest('id');
         }
 
-        if ($request->filled('type')) {
+        if (!$isReturnsView && $request->filled('type')) {
             if ($request->type === 'expense') {
                 $query->where('type', 'payment_out')->whereNull('party_id');
             } else {
@@ -87,7 +95,9 @@ class TransactionController extends Controller
             'expenseCategories',
             'purchaseCategories',
             'isTrashView',
+            'isReturnsView',
             'activeCount',
+            'returnsCount',
             'trashCount'
         ));
     }
@@ -104,16 +114,27 @@ class TransactionController extends Controller
 
         $validated = $request->validate([
             'date' => ['required', 'date', "after_or_equal:{$yesterday}", "before_or_equal:{$today}"],
-            'type' => ['required', Rule::in(['payment_in', 'payment_out', 'purchase_bill'])],
-            'account_id' => [Rule::requiredIf(fn() => $request->type !== 'purchase_bill'), 'nullable', 'exists:accounts,id'],
+            'type' => ['required', Rule::in(['payment_in', 'payment_out', 'purchase_bill', 'purchase_return'])],
+            'account_id' => [Rule::requiredIf(fn() => !in_array($request->type, ['purchase_bill', 'purchase_return'])), 'nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'party_id' => [Rule::requiredIf(fn() => $request->type === 'purchase_bill'), 'nullable', 'exists:parties,id'],
-            'category_id' => ['nullable', 'exists:expense_categories,id'],
+            'party_id' => [
+                Rule::requiredIf(fn() => in_array($request->type, ['purchase_bill', 'purchase_return']) || ($request->type === 'payment_out' && empty($request->category_id))),
+                'nullable',
+                'exists:parties,id'
+            ],
+            'category_id' => [
+                Rule::requiredIf(fn() => $request->type === 'payment_out' && empty($request->party_id)),
+                'nullable',
+                'exists:expense_categories,id'
+            ],
             'bill_no' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
+            'original_transaction_id' => ['nullable', 'exists:transactions,id'],
         ], [
             'date.after_or_equal' => 'Date cannot be earlier than yesterday.',
             'date.before_or_equal' => 'Date cannot be in the future.',
+            'party_id.required' => 'Please select either a party or an expense category for this payment out.',
+            'category_id.required' => 'Please select either an expense category or a party for this payment out.',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -134,13 +155,35 @@ class TransactionController extends Controller
             }
         }
 
+        // Enforce Purchase Return restrictions
+        if ($validated['type'] === 'purchase_return') {
+            if (!empty($request->original_transaction_id)) {
+                $origTrx = Transaction::findOrFail($request->original_transaction_id);
+
+                // Enforce vendor cannot be different
+                if ($origTrx->party_id && (int) $validated['party_id'] !== (int) $origTrx->party_id) {
+                    return back()->withInput()->with('error', "The return vendor must match the original purchase bill vendor ({$origTrx->party?->name}).");
+                }
+
+                // Enforce return amount cannot exceed remaining returnable amount of the original bill
+                $alreadyReturned = (float) Transaction::where('original_transaction_id', $origTrx->id)->sum('amount');
+                $remainingAllowed = max(0, (float) $origTrx->amount - $alreadyReturned);
+
+                if ((float) $validated['amount'] > $remainingAllowed) {
+                    return back()->withInput()->with('error', "Return amount (Rs. " . number_format($validated['amount'], 2) . ") exceeds the remaining returnable bill amount of Rs. " . number_format($remainingAllowed, 2) . " (Original Bill Total: Rs. " . number_format($origTrx->amount, 2) . ").");
+                }
+
+                $validated['original_transaction_id'] = $origTrx->id;
+            }
+        }
+
         try {
             DB::transaction(function () use ($validated) {
                 $transaction = Transaction::create($validated);
                 $amount = $validated['amount'];
 
                 // Adjust Account Balance only for cash/bank payments
-                if ($validated['type'] !== 'purchase_bill' && !empty($validated['account_id'])) {
+                if (!in_array($validated['type'], ['purchase_bill', 'purchase_return']) && !empty($validated['account_id'])) {
                     $account = Account::whereKey($validated['account_id'])->lockForUpdate()->firstOrFail();
                     if ($validated['type'] === 'payment_in') {
                         $account->current_balance += $amount;
@@ -162,6 +205,9 @@ class TransactionController extends Controller
                 } elseif ($validated['type'] === 'purchase_bill') {
                     // Credit purchase increases supplier payable (we owe more)
                     $party->current_balance += $amount;
+                } elseif ($validated['type'] === 'purchase_return') {
+                    // Purchase return reduces supplier payable (we owe less, minus from ledger)
+                    $party->current_balance -= $amount;
                 } else {
                     // Payment Out: for suppliers reduces payable; for staff advance adds to their balance
                     if ($party->type === 'staff') {
@@ -177,16 +223,22 @@ class TransactionController extends Controller
             $mod = match($validated['type']) {
                 'payment_in' => 'Payment In',
                 'purchase_bill' => 'Purchase Bill',
+                'purchase_return' => 'Purchase Return',
                 default => $isExpense ? 'Expense' : 'Payment Out',
             };
             $partyName = !empty($validated['party_id']) 
                 ? (Party::find($validated['party_id'])?->name ?? 'Party') 
                 : ($isExpense ? (ExpenseCategory::find($validated['category_id'])?->name ?? 'Operational Expense') : 'Direct Counter');
-            $channelInfo = !empty($validated['account_id']) ? Account::find($validated['account_id'])?->name : 'Credit (No Cash)';
+            $channelInfo = !empty($validated['account_id']) ? Account::find($validated['account_id'])?->name : ($validated['type'] === 'purchase_return' ? 'Credit Return (Party Ledger Deducted)' : 'Credit (No Cash)');
+            $logMeta = $isExpense ? "Category: {$partyName}" : "Party: {$partyName}";
+            if (!empty($validated['party_id']) && !empty($validated['category_id'])) {
+                $catName = ExpenseCategory::find($validated['category_id'])?->name;
+                if ($catName) $logMeta .= ", Category: {$catName}";
+            }
             ActivityLog::log(
                 'Created',
                 $mod,
-                "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$channelInfo}, " . ($isExpense ? "Category: {$partyName}" : "Party: {$partyName}") . ")"
+                "Voucher #{$transaction->id}: {$mod} of Rs. " . number_format($amount, 2) . " ({$channelInfo}, {$logMeta})"
             );
         });
         } catch (\Exception $e) {
@@ -200,12 +252,14 @@ class TransactionController extends Controller
         $msg = match($validated['type']) {
             'payment_in' => 'Payment In recorded and account balance credited successfully.',
             'purchase_bill' => 'Purchase Bill recorded and supplier ledger credited successfully.',
+            'purchase_return' => 'Purchase Return recorded and supplier ledger deducted successfully.',
             default => $isExpense 
                 ? 'Expense recorded and account balance debited successfully.' 
                 : 'Payment Out recorded and account balance debited successfully.',
         };
 
-        return redirect()->route('transactions.index')->with('success', $msg);
+        $redirectParams = $validated['type'] === 'purchase_return' ? ['view' => 'returns'] : [];
+        return redirect()->route('transactions.index', $redirectParams)->with('success', $msg);
     }
 
     public function transfer(Request $request)
@@ -351,7 +405,7 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($transaction) {
             // Revert Account Balance if it was a cash/bank transaction
-            if ($transaction->type !== 'purchase_bill' && $transaction->account) {
+            if (!in_array($transaction->type, ['purchase_bill', 'purchase_return']) && $transaction->account) {
                 $account = $transaction->account;
                 if ($transaction->type === 'payment_in') {
                     $account->current_balance -= $transaction->amount;
@@ -368,6 +422,9 @@ class TransactionController extends Controller
                     $party->current_balance += $transaction->amount;
                 } elseif ($transaction->type === 'purchase_bill') {
                     $party->current_balance -= $transaction->amount;
+                } elseif ($transaction->type === 'purchase_return') {
+                    // Reverting a return adds the amount back to supplier payable
+                    $party->current_balance += $transaction->amount;
                 } else {
                     if ($party->type === 'staff') {
                         $party->current_balance -= $transaction->amount;
@@ -383,6 +440,7 @@ class TransactionController extends Controller
             $txType = match($transaction->type) {
                 'payment_in' => 'Payment In',
                 'purchase_bill' => 'Purchase Bill',
+                'purchase_return' => 'Purchase Return',
                 default => 'Payment Out',
             };
 

@@ -22,6 +22,7 @@ class Transaction extends Model
         'description',
         'created_by',
         'status',
+        'original_transaction_id',
         'deleted_by',
     ];
 
@@ -55,6 +56,16 @@ class Transaction extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function originalTransaction()
+    {
+        return $this->belongsTo(Transaction::class, 'original_transaction_id');
+    }
+
+    public function returns()
+    {
+        return $this->hasMany(Transaction::class, 'original_transaction_id');
+    }
+
     public function getTypeBadgeAttribute(): string
     {
         if ($this->type === 'payment_out' && empty($this->party_id) && !empty($this->category_id)) {
@@ -62,10 +73,11 @@ class Transaction extends Model
         }
 
         return match($this->type) {
-            'payment_in'    => '<span class="badge bg-success-subtle text-success border border-success fw-bold"><i class="bi bi-arrow-down-left me-1"></i>Payment In</span>',
-            'payment_out'   => '<span class="badge bg-danger-subtle text-danger border border-danger fw-bold"><i class="bi bi-arrow-up-right me-1"></i>Payment Out</span>',
-            'purchase_bill' => '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning fw-bold"><i class="bi bi-receipt me-1"></i>Purchase Bill</span>',
-            default         => '<span class="badge bg-secondary">' . ucfirst($this->type) . '</span>',
+            'payment_in'       => '<span class="badge bg-success-subtle text-success border border-success fw-bold"><i class="bi bi-arrow-down-left me-1"></i>Payment In</span>',
+            'payment_out'      => '<span class="badge bg-danger-subtle text-danger border border-danger fw-bold"><i class="bi bi-arrow-up-right me-1"></i>Payment Out</span>',
+            'purchase_bill'    => '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning fw-bold"><i class="bi bi-receipt me-1"></i>Purchase Bill</span>',
+            'purchase_return'  => '<span class="badge bg-info-subtle text-info-emphasis border border-info fw-bold"><i class="bi bi-arrow-return-left me-1"></i>Purchase Return</span>',
+            default            => '<span class="badge bg-secondary">' . ucfirst($this->type) . '</span>',
         };
     }
 

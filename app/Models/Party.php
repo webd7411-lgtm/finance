@@ -89,7 +89,7 @@ class Party extends Model
         } else {
             // supplier or trader
             foreach ($transactions as $tx) {
-                if ($tx->type === 'payment_out') {
+                if ($tx->type === 'payment_out' || $tx->type === 'purchase_return') {
                     $balance -= (float) $tx->amount;
                 } else {
                     $balance += (float) $tx->amount;

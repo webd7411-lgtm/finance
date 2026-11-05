@@ -49,6 +49,29 @@
     .kpi-value {
         font-size: clamp(0.95rem, 3.5vw, 1.25rem);
     }
+    @keyframes pulseFieldHighlight {
+        0% {
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.75);
+            border-color: #dc3545;
+        }
+        50% {
+            box-shadow: 0 0 0 8px rgba(220, 53, 69, 0.2);
+            border-color: #dc3545;
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            border-color: #dc3545;
+        }
+    }
+    .field-highlight-error {
+        border-color: #dc3545 !important;
+        animation: pulseFieldHighlight 1.5s infinite !important;
+        background-color: #fff8f8 !important;
+    }
+    .validation-error-feedback {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
 </style>
 @endpush
 
@@ -111,35 +134,41 @@
         <div class="row g-2 g-md-3">
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
+                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="closing_date">
                         <i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span>
                     </label>
                 </div>
-                <input type="date" id="closing_date" name="date" class="form-control form-control-sm fw-semibold" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
+                <input type="date" id="closing_date" name="date" class="form-control form-control-sm fw-semibold @error('date') is-invalid @enderror" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
+                @error('date')
+                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                @enderror
                 <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
             </div>
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
+                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="shift_type_select">
                         <i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span>
                     </label>
                 </div>
-                <select name="shift_type" id="shift_type_select" class="form-select form-select-sm fw-semibold" required style="height: 36px;">
+                <select name="shift_type" id="shift_type_select" class="form-select form-select-sm fw-semibold @error('shift_type') is-invalid @enderror" required style="height: 36px;">
                     <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
                     <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
                 </select>
+                @error('shift_type')
+                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                @enderror
                 <div id="shift_duplicate_warning" class="text-danger small mt-1 fw-bold d-none" style="font-size: 0.68rem;"></div>
             </div>
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
+                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="cashier_id">
                         <i class="bi bi-person-badge text-primary me-1"></i>Shift Cashier <span class="text-danger">*</span>
                     </label>
                     <a href="{{ route('cashiers.index') }}" target="_blank" class="text-primary text-decoration-none small" style="font-size: 0.68rem;" title="Manage Cashiers in Master Setup">+ Add</a>
                 </div>
-                <select name="cashier_id" class="form-select form-select-sm fw-semibold" required style="height: 36px;">
+                <select name="cashier_id" id="cashier_id" class="form-select form-select-sm fw-semibold @error('cashier_id') is-invalid @enderror" required style="height: 36px;">
                     <option value="">-- Choose Cashier --</option>
                     @foreach($cashiers as $c)
                         <option value="{{ $c->id }}" {{ old('cashier_id') == $c->id ? 'selected' : '' }}>
@@ -147,11 +176,14 @@
                         </option>
                     @endforeach
                 </select>
+                @error('cashier_id')
+                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
+                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="invoice_start">
                         <i class="bi bi-receipt text-primary me-1"></i>Start Invoice
                     </label>
                     @if(!empty($suggestedInvoiceStart))
@@ -166,14 +198,17 @@
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
+                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="invoice_end">
                         <i class="bi bi-receipt text-primary me-1"></i>End Invoice
                     </label>
                 </div>
                 <div class="input-group input-group-sm" style="height: 36px;">
                     <span class="input-group-text bg-light text-muted h-100"><i class="bi bi-hash"></i></span>
-                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm fw-bold font-monospace h-100" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()">
+                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm fw-bold font-monospace h-100 @error('invoice_end') is-invalid @enderror" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()">
                 </div>
+                @error('invoice_end')
+                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
@@ -207,13 +242,16 @@
                     <!-- Gross Sale & Net Sale Row -->
                     <div class="row g-3 mb-3">
                         <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">
+                            <label class="form-label small fw-semibold text-secondary mb-1" for="total_sale">
                                 Total Shift Gross Sale (Rs.) <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light fw-bold text-dark">Rs.</span>
-                                <input type="text" inputmode="decimal" class="form-control fw-bold fs-5 text-dark amount-format" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required placeholder="0.00" autocomplete="off">
+                                <input type="text" inputmode="decimal" class="form-control fw-bold fs-5 text-dark amount-format @error('total_sale') is-invalid @enderror" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required placeholder="0.00" autocomplete="off">
                             </div>
+                            @error('total_sale')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
                             <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
                         </div>
 
@@ -254,14 +292,17 @@
                             </div>
                             <div class="col-6 col-sm-6 col-md-3">
                                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
+                                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="return_invoice_end">
                                         <i class="bi bi-receipt text-danger me-1"></i>Return End
                                     </label>
                                 </div>
                                 <div class="input-group input-group-sm" style="height: 34px;">
                                     <span class="input-group-text bg-white text-muted h-100"><i class="bi bi-hash"></i></span>
-                                    <input type="number" min="1" id="return_invoice_end" name="return_invoice_end" class="form-control form-control-sm font-monospace h-100" placeholder="e.g. 18" value="{{ old('return_invoice_end', '') }}" oninput="calculateReturnInvoiceCount()">
+                                    <input type="number" min="1" id="return_invoice_end" name="return_invoice_end" class="form-control form-control-sm font-monospace h-100 @error('return_invoice_end') is-invalid @enderror" placeholder="e.g. 18" value="{{ old('return_invoice_end', '') }}" oninput="calculateReturnInvoiceCount()">
                                 </div>
+                                @error('return_invoice_end')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="col-6 col-sm-6 col-md-3">
                                 <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
@@ -311,14 +352,21 @@
                     </small>
 
                     <div id="accountPaymentRows">
+                        @php
+                            $oldAccounts = old('account_payments');
+                            if (!is_array($oldAccounts) || empty($oldAccounts)) {
+                                $oldAccounts = [['account_id' => '', 'amount' => '', 'description' => '']];
+                            }
+                        @endphp
+                        @foreach($oldAccounts as $aIdx => $oldAcc)
                         <div class="p-2 mb-2 rounded bg-light border" data-account-payment-row>
                             <div class="row g-2 align-items-end">
                                 <div class="col-12 col-md-5">
                                     <label class="form-label small fw-semibold text-secondary">Destination Account</label>
-                                    <select class="form-select form-select-sm shift-account-select" name="account_payments[0][account_id]" onchange="calculateClosing()">
+                                    <select class="form-select form-select-sm shift-account-select" name="account_payments[{{ $aIdx }}][account_id]" onchange="calculateClosing()">
                                         <option value="">-- Choose Account / Wallet --</option>
                                         @foreach($accounts as $acc)
-                                            <option value="{{ $acc->id }}" data-type="{{ $acc->type }}">
+                                            <option value="{{ $acc->id }}" data-type="{{ $acc->type }}" {{ (string)($oldAcc['account_id'] ?? '') === (string)$acc->id ? 'selected' : '' }}>
                                                 {{ $acc->name }} ({{ ucfirst($acc->type) }})
                                             </option>
                                         @endforeach
@@ -328,12 +376,12 @@
                                     <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white text-muted">Rs.</span>
-                                        <input type="text" inputmode="decimal" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary amount-format" name="account_payments[0][amount]" placeholder="0.00" autocomplete="off">
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary amount-format" name="account_payments[{{ $aIdx }}][amount]" value="{{ $oldAcc['amount'] ?? '' }}" placeholder="0.00" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold text-secondary">Transaction Ref / Note</label>
-                                    <input type="text" class="form-control form-control-sm" name="account_payments[0][description]" maxlength="500" placeholder="Txn ID / payer name">
+                                    <input type="text" class="form-control form-control-sm" name="account_payments[{{ $aIdx }}][description]" value="{{ $oldAcc['description'] ?? '' }}" maxlength="500" placeholder="Txn ID / payer name">
                                 </div>
                                 <div class="col-12 col-md-1">
                                     <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-account-payment title="Remove row">
@@ -342,6 +390,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endforeach
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center pt-2 small text-secondary">
@@ -377,32 +426,43 @@
                     </small>
 
                     <div id="partyPaymentRows">
+                        @php
+                            $oldParties = old('party_payments');
+                            if (!is_array($oldParties) || empty($oldParties)) {
+                                $oldParties = [['party_id' => '', 'expense_category_id' => '', 'amount' => '', 'details' => '']];
+                            }
+                        @endphp
+                        @foreach($oldParties as $pIdx => $oldP)
+                        @php
+                            $matchedParty = !empty($oldP['party_id']) ? $parties->firstWhere('id', (int)$oldP['party_id']) : null;
+                            $partySearchText = $matchedParty ? ($matchedParty->name . ($matchedParty->phone ? ' (' . $matchedParty->phone . ')' : '') . ' [' . ucfirst($matchedParty->type) . '] #' . $matchedParty->id) : '';
+                        @endphp
                         <div class="p-2 mb-2 rounded bg-light border" data-party-payment-row>
                             <div class="row g-2 align-items-end">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold text-secondary">Search Party / Payee</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                        <input type="search" class="form-control form-control-sm" list="shiftClosingPartyList" data-party-search placeholder="Type name or phone..." autocomplete="off">
+                                        <input type="search" class="form-control form-control-sm" list="shiftClosingPartyList" data-party-search value="{{ $partySearchText }}" placeholder="Type name or phone..." autocomplete="off">
                                     </div>
-                                    <input type="hidden" name="party_payments[0][party_id]" data-party-id>
+                                    <input type="hidden" name="party_payments[{{ $pIdx }}][party_id]" value="{{ $oldP['party_id'] ?? '' }}" data-party-id>
                                 </div>
                                 <div class="col-12 col-md-3">
                                     <label class="form-label small fw-semibold text-secondary">Expense Category / Reason</label>
-                                    <select name="party_payments[0][expense_category_id]" class="form-select form-select-sm">
+                                    <select name="party_payments[{{ $pIdx }}][expense_category_id]" class="form-select form-select-sm">
                                         <option value="">-- Select Purpose --</option>
                                         @foreach($expenseCategories as $cat)
-                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                            <option value="{{ $cat->id }}" {{ (string)($oldP['expense_category_id'] ?? '') === (string)$cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="col-6 col-md-2">
                                     <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[0][amount]" placeholder="0.00" autocomplete="off">
+                                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[{{ $pIdx }}][amount]" value="{{ $oldP['amount'] ?? '' }}" placeholder="0.00" autocomplete="off">
                                 </div>
                                 <div class="col-6 col-md-2">
                                     <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
-                                    <input type="text" class="form-control form-control-sm" name="party_payments[0][details]" maxlength="1000" placeholder="Bill / memo reference">
+                                    <input type="text" class="form-control form-control-sm" name="party_payments[{{ $pIdx }}][details]" value="{{ $oldP['details'] ?? '' }}" maxlength="1000" placeholder="Bill / memo reference">
                                 </div>
                                 <div class="col-12 col-md-1">
                                     <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-party-payment title="Remove row">
@@ -411,6 +471,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endforeach
                     </div>
 
                     <datalist id="shiftClosingPartyList">
@@ -742,7 +803,7 @@ function calculateReturnInvoiceCount() {
     }
 }
 
-let partyPaymentIndex = 1;
+let partyPaymentIndex = {{ !empty($oldParties) ? count($oldParties) : 1 }};
 const partyPaymentRows = document.getElementById('partyPaymentRows');
 
 function getPartyOptions() {
@@ -750,32 +811,39 @@ function getPartyOptions() {
 }
 
 function bindPartyPaymentRow(row) {
+    if (!row) return;
     const partyInput = row.querySelector('[data-party-search]');
     const partyIdInput = row.querySelector('[data-party-id]');
     const amtInput = row.querySelector('.shift-party-payment-amount');
 
-    partyInput.addEventListener('input', function () {
-        const partyOptions = getPartyOptions();
-        const matchedParty = partyOptions.find(function (option) { return option.value === partyInput.value; });
-        partyIdInput.value = matchedParty ? matchedParty.dataset.partyId : '';
-        calculateClosing();
-    });
+    if (partyInput && partyIdInput) {
+        partyInput.addEventListener('input', function () {
+            const partyOptions = getPartyOptions();
+            const matchedParty = partyOptions.find(function (option) { return option.value === partyInput.value; });
+            partyIdInput.value = matchedParty ? matchedParty.dataset.partyId : '';
+            calculateClosing();
+        });
+    }
 
     if (amtInput) {
         attachAmountFormatListeners(amtInput);
     }
 
-    row.querySelector('[data-remove-party-payment]').addEventListener('click', function () {
+    row.querySelector('[data-remove-party-payment]')?.addEventListener('click', function () {
         if (partyPaymentRows.querySelectorAll('[data-party-payment-row]').length > 1) {
             row.remove();
         } else {
             row.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+            const cat = row.querySelector('select');
+            if (cat) cat.value = '';
         }
         calculateClosing();
     });
 }
 
-bindPartyPaymentRow(partyPaymentRows.querySelector('[data-party-payment-row]'));
+document.querySelectorAll('#partyPaymentRows [data-party-payment-row]').forEach(function(row) {
+    bindPartyPaymentRow(row);
+});
 
 document.getElementById('addPartyPayment').addEventListener('click', function () {
     const row = document.createElement('div');
@@ -1148,10 +1216,11 @@ if (quickAddPartyForm) {
     });
 }
 
-let accountPaymentIndex = 1;
+let accountPaymentIndex = {{ !empty($oldAccounts) ? count($oldAccounts) : 1 }};
 const accountPaymentRows = document.getElementById('accountPaymentRows');
 
 function bindAccountPaymentRow(row) {
+    if (!row) return;
     row.querySelector('.shift-account-select')?.addEventListener('change', calculateClosing);
     const amtInput = row.querySelector('.shift-account-payment-amount');
     if (amtInput) {
@@ -1169,9 +1238,9 @@ function bindAccountPaymentRow(row) {
     });
 }
 
-if (accountPaymentRows.querySelector('[data-account-payment-row]')) {
-    bindAccountPaymentRow(accountPaymentRows.querySelector('[data-account-payment-row]'));
-}
+document.querySelectorAll('#accountPaymentRows [data-account-payment-row]').forEach(function(row) {
+    bindAccountPaymentRow(row);
+});
 
 document.getElementById('addAccountPayment').addEventListener('click', function () {
     const row = document.createElement('div');
@@ -1568,23 +1637,240 @@ noteInputs.forEach(function(input, index) {
     });
 });
 
-// Strip commas and enforce no-negative-variance + no-duplicate-shift check before submitting form
-document.getElementById('shiftClosingForm')?.addEventListener('submit', function(e) {
+// Floating toast alert function
+function showFloatingToastAlert(message) {
+    let toast = document.getElementById('shiftValidationToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'shiftValidationToast';
+        toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 shadow-lg rounded-3 py-2 px-3 text-white bg-danger border border-white d-flex align-items-center gap-2';
+        toast.style.zIndex = '99999';
+        toast.style.maxWidth = '90vw';
+        toast.style.fontSize = '0.9rem';
+        toast.style.fontWeight = '600';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<i class="bi bi-exclamation-triangle-fill fs-5"></i> <span>${message}</span> <button type="button" class="btn-close btn-close-white ms-2 btn-sm" aria-label="Close" onclick="this.parentElement.remove()"></button>`;
+    toast.style.display = 'flex';
+
+    if (window.shiftToastTimeout) clearTimeout(window.shiftToastTimeout);
+    window.shiftToastTimeout = setTimeout(function() {
+        if (toast && toast.parentElement) {
+            toast.remove();
+        }
+    }, 4500);
+}
+
+// Clear all validation highlights and messages
+function clearAllValidationHighlights() {
+    document.querySelectorAll('.field-highlight-error, .is-invalid').forEach(function(el) {
+        el.classList.remove('field-highlight-error', 'is-invalid');
+    });
+    document.querySelectorAll('.validation-error-feedback').forEach(function(el) {
+        el.remove();
+    });
+}
+
+// Focus and highlight the invalid field with message
+function triggerValidationError(element, message) {
+    clearAllValidationHighlights();
+
+    if (!element) return false;
+
+    element.classList.add('is-invalid', 'field-highlight-error');
+
+    let feedback = document.createElement('div');
+    feedback.className = 'validation-error-feedback text-danger fw-bold small mt-1 d-flex align-items-center gap-1';
+    feedback.innerHTML = '<i class="bi bi-exclamation-circle-fill text-danger me-1"></i> ' + message;
+
+    if (element.closest('.input-group')) {
+        element.closest('.input-group').insertAdjacentElement('afterend', feedback);
+    } else {
+        element.insertAdjacentElement('afterend', feedback);
+    }
+
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(function() {
+        try {
+            element.focus();
+            if (element.select && typeof element.select === 'function') {
+                element.select();
+            }
+        } catch (e) {}
+    }, 150);
+
+    showFloatingToastAlert(message);
+
+    const clearHandler = function() {
+        element.classList.remove('is-invalid', 'field-highlight-error');
+        if (feedback && feedback.parentElement) {
+            feedback.remove();
+        }
+        element.removeEventListener('input', clearHandler);
+        element.removeEventListener('change', clearHandler);
+    };
+    element.addEventListener('input', clearHandler);
+    element.addEventListener('change', clearHandler);
+
+    return false;
+}
+
+// Validate form before submission
+function validateShiftFormOnSubmit(e) {
+    // 1. Closing Date
+    const dateInput = document.getElementById('closing_date');
+    if (!dateInput || !dateInput.value.trim()) {
+        e.preventDefault();
+        return triggerValidationError(dateInput, 'Please select a Closing Date.');
+    }
+
+    // 2. Shift Cycle
+    const shiftSelect = document.getElementById('shift_type_select');
+    if (!shiftSelect || !shiftSelect.value.trim()) {
+        e.preventDefault();
+        return triggerValidationError(shiftSelect, 'Please select Shift Cycle (Morning or Evening).');
+    }
     if (window.isShiftAlreadyClosed) {
         e.preventDefault();
-        alert('Duplicate Shift Blocked!\n\nThis shift has already been closed for the selected date. You cannot close the same shift twice.');
-        return false;
+        return triggerValidationError(shiftSelect, 'This shift has already been closed for the selected date. Choose another shift or date.');
     }
 
+    // 3. Shift Cashier
+    const cashierSelect = document.getElementById('cashier_id') || document.querySelector('select[name="cashier_id"]');
+    if (!cashierSelect || !cashierSelect.value.trim()) {
+        e.preventDefault();
+        return triggerValidationError(cashierSelect, 'Please select a Shift Cashier before submitting.');
+    }
+
+    // 4. Shift Gross Sales
+    const totalSaleInput = document.getElementById('total_sale');
+    const totalSaleVal = parseAmount(totalSaleInput ? totalSaleInput.value : '');
+    if (!totalSaleInput || totalSaleInput.value.trim() === '' || isNaN(totalSaleVal) || totalSaleVal < 0) {
+        e.preventDefault();
+        return triggerValidationError(totalSaleInput, 'Please enter Total Shift Gross Sale (Rs.).');
+    }
+
+    // 5. Invoices Range check
+    const invStartInput = document.getElementById('invoice_start');
+    const invEndInput = document.getElementById('invoice_end');
+    if (invEndInput && invEndInput.value.trim() !== '') {
+        const invStart = parseInt(invStartInput?.value) || 0;
+        const invEnd = parseInt(invEndInput.value) || 0;
+        if (invStart > 0 && invEnd < invStart) {
+            e.preventDefault();
+            return triggerValidationError(invEndInput, 'End Invoice (' + invEnd + ') cannot be less than Start Invoice (' + invStart + ').');
+        }
+    }
+
+    // 6. Return Invoices Range check
+    const retStartInput = document.getElementById('return_invoice_start');
+    const retEndInput = document.getElementById('return_invoice_end');
+    if (retEndInput && retEndInput.value.trim() !== '') {
+        const retStart = parseInt(retStartInput?.value) || 0;
+        const retEnd = parseInt(retEndInput.value) || 0;
+        if (retStart > 0 && retEnd < retStart) {
+            e.preventDefault();
+            return triggerValidationError(retEndInput, 'Return End Invoice (' + retEnd + ') cannot be less than Return Start Invoice (' + retStart + ').');
+        }
+    }
+
+    // 7. Digital Collections Validation
+    const accountRows = document.querySelectorAll('#accountPaymentRows [data-account-payment-row]');
+    for (let i = 0; i < accountRows.length; i++) {
+        const row = accountRows[i];
+        const accSelect = row.querySelector('.shift-account-select');
+        const amtInput = row.querySelector('.shift-account-payment-amount');
+        const descInput = row.querySelector('input[name*="[description]"]');
+
+        const hasAcc = accSelect && accSelect.value.trim() !== '';
+        const amtVal = parseAmount(amtInput?.value);
+        const hasAmt = amtInput && amtInput.value.trim() !== '' && amtVal > 0;
+        const hasDesc = descInput && descInput.value.trim() !== '';
+
+        if (hasAcc || hasAmt || hasDesc) {
+            if (!hasAcc) {
+                e.preventDefault();
+                return triggerValidationError(accSelect, 'Please select a destination account/wallet for this collection.');
+            }
+            if (!hasAmt) {
+                e.preventDefault();
+                return triggerValidationError(amtInput, 'Please enter a valid amount greater than 0 for this online collection.');
+            }
+        }
+    }
+
+    // 8. Party / Supplier Payouts Validation
+    const partyRows = document.querySelectorAll('#partyPaymentRows [data-party-payment-row]');
+    for (let i = 0; i < partyRows.length; i++) {
+        const row = partyRows[i];
+        const partySearch = row.querySelector('[data-party-search]');
+        const partyId = row.querySelector('[data-party-id]');
+        const amtInput = row.querySelector('.shift-party-payment-amount');
+        const catSelect = row.querySelector('select[name*="[expense_category_id]"]');
+        const detailInput = row.querySelector('input[name*="[details]"]');
+
+        const hasSearch = partySearch && partySearch.value.trim() !== '';
+        const hasPartyId = partyId && partyId.value.trim() !== '';
+        const amtVal = parseAmount(amtInput?.value);
+        const hasAmt = amtInput && amtInput.value.trim() !== '' && amtVal > 0;
+        const hasCat = catSelect && catSelect.value.trim() !== '';
+        const hasDetail = detailInput && detailInput.value.trim() !== '';
+
+        if (hasSearch || hasPartyId || hasAmt || hasCat || hasDetail) {
+            if (!hasPartyId) {
+                e.preventDefault();
+                return triggerValidationError(partySearch, 'Please choose a valid registered party from the list or add new party.');
+            }
+            if (!hasAmt) {
+                e.preventDefault();
+                return triggerValidationError(amtInput, 'Please enter a valid amount greater than 0 for this party payment.');
+            }
+        }
+    }
+
+    // 9. Negative Variance (Cash Shortage) Check
     if (typeof window.currentShiftVariance !== 'undefined' && window.currentShiftVariance < 0) {
         e.preventDefault();
-        alert('Negative Variance Detected!\n\nShift closing cannot be submitted with a cash shortage of Rs. ' + Math.abs(window.currentShiftVariance).toFixed(2) + '.\nPlease balance your counted cash and deductions before closing.');
+        const diffCard = document.getElementById('kpi_variance_card') || document.getElementById('note_5000');
+        showFloatingToastAlert('Negative Variance: Shortage of Rs. ' + Math.abs(window.currentShiftVariance).toFixed(2) + '. Counted cash cannot be less than expected sales.');
+        if (diffCard) {
+            diffCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return false;
     }
 
+    // All validation passed: strip commas before submission
     document.querySelectorAll('.amount-format').forEach(function(input) {
         input.value = input.value.replace(/,/g, '');
     });
+
+    return true;
+}
+
+const shiftForm = document.getElementById('shiftClosingForm');
+shiftForm?.addEventListener('submit', validateShiftFormOnSubmit);
+
+// Intercept submit button click
+document.getElementById('submitBtn')?.addEventListener('click', function(e) {
+    if (this.disabled) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Auto focus first invalid element if rendered from server errors on page load
+window.addEventListener('DOMContentLoaded', function() {
+    const firstServerError = document.querySelector('.is-invalid');
+    if (firstServerError) {
+        firstServerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function() {
+            try {
+                firstServerError.focus();
+                if (firstServerError.select) firstServerError.select();
+            } catch (e) {}
+        }, 200);
+    }
 });
 
 // Initialize amount formatting for all existing inputs
