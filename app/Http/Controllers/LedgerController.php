@@ -21,8 +21,9 @@ class LedgerController extends Controller
         $allParties = Party::orderBy('type')->orderBy('name')->get();
         $creditPartiesCount = $allParties->where('is_credit', true)->count();
         $cashPartiesCount = $allParties->where('is_cash', true)->count();
+        $staffPartiesCount = $allParties->where('type', 'staff')->count();
 
-        // Determine scope: 'single', 'all_credit', 'all_cash', 'all', or 'multiple'
+        // Determine scope: 'single', 'all_credit', 'all_cash', 'all_staff', 'all', or 'multiple'
         $partyIdParam = $request->input('party_id');
         $partyIdsParam = array_filter(array_map('intval', (array) $request->input('party_ids', [])));
         $scopeParam = $request->input('scope', $request->input('mode'));
@@ -37,6 +38,11 @@ class LedgerController extends Controller
             $party = null;
             $selectedParties = $allParties->where('is_cash', true)->values();
             $statementTitle = 'All Cash Parties (Combined Statement)';
+        } elseif ($partyIdParam === 'all_staff' || $scopeParam === 'all_staff' || $scopeParam === 'staff') {
+            $ledgerScope = 'all_staff';
+            $party = null;
+            $selectedParties = $allParties->where('type', 'staff')->values();
+            $statementTitle = 'All Staff Members (Grouped Statement)';
         } elseif ($partyIdParam === 'all' || $scopeParam === 'all') {
             $ledgerScope = 'all';
             $party = null;
@@ -243,6 +249,7 @@ class LedgerController extends Controller
             'statementTitle',
             'creditPartiesCount',
             'cashPartiesCount',
+            'staffPartiesCount',
             'fromDate',
             'toDate',
             'openingBalance',

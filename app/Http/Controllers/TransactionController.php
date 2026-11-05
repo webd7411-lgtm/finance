@@ -33,6 +33,32 @@ class TransactionController extends Controller
                 ->latest('date')->latest('id');
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $cleanNumeric = str_replace(',', '', $search);
+            $cleanId = is_numeric($search) ? (int)$search : (preg_match('/^#?0*([1-9][0-9]*)$/', $search, $matches) ? (int)$matches[1] : null);
+
+            $query->where(function ($q) use ($search, $cleanNumeric, $cleanId) {
+                $q->where('bill_no', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('amount', 'like', "%{$cleanNumeric}%")
+                  ->orWhereHas('party', function ($pq) use ($search) {
+                      $pq->where('name', 'like', "%{$search}%")
+                         ->orWhere('phone', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('category', function ($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('account', function ($aq) use ($search) {
+                      $aq->where('name', 'like', "%{$search}%");
+                  });
+
+                if ($cleanId !== null) {
+                    $q->orWhere('id', $cleanId);
+                }
+            });
+        }
+
         if (!$isReturnsView && $request->filled('type')) {
             if ($request->type === 'expense') {
                 $query->where('type', 'payment_out')->whereNull('party_id');
@@ -46,7 +72,15 @@ class TransactionController extends Controller
         }
 
         if ($request->filled('party_id')) {
-            $query->where('party_id', $request->party_id);
+            if ($request->party_id === 'all_staff') {
+                $query->whereHas('party', fn($q) => $q->where('type', 'staff'));
+            } else {
+                $query->where('party_id', $request->party_id);
+            }
+        }
+
+        if ($request->filled('party_type')) {
+            $query->whereHas('party', fn($q) => $q->where('type', $request->party_type));
         }
 
         if ($request->filled('expense_category_id') && $request->filled('purchase_category_id')) {
@@ -79,6 +113,7 @@ class TransactionController extends Controller
         $netCashFlow = $totalIn - $totalOut;
 
         $parties = Party::orderBy('name')->get();
+        $staffCount = Transaction::whereHas('party', fn($q) => $q->where('type', 'staff'))->count();
         $accounts = Account::orderBy('name')->get();
         $categories = ExpenseCategory::orderBy('name')->get();
         $expenseCategories = ExpenseCategory::expense()->orderBy('name')->get();
@@ -98,7 +133,8 @@ class TransactionController extends Controller
             'isReturnsView',
             'activeCount',
             'returnsCount',
-            'trashCount'
+            'trashCount',
+            'staffCount'
         ));
     }
 
@@ -118,12 +154,10 @@ class TransactionController extends Controller
             'account_id' => [Rule::requiredIf(fn() => !in_array($request->type, ['purchase_bill', 'purchase_return'])), 'nullable', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'party_id' => [
-                Rule::requiredIf(fn() => in_array($request->type, ['purchase_bill', 'purchase_return']) || ($request->type === 'payment_out' && empty($request->category_id))),
-                'nullable',
+                'required',
                 'exists:parties,id'
             ],
             'category_id' => [
-                Rule::requiredIf(fn() => $request->type === 'payment_out' && empty($request->party_id)),
                 'nullable',
                 'exists:expense_categories,id'
             ],
@@ -133,8 +167,8 @@ class TransactionController extends Controller
         ], [
             'date.after_or_equal' => 'Date cannot be earlier than yesterday.',
             'date.before_or_equal' => 'Date cannot be in the future.',
-            'party_id.required' => 'Please select either a party or an expense category for this payment out.',
-            'category_id.required' => 'Please select either an expense category or a party for this payment out.',
+            'party_id.required' => 'Please select a party for this transaction.',
+            'party_id.exists' => 'The selected party is invalid.',
         ]);
 
         $validated['created_by'] = auth()->id();

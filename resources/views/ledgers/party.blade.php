@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Party Ledger Statement - ' . ($statementTitle ?? ($party ? $party->name : 'Select Party')))
-@section('page_title', ($ledgerScope ?? 'single') === 'all_credit' ? 'Credit Parties Ledger (Combined)' : (($ledgerScope ?? 'single') === 'all_cash' ? 'Cash Parties Ledger (Combined)' : (($ledgerScope ?? 'single') === 'all' ? 'All Parties Consolidated Ledger' : 'Party Ledger Statement')))
+@section('page_title', ($ledgerScope ?? 'single') === 'all_credit' ? 'Credit Parties Ledger (Combined)' : (($ledgerScope ?? 'single') === 'all_cash' ? 'Cash Parties Ledger (Combined)' : (($ledgerScope ?? 'single') === 'all_staff' ? 'Staff Members Ledger (Grouped)' : (($ledgerScope ?? 'single') === 'all' ? 'All Parties Consolidated Ledger' : 'Party Ledger Statement'))))
 
 @section('page_badge')
     @if(($ledgerScope ?? 'single') === 'all_credit')
@@ -11,6 +11,10 @@
     @elseif(($ledgerScope ?? 'single') === 'all_cash')
         <span class="badge bg-success-subtle text-success border border-success px-2 py-1 small">
             <i class="bi bi-cash-stack me-1"></i> Combined Cash Ledger &bull; {{ $selectedParties->count() }} Parties
+        </span>
+    @elseif(($ledgerScope ?? 'single') === 'all_staff')
+        <span class="badge bg-info-subtle text-info-emphasis border border-info px-2 py-1 small">
+            <i class="bi bi-people me-1 text-info"></i> All Staff Ledger &bull; {{ $selectedParties->count() }} Staff Members
         </span>
     @elseif(($ledgerScope ?? 'single') === 'all')
         <span class="badge bg-dark-subtle text-dark border px-2 py-1 small">
@@ -208,12 +212,17 @@
        style="font-size: 0.78rem;">
         <i class="bi bi-cash-stack me-1"></i> All Cash Parties (Grouped) <span class="badge bg-success-subtle text-success ms-1">{{ $cashPartiesCount ?? 0 }}</span>
     </a>
+    <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_staff', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'btn-info text-white fw-bold shadow-xs' : 'btn-outline-info' }}" 
+       style="font-size: 0.78rem;">
+        <i class="bi bi-people me-1"></i> All Staff (Grouped) <span class="badge bg-info-subtle text-info ms-1">{{ $staffPartiesCount ?? 0 }}</span>
+    </a>
 </div>
 
 <!-- Filter & Selection Bar (No-Print) -->
 <div class="card-custom p-3 mb-3 mb-md-4 no-print">
     <form method="GET" action="{{ route('ledgers.party') }}" id="partyLedgerFilterForm" class="row g-2 align-items-end">
-        <input type="hidden" name="party_id" id="partyId" value="{{ in_array($ledgerScope ?? 'single', ['all_credit', 'all_cash', 'all']) ? $ledgerScope : (($ledgerScope ?? 'single') === 'single' ? ($party->id ?? '') : '') }}">
+        <input type="hidden" name="party_id" id="partyId" value="{{ in_array($ledgerScope ?? 'single', ['all_credit', 'all_cash', 'all_staff', 'all']) ? $ledgerScope : (($ledgerScope ?? 'single') === 'single' ? ($party->id ?? '') : '') }}">
 
         <!-- 1. Single Party Search Bar -->
         <div class="col-12 col-md-3">
@@ -253,6 +262,10 @@
                         <span><i class="bi bi-cash-stack me-1 text-success"></i> <strong>All Cash Parties</strong> (Grouped Statement)</span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'bg-white text-success' : 'bg-success-subtle text-success border' }}">{{ $cashPartiesCount ?? 0 }}</span>
                     </button>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'active bg-info text-white' : '' }}" role="option" data-party-id="all_staff" data-display-title="All Staff Members (Grouped Statement)">
+                        <span><i class="bi bi-people me-1 text-info"></i> <strong>All Staff Members</strong> (Grouped Statement)</span>
+                        <span class="badge {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'bg-white text-info' : 'bg-info-subtle text-info border' }}">{{ $staffPartiesCount ?? 0 }}</span>
+                    </button>
                     
                     <div class="dropdown-divider my-1 combined-divider"></div>
                     <div class="px-2 py-1 text-muted fw-bold text-uppercase d-flex justify-content-between align-items-center" style="font-size: 0.65rem; letter-spacing: 0.4px;">
@@ -261,6 +274,7 @@
                             <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 active" data-filter-mode="all" style="font-size: 0.65rem;">All</button>
                             <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5" data-filter-mode="credit" style="font-size: 0.65rem;">Credit</button>
                             <button type="button" class="btn btn-xs btn-outline-success py-0 px-1.5" data-filter-mode="cash" style="font-size: 0.65rem;">Cash</button>
+                            <button type="button" class="btn btn-xs btn-outline-info py-0 px-1.5" data-filter-mode="staff" style="font-size: 0.65rem;">Staff</button>
                         </div>
                     </div>
 
@@ -281,7 +295,7 @@
                             @php
                                 $isChecked = in_array((string)$p->id, $requestedPartyIds);
                             @endphp
-                            <div class="dropdown-item rounded-1 small py-1.5 px-2 party-item d-flex align-items-center gap-2 cursor-pointer" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
+                            <div class="dropdown-item rounded-1 small py-1.5 px-2 party-item d-flex align-items-center gap-2 cursor-pointer" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-party-type="{{ $p->type }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
                                 <input type="checkbox" name="party_ids[]" value="{{ $p->id }}" class="form-check-input mt-0 party-check" id="partyCheck_{{ $p->id }}" {{ $isChecked ? 'checked' : '' }}>
                                 <label for="partyCheck_{{ $p->id }}" class="flex-grow-1 d-flex justify-content-between align-items-center mb-0 cursor-pointer user-select-none">
                                     <span>[{{ ucfirst($p->type) }}] <strong>{{ $p->name }}</strong> <small class="text-muted">({{ $p->phone ?? 'No Phone' }})</small></span>
@@ -438,6 +452,8 @@
                             <span class="badge bg-primary text-white px-2 py-1"><i class="bi bi-credit-card me-1"></i>Credit Parties Only</span>
                         @elseif(($ledgerScope ?? 'single') === 'all_cash')
                             <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-cash-stack me-1"></i>Cash Parties Only</span>
+                        @elseif(($ledgerScope ?? 'single') === 'all_staff')
+                            <span class="badge bg-info text-white px-2 py-1"><i class="bi bi-people me-1"></i>Staff Members Only</span>
                         @else
                             <span class="badge bg-dark text-white px-2 py-1"><i class="bi bi-people-fill me-1"></i>All Parties Consolidated</span>
                         @endif
@@ -913,6 +929,8 @@
             partySearch.value = 'All Credit Parties (Grouped Statement)';
         } else if (currentScope === 'all_cash') {
             partySearch.value = 'All Cash Parties (Grouped Statement)';
+        } else if (currentScope === 'all_staff') {
+            partySearch.value = 'All Staff Members (Grouped Statement)';
         } else if (currentScope === 'multiple') {
             partySearch.value = selectedCountOnLoad + ' Parties Selected';
         } else if (currentScope === 'single') {
@@ -1048,6 +1066,8 @@
                 modeMatches = btn.dataset.partyId === 'all_credit';
             } else if (currentDealingFilter === 'cash') {
                 modeMatches = btn.dataset.partyId === 'all_cash';
+            } else if (currentDealingFilter === 'staff') {
+                modeMatches = btn.dataset.partyId === 'all_staff';
             }
             const visible = matches && modeMatches;
             btn.hidden = !visible;
@@ -1074,6 +1094,8 @@
                 modeMatches = item.dataset.isCredit === '1';
             } else if (currentDealingFilter === 'cash') {
                 modeMatches = item.dataset.isCash === '1';
+            } else if (currentDealingFilter === 'staff') {
+                modeMatches = (item.dataset.partyType || '').toLowerCase() === 'staff';
             }
             const visible = textMatches && modeMatches;
             item.hidden = !visible;

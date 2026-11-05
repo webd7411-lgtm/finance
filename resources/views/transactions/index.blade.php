@@ -52,15 +52,13 @@
     /* Searchable Party Direct Input Styles */
     .searchable-select-native {
         position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        padding: 0 !important;
-        margin: -1px !important;
-        overflow: hidden !important;
-        clip: rect(0, 0, 0, 0) !important;
-        border: 0 !important;
         opacity: 0 !important;
         pointer-events: none !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
     }
     .searchable-party-container {
         position: relative;
@@ -80,14 +78,15 @@
     }
     .searchable-party-dropdown {
         position: absolute;
-        top: calc(100% + 2px);
+        top: 100%;
         left: 0;
         right: 0;
-        z-index: 1060;
+        margin-top: 2px;
+        z-index: 9999;
         background: #fff;
         border: 1px solid #ced4da;
         border-radius: 0.375rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
         max-height: 220px;
         overflow-y: auto;
     }
@@ -179,9 +178,13 @@
             </div>
             <!-- View Tabs -->
             <div class="btn-group btn-group-sm ms-sm-2" role="group">
-                <a href="{{ route('transactions.index') }}" class="btn btn-sm {{ !$isTrashView && !($isReturnsView ?? false) ? 'btn-primary active' : 'btn-outline-secondary' }}">
+                <a href="{{ route('transactions.index') }}" class="btn btn-sm {{ !$isTrashView && !($isReturnsView ?? false) && request('party_type') !== 'staff' && request('party_id') !== 'all_staff' ? 'btn-primary active' : 'btn-outline-secondary' }}">
                     <i class="bi bi-clock-history me-1"></i> Active Vouchers
-                    <span class="badge {{ !$isTrashView && !($isReturnsView ?? false) ? 'bg-white text-primary' : 'bg-secondary text-white' }} ms-1">{{ $activeCount }}</span>
+                    <span class="badge {{ !$isTrashView && !($isReturnsView ?? false) && request('party_type') !== 'staff' && request('party_id') !== 'all_staff' ? 'bg-white text-primary' : 'bg-secondary text-white' }} ms-1">{{ $activeCount }}</span>
+                </a>
+                <a href="{{ route('transactions.index', ['party_type' => 'staff']) }}" class="btn btn-sm {{ request('party_type') === 'staff' || request('party_id') === 'all_staff' ? 'btn-info text-white fw-bold active shadow-xs' : 'btn-outline-info' }}">
+                    <i class="bi bi-people me-1"></i> All Staff
+                    <span class="badge {{ request('party_type') === 'staff' || request('party_id') === 'all_staff' ? 'bg-white text-info' : 'bg-info-subtle text-info border' }} ms-1">{{ $staffCount ?? 0 }}</span>
                 </a>
                 <a href="{{ route('transactions.index', ['view' => 'returns']) }}" class="btn btn-sm {{ ($isReturnsView ?? false) ? 'btn-warning text-dark fw-bold active' : 'btn-outline-warning text-dark' }}">
                     <i class="bi bi-arrow-return-left me-1"></i> Purchase Returns
@@ -195,14 +198,27 @@
         </div>
 
         <!-- Filter Form -->
-        <form method="GET" action="{{ route('transactions.index') }}" class="d-flex gap-1.5 flex-wrap w-100 w-sm-auto align-items-center">
+        <form method="GET" action="{{ route('transactions.index') }}" class="d-flex gap-1.5 flex-wrap w-100 w-sm-auto align-items-center" id="transactionFilterForm">
             @if($isTrashView)
                 <input type="hidden" name="view" value="trash">
             @elseif($isReturnsView ?? false)
                 <input type="hidden" name="view" value="returns">
             @endif
+
+            <div class="input-group input-group-sm flex-fill flex-sm-grow-0" style="min-width: 190px; max-width: 250px;">
+                <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-1.5">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="search" name="search" id="transactionSearchInput" list="partiesSearchList" class="form-control form-control-sm border-start-0 ps-1" placeholder="Search party, bill, ref..." value="{{ request('search') }}" autocomplete="off" title="Search by party name, phone, bill number, description or voucher #">
+                <datalist id="partiesSearchList">
+                    @foreach($parties as $p)
+                        <option value="{{ $p->name }}">{{ ucfirst($p->type) }}</option>
+                    @endforeach
+                </datalist>
+            </div>
+
             @if(!($isReturnsView ?? false))
-            <select name="type" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 110px; max-width: 140px;">
+            <select name="type" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 110px; max-width: 140px;" title="Filter by Voucher Type">
                 <option value="">All Types</option>
                 <option value="payment_in" {{ request('type') == 'payment_in' ? 'selected' : '' }}>Payment In</option>
                 <option value="payment_out" {{ request('type') == 'payment_out' ? 'selected' : '' }}>Payment Out</option>
@@ -211,7 +227,15 @@
             </select>
             @endif
 
-            <select name="account_id" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 120px; max-width: 150px;">
+            <select name="party_type" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 110px; max-width: 140px;" title="Filter by Party Type">
+                <option value="">All Parties</option>
+                <option value="staff" {{ request('party_type') == 'staff' || request('party_id') == 'all_staff' ? 'selected' : '' }}>All Staff</option>
+                <option value="supplier" {{ request('party_type') == 'supplier' ? 'selected' : '' }}>Suppliers</option>
+                <option value="customer" {{ request('party_type') == 'customer' ? 'selected' : '' }}>Customers</option>
+                <option value="trader" {{ request('party_type') == 'trader' ? 'selected' : '' }}>Traders</option>
+            </select>
+
+            <select name="account_id" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 120px; max-width: 150px;" title="Filter by Account">
                 <option value="">All Accounts</option>
                 @foreach($accounts as $acc)
                     <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}{{ $acc->isActive() ? '' : ' (Inactive)' }}</option>
@@ -236,16 +260,16 @@
             <input type="date" name="to_date" class="form-control form-control-sm flex-fill flex-sm-grow-0" value="{{ request('to_date') }}" title="To Date" style="min-width: 125px; max-width: 135px;">
 
             @if(!$isTrashView)
-                <select name="status" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 105px; max-width: 130px;">
+                <select name="status" class="form-select form-select-sm flex-fill flex-sm-grow-0" style="min-width: 105px; max-width: 130px;" title="Filter by Status">
                     <option value="">All Status</option>
                     <option value="locked" {{ request('status') == 'locked' ? 'selected' : '' }}>Locked</option>
                     <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>Submitted</option>
                 </select>
             @endif
 
-            <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-filter"></i></button>
-            @if(request()->hasAny(['type', 'account_id', 'party_id', 'category_id', 'expense_category_id', 'purchase_category_id', 'from_date', 'to_date', 'status']))
-                <a href="{{ route('transactions.index', $isTrashView ? ['view' => 'trash'] : []) }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none">Clear</a>
+            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Apply Filters"><i class="bi bi-filter"></i></button>
+            @if(request()->hasAny(['search', 'type', 'party_type', 'account_id', 'party_id', 'category_id', 'expense_category_id', 'purchase_category_id', 'from_date', 'to_date', 'status']))
+                <a href="{{ route('transactions.index', $isTrashView ? ['view' => 'trash'] : (($isReturnsView ?? false) ? ['view' => 'returns'] : [])) }}" class="btn btn-link btn-sm text-secondary p-1 text-decoration-none" title="Clear all filters">Clear</a>
             @endif
         </form>
     </div>
@@ -711,15 +735,16 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Received From Party <span class="text-muted fw-normal">(Optional)</span></label>
-                        <select name="party_id" id="payInPartySelect" class="form-select form-select-sm py-2 searchable-party-select" data-placeholder="-- Direct Sale / Counter Receipt (No Party) --">
-                            <option value="">-- Direct Sale / Counter Receipt (No Party) --</option>
+                        <label class="form-label small fw-semibold text-secondary">Received From Party <span class="text-danger">*</span></label>
+                        <select name="party_id" id="payInPartySelect" class="form-select form-select-sm py-2 searchable-party-select" data-placeholder="-- Select Customer / Party --" required>
+                            <option value="" disabled selected>-- Select Customer / Party --</option>
                             @foreach($parties as $p)
-                                <option value="{{ $p->id }}" data-type="{{ $p->type }}" data-phone="{{ $p->phone }}" data-balance="{{ (float)$p->current_balance }}">
+                                <option value="{{ $p->id }}" data-type="{{ $p->type }}" data-phone="{{ $p->phone }}" data-balance="{{ (float)$p->current_balance }}" {{ old('party_id') == $p->id ? 'selected' : '' }}>
                                     {{ $p->name }} [{{ strtoupper($p->type) }}] - Balance: Rs. {{ number_format($p->current_balance, 2) }}
                                 </option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback searchable-party-feedback" style="display: none; font-size: 0.75rem;">Please select a party.</div>
                         <div class="form-text small text-muted" style="font-size: 0.72rem;">Selecting a party will deduct this amount from their outstanding receivable balance.</div>
                     </div>
 
@@ -784,25 +809,26 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Paid To Party <span class="text-muted fw-normal">(Optional if Expense Category selected)</span></label>
-                        <select name="party_id" id="payOutPartySelect" class="form-select form-select-sm py-2 searchable-party-select" data-placeholder="-- Select Supplier / Trader / Staff (or None for Direct Expense) --">
-                            <option value="" selected>-- Select Supplier / Trader / Staff (or None for Direct Expense) --</option>
+                        <label class="form-label small fw-semibold text-secondary">Paid To Party <span class="text-danger">*</span></label>
+                        <select name="party_id" id="payOutPartySelect" class="form-select form-select-sm py-2 searchable-party-select" data-placeholder="-- Select Supplier / Trader / Staff --" required>
+                            <option value="" disabled selected>-- Select Supplier / Trader / Staff --</option>
                             @foreach($parties as $p)
                                 <option value="{{ $p->id }}" data-type="{{ $p->type }}" data-phone="{{ $p->phone }}" data-balance="{{ (float)$p->current_balance }}" {{ old('party_id') == $p->id ? 'selected' : '' }}>
                                     {{ $p->name }} [{{ strtoupper($p->type) }}] - Balance: Rs. {{ number_format($p->current_balance, 2) }}
                                 </option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback searchable-party-feedback" style="display: none; font-size: 0.75rem;">Please select a party.</div>
                         <div class="form-text small text-muted" style="font-size: 0.72rem;">Selecting a supplier reduces payable balance; selecting staff registers an advance loan.</div>
                     </div>
 
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label small fw-semibold text-secondary mb-0">Expense Category <span class="text-muted fw-normal">(Optional if Party selected)</span></label>
+                            <label class="form-label small fw-semibold text-secondary mb-0">Expense Category <span class="text-muted fw-normal">(Optional)</span></label>
                             <a href="{{ route('expense-categories.index') }}" class="small text-decoration-none" style="font-size: 0.72rem;" target="_blank">+ Manage Categories</a>
                         </div>
                         <select name="category_id" id="payOutCategorySelect" class="form-select form-select-sm py-2">
-                            <option value="" selected>-- Select Expense Category --</option>
+                            <option value="" selected>-- Select Expense Category (Optional) --</option>
                             @foreach($expenseCategories as $cat)
                                 <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                             @endforeach
@@ -964,6 +990,7 @@
                                 </option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback searchable-party-feedback" style="display: none; font-size: 0.75rem;">Please select a supplier.</div>
                         <div class="form-text small text-muted" style="font-size: 0.72rem;">The bill amount will be credited to this party's ledger.</div>
                     </div>
 
@@ -1145,7 +1172,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!select || select.dataset.searchableInitialized === 'true') return;
         select.dataset.searchableInitialized = 'true';
 
-        const isRequired = select.hasAttribute('required');
         const defaultPlaceholder = select.dataset.placeholder || '-- Select Party --';
 
         function getOptionsData() {
@@ -1195,15 +1221,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function syncInputDisplay() {
             const optionsData = getOptionsData();
-            const selectedOpt = optionsData.find(o => String(o.value) === String(select.value)) || optionsData[select.selectedIndex];
+            const selectedOpt = optionsData.find(o => String(o.value) === String(select.value)) || (select.selectedIndex >= 0 ? optionsData[select.selectedIndex] : null);
             if (selectedOpt && selectedOpt.value) {
-                input.value = selectedOpt.rawText;
-            } else if (selectedOpt && !selectedOpt.value && !isRequired) {
                 input.value = selectedOpt.rawText;
             } else {
                 input.value = '';
             }
-            input.classList.remove('is-invalid');
+            if (select.value) {
+                input.classList.remove('is-invalid');
+                const feedback = wrapper.parentElement.querySelector('.searchable-party-feedback');
+                if (feedback) feedback.style.display = 'none';
+            }
         }
 
         function filterList(query) {
@@ -1214,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', function() {
             activeIndex = -1;
 
             const filtered = optionsData.filter(opt => {
-                if (opt.disabled) return false;
+                if (opt.disabled && !opt.value) return false;
                 if (!cleanQuery) return true;
                 return opt.rawText.toLowerCase().includes(cleanQuery);
             });
@@ -1249,26 +1277,21 @@ document.addEventListener('DOMContentLoaded', function() {
             closeDropdown();
         }
 
-        function openDropdown() {
+        function openDropdown(showAll = true) {
             document.querySelectorAll('.searchable-party-dropdown').forEach(d => {
                 if (d !== dropdown) d.style.display = 'none';
             });
 
-            filterList(input.value);
+            if (showAll) {
+                filterList('');
+            } else {
+                filterList(input.value);
+            }
             dropdown.style.display = 'block';
 
-            const rect = input.getBoundingClientRect();
-            const modalBody = input.closest('.modal-body');
-            if (modalBody) {
-                const bodyRect = modalBody.getBoundingClientRect();
-                const spaceBelow = bodyRect.bottom - rect.bottom;
-                if (spaceBelow < 230 && rect.top - bodyRect.top > 230) {
-                    dropdown.style.top = 'auto';
-                    dropdown.style.bottom = 'calc(100% + 2px)';
-                } else {
-                    dropdown.style.bottom = 'auto';
-                    dropdown.style.top = 'calc(100% + 2px)';
-                }
+            const selectedEl = dropdown.querySelector('.is-selected');
+            if (selectedEl) {
+                selectedEl.scrollIntoView({ block: 'nearest' });
             }
         }
 
@@ -1278,14 +1301,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         input.addEventListener('focus', function() {
-            openDropdown();
+            openDropdown(true);
             this.select();
         });
 
-        input.addEventListener('click', function() {
-            if (dropdown.style.display !== 'block') {
-                openDropdown();
-            }
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openDropdown(true);
+            this.select();
         });
 
         arrowBtn.addEventListener('click', function(e) {
@@ -1294,13 +1317,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeDropdown();
             } else {
                 input.focus();
-                filterList('');
-                openDropdown();
+                openDropdown(true);
             }
         });
 
         input.addEventListener('input', function() {
-            openDropdown();
+            openDropdown(false);
             filterList(this.value);
 
             if (!this.value.trim()) {
@@ -1309,38 +1331,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        input.addEventListener('blur', function() {
-            setTimeout(function() {
-                closeDropdown();
-                const optionsData = getOptionsData();
-                const cleanInput = input.value.trim().toLowerCase();
-                if (!cleanInput) {
-                    if (!isRequired) {
-                        select.value = '';
-                        select.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    syncInputDisplay();
-                    return;
-                }
-                const exactMatch = optionsData.find(o => o.rawText.toLowerCase() === cleanInput);
-                if (exactMatch) {
-                    select.value = exactMatch.value;
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                    syncInputDisplay();
-                } else {
-                    syncInputDisplay();
-                }
-            }, 180);
-        });
-
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 closeDropdown();
+                syncInputDisplay();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 if (dropdown.style.display !== 'block') {
-                    openDropdown();
+                    openDropdown(true);
                     return;
                 }
                 if (visibleItems.length === 0) return;
@@ -1349,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (dropdown.style.display !== 'block') {
-                    openDropdown();
+                    openDropdown(true);
                     return;
                 }
                 if (visibleItems.length === 0) return;
@@ -1363,6 +1362,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (visibleItems.length > 0) {
                         selectItem(visibleItems[0].option);
                     }
+                }
+            } else if (e.key === 'Tab') {
+                if (dropdown.style.display === 'block') {
+                    if (activeIndex >= 0 && activeIndex < visibleItems.length) {
+                        selectItem(visibleItems[activeIndex].option);
+                    }
+                    closeDropdown();
                 }
             }
         });
@@ -1378,13 +1384,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        select.addEventListener('invalid', function(e) {
-            e.preventDefault();
-            input.classList.add('is-invalid');
-            input.focus();
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-
         select.addEventListener('change', syncInputDisplay);
         syncInputDisplay();
 
@@ -1397,21 +1396,62 @@ document.addEventListener('DOMContentLoaded', function() {
             modalEl.addEventListener('hidden.bs.modal', function() {
                 closeDropdown();
                 input.classList.remove('is-invalid');
+                const feedback = wrapper.parentElement.querySelector('.searchable-party-feedback');
+                if (feedback) feedback.style.display = 'none';
             });
         }
     }
 
-    // Global click-outside to close party dropdowns
+    // Global click-outside to close party dropdowns and sync display text
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.searchable-party-container')) {
-            document.querySelectorAll('.searchable-party-dropdown').forEach(d => {
-                d.style.display = 'none';
-            });
-        }
+        document.querySelectorAll('.searchable-party-container').forEach(container => {
+            if (!container.contains(e.target)) {
+                const drop = container.querySelector('.searchable-party-dropdown');
+                if (drop) drop.style.display = 'none';
+                const sel = container.querySelector('select');
+                const inp = container.querySelector('.searchable-party-input');
+                if (sel && inp) {
+                    const selectedOpt = sel.selectedOptions[0];
+                    if (selectedOpt && selectedOpt.value) {
+                        inp.value = selectedOpt.text.trim();
+                    } else {
+                        inp.value = '';
+                    }
+                    if (sel.value) {
+                        inp.classList.remove('is-invalid');
+                        const feedback = container.parentElement.querySelector('.searchable-party-feedback');
+                        if (feedback) feedback.style.display = 'none';
+                    }
+                }
+            }
+        });
     });
 
     // Initialize all searchable party dropdowns
     document.querySelectorAll('.searchable-party-select').forEach(initSearchablePartySelect);
+
+    // Form submit validation for required party select across modals
+    ['#paymentInModal form', '#paymentOutModal form', '#purchaseBillModal form'].forEach(selector => {
+        const formEl = document.querySelector(selector);
+        if (formEl) {
+            formEl.addEventListener('submit', function(e) {
+                const partySel = formEl.querySelector('.searchable-party-select[required]');
+                if (partySel && !partySel.value) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const partyInput = partySel.parentElement.querySelector('.searchable-party-input');
+                    if (partyInput) {
+                        partyInput.classList.add('is-invalid');
+                        partyInput.focus();
+                        partyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    const feedback = partySel.closest('.mb-3')?.querySelector('.searchable-party-feedback');
+                    if (feedback) feedback.style.display = 'block';
+                    return false;
+                }
+            });
+        }
+    });
 
     // -------------------------------------------------------------
     // Existing Account Balance Checking Logic
@@ -1476,20 +1516,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setupBalanceCheck('payOutAccountSelect', 'payOutAmountInput', 'payOutBalanceFeedback', 'payOutAmountWarning');
     setupBalanceCheck('transferFromAccountSelect', 'transferAmountInput', 'transferBalanceFeedback', 'transferAmountWarning');
-
-    const payOutForm = document.querySelector('#paymentOutModal form');
-    if (payOutForm) {
-        payOutForm.addEventListener('submit', function(e) {
-            const partySel = document.getElementById('payOutPartySelect');
-            const catSel = document.getElementById('payOutCategorySelect');
-            if (partySel && catSel && !partySel.value && !catSel.value) {
-                e.preventDefault();
-                e.stopPropagation();
-                alert('Please select either a Paid To Party or an Expense Category.');
-                catSel.focus();
-            }
-        });
-    }
 
     // -------------------------------------------------------------
     // Purchase Return Restrictions & Dynamic Modal Prefill
@@ -1641,6 +1667,66 @@ document.addEventListener('DOMContentLoaded', function() {
             modalInstance.show();
         });
     });
+
+    // -------------------------------------------------------------
+    // Auto-apply Filters & Search for Transactions Journal
+    // -------------------------------------------------------------
+    const filterForm = document.getElementById('transactionFilterForm');
+    if (filterForm) {
+        const searchInput = document.getElementById('transactionSearchInput');
+        let searchTimer = null;
+
+        function submitFilteredForm() {
+            const url = new URL(filterForm.action, window.location.origin);
+            const formData = new FormData(filterForm);
+            for (const [key, val] of formData.entries()) {
+                const trimmed = val ? val.trim() : '';
+                if (trimmed !== '') {
+                    url.searchParams.append(key, trimmed);
+                }
+            }
+            window.location.href = url.toString();
+        }
+
+        // Auto-submit on change for dropdowns and date pickers
+        filterForm.querySelectorAll('select, input[type="date"]').forEach(function(el) {
+            el.addEventListener('change', function() {
+                submitFilteredForm();
+            });
+        });
+
+        // Search input: debounce and Enter key
+        if (searchInput) {
+            // Restore focus and cursor position if user was typing in search before reload
+            if (sessionStorage.getItem('trx_search_focused') === '1') {
+                searchInput.focus();
+                const temp = searchInput.value;
+                searchInput.value = '';
+                searchInput.value = temp;
+                sessionStorage.removeItem('trx_search_focused');
+            }
+
+            searchInput.addEventListener('input', function() {
+                sessionStorage.setItem('trx_search_focused', '1');
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(function() {
+                    submitFilteredForm();
+                }, 500);
+            });
+
+            // Native clear button click (type="search" 'x')
+            searchInput.addEventListener('search', function() {
+                submitFilteredForm();
+            });
+        }
+
+        // On manual form submit (Enter key or filter button)
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearTimeout(searchTimer);
+            submitFilteredForm();
+        });
+    }
 });
 </script>
 @endpush
