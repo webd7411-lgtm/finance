@@ -11,7 +11,9 @@ class AccountController extends Controller
     public function index()
     {
         Account::syncCashAccountBalance();
-        $accounts = Account::all();
+        $accounts = Account::orderByRaw("CASE WHEN type = 'cash' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->get();
         $totalBalance = $accounts->sum('current_balance');
         $cashBalance = $accounts->where('type', 'cash')->sum('current_balance');
         $jazzCashBalance = $accounts->where('type', 'jazzcash')->sum('current_balance');

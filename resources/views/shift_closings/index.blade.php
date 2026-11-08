@@ -155,7 +155,7 @@
                         <th>Date</th>
                         <th>Shift</th>
                         <th>Cashier</th>
-                        <th class="text-center">Invoices</th>
+                        <th class="text-center">Dispensed (Ltr) / Pump</th>
                         <th class="text-end">Total Sale</th>
                         <th class="text-end">Cash Counted</th>
                         <th class="text-end">JazzCash / Bank</th>
@@ -177,9 +177,18 @@
                                 <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
                             </td>
                             <td class="text-center small font-monospace">
-                                {{ number_format($c->total_invoices) }}
-                                @if($c->invoice_start && $c->invoice_end)
-                                    <small class="d-block text-muted">{{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }}</small>
+                                @if($c->total_liters > 0)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">
+                                        {{ number_format($c->total_liters, 2) }} Ltr
+                                    </span>
+                                    @if($c->pump_machine)
+                                        <small class="d-block text-secondary text-truncate" style="max-width: 140px; font-size: 0.68rem;">{{ $c->pump_machine }}</small>
+                                    @endif
+                                @else
+                                    {{ number_format($c->total_invoices) }} bills
+                                    @if($c->invoice_start && $c->invoice_end)
+                                        <small class="d-block text-muted">{{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }}</small>
+                                    @endif
                                 @endif
                             </td>
                             <td class="text-end font-monospace small fw-bold">
@@ -211,9 +220,18 @@
                                 <i class="bi bi-person me-1"></i>{{ $c->cashier->name ?? 'User #' . $c->cashier_id }}
                             </td>
                             <td class="text-center small font-monospace">
-                                {{ number_format($c->total_invoices) }}
-                                @if($c->invoice_start && $c->invoice_end)
-                                    <small class="d-block text-muted">{{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }}</small>
+                                @if($c->total_liters > 0)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">
+                                        {{ number_format($c->total_liters, 2) }} Ltr
+                                    </span>
+                                    @if($c->pump_machine)
+                                        <small class="d-block text-secondary text-truncate" style="max-width: 140px; font-size: 0.68rem;">{{ $c->pump_machine }}</small>
+                                    @endif
+                                @else
+                                    {{ number_format($c->total_invoices) }} bills
+                                    @if($c->invoice_start && $c->invoice_end)
+                                        <small class="d-block text-muted">{{ number_format($c->invoice_start) }} - {{ number_format($c->invoice_end) }}</small>
+                                    @endif
                                 @endif
                             </td>
                             <td class="text-end font-monospace small fw-bold">

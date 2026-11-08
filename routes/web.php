@@ -1,11 +1,16 @@
 <?php
 
+use App\Models\ShiftClosing;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PartyController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\CashierController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PumpController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ShiftClosingController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\DayClosingController;
@@ -28,13 +33,22 @@ Route::get('/', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    // Step 1: Users & Roles Module (Owner & Incharge Access)
+    // Step 1: Users & Roles Module (Merged into HR Management - redirect to Employees Directory)
     Route::middleware('role:owner,incharge')->group(function () {
-        Route::resource('users', UserController::class)->except(['create', 'show', 'edit']);
-        Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::get('users', function () {
+            return redirect()->route('hr.employees.index');
+        })->name('users.index');
+
+        // Roles & Permissions Management (three-star UI)
+        Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::put('roles/{id}', [RoleController::class, 'update'])->name('roles.update');
+        Route::post('roles/update-permissions', [RoleController::class, 'updatePermissions'])->name('roles.update.permission');
+        Route::delete('roles/{id}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        Route::get('roles/delete/{id}', [RoleController::class, 'delete'])->name('roles.delete');
     });
 
-    // Step 2: Master Setup (Parties, Accounts, Categories)
+    // Step 2: Master Setup (Parties, Accounts, Categories, Products)
     Route::get('parties/check-duplicate', [PartyController::class, 'checkDuplicate'])->name('parties.check-duplicate');
     Route::resource('parties', PartyController::class);
     Route::resource('accounts', AccountController::class);
@@ -42,6 +56,24 @@ Route::middleware('auth')->group(function () {
     Route::resource('expense-categories', ExpenseCategoryController::class)->except(['create', 'show', 'edit']);
     Route::resource('cashiers', CashierController::class)->except(['create', 'show', 'edit']);
     Route::post('cashiers/{cashier}/toggle-status', [CashierController::class, 'toggleStatus'])->name('cashiers.toggle-status');
+    
+    // Petrol Pump Products & Inventory
+    Route::get('products/check-duplicate', [ProductController::class, 'checkDuplicate'])->name('products.check-duplicate');
+    Route::post('products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
+    Route::post('products/{product}/quick-price', [ProductController::class, 'quickPriceUpdate'])->name('products.quick-price');
+    Route::post('products/categories/quick-store', [ProductController::class, 'storeCategory'])->name('products.categories.quick-store');
+    Route::post('products/units/quick-store', [ProductController::class, 'storeUnit'])->name('products.units.quick-store');
+    Route::resource('products', ProductController::class);
+
+    // Stock & Fuel Purchases
+    Route::resource('purchases', PurchaseController::class)->except(['edit', 'update']);
+
+    // Petrol Pump Machines & Meter Readings Management
+    Route::get('pumps/details/{pump}', [PumpController::class, 'getDetails'])->name('pumps.details');
+    Route::post('pumps/{pump}/toggle-status', [PumpController::class, 'toggleStatus'])->name('pumps.toggle-status');
+    Route::post('pumps/{pump}/adjust-reading', [PumpController::class, 'adjustReading'])->name('pumps.adjust-reading');
+    Route::post('pumps/quick-store', [PumpController::class, 'store'])->name('pumps.quick-store');
+    Route::resource('pumps', PumpController::class);
 
     // Step 3: Shift Closing Module (Morning & Evening)
     Route::resource('shift-closings', ShiftClosingController::class)->except(['edit', 'update']);
@@ -81,3 +113,4 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+require __DIR__.'/hr.php';

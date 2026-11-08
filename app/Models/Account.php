@@ -23,6 +23,13 @@ class Account extends Model
         return ($this->status ?? 'active') === 'active';
     }
 
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status', 'active')->orWhereNull('status');
+        });
+    }
+
     public function getStatusBadgeAttribute(): string
     {
         return $this->isActive()

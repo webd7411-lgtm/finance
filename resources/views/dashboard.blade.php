@@ -11,6 +11,12 @@
 
 @section('page_actions')
     <div class="d-flex flex-wrap gap-1 gap-sm-2 w-100 justify-content-start justify-content-sm-end">
+        <a href="{{ route('pumps.index') }}" class="btn btn-outline-primary btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
+            <i class="bi bi-speedometer2 me-1"></i> Pump Machines
+        </a>
+        <a href="{{ route('products.index') }}" class="btn btn-outline-danger btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
+            <i class="bi bi-fuel-pump me-1"></i> Products & Fuel
+        </a>
         <a href="{{ route('shift-closings.index') }}" class="btn btn-primary btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
             <i class="bi bi-plus-circle me-1"></i> Shift Closing
         </a>
@@ -27,11 +33,22 @@
 <style>
     /* Full mobile responsive rules - strictly zero horizontal scroll */
     .dashboard-kpi-card {
-        padding: 0.95rem;
+        padding: 0.55rem 0.75rem !important;
+        border-radius: 10px;
+    }
+    .kpi-icon-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.85rem;
     }
     .kpi-value-text {
-        font-size: clamp(1.2rem, 4.5vw, 1.7rem);
-        line-height: 1.25;
+        font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+        line-height: 1.2;
         word-break: break-word;
     }
     .chart-box-wrapper {
@@ -52,7 +69,10 @@
     }
     @media (max-width: 575.98px) {
         .dashboard-kpi-card {
-            padding: 0.8rem !important;
+            padding: 0.5rem 0.65rem !important;
+        }
+        .kpi-value-text {
+            font-size: 1.05rem !important;
         }
     }
 </style>
@@ -60,27 +80,27 @@
 
 @section('content')
 <!-- Row 1: Liquid Funds & Closing Balances -->
-<div class="d-flex align-items-center justify-content-between mb-2">
+<div class="d-flex align-items-center justify-content-between mb-1.5">
     <div class="d-flex align-items-center gap-2">
-        <span class="text-uppercase text-muted fw-bold" style="letter-spacing: 0.6px; font-size: 0.73rem;">
+        <span class="text-uppercase text-muted fw-bold" style="letter-spacing: 0.5px; font-size: 0.7rem;">
             <i class="bi bi-wallet2 text-primary me-1"></i>Liquid Funds & Closing Balances
         </span>
     </div>
 </div>
-<div class="row g-2 g-md-3 mb-3 mb-md-4">
+<div class="row g-2 g-md-2.5 mb-2.5 mb-md-3">
     <!-- Card 1: Total Liquid Assets (Overall Closing Balance) -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-primary shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Total Liquid Assets</span>
-                <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
-                    <i class="bi bi-wallet2 fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-primary shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.68rem;">Total Liquid Assets</span>
+                <div class="bg-primary text-white kpi-icon-badge shadow-sm">
+                    <i class="bi bi-wallet2"></i>
                 </div>
             </div>
             <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
                 Rs. {{ number_format($totalLiquidFunds, 2) }}
             </div>
-            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.7rem;">
                 <span>Total: <strong class="text-dark">Cash + Banks + JazzCash</strong></span>
                 <a href="{{ route('accounts.index') }}" class="text-primary text-decoration-none fw-semibold">View All &rarr;</a>
             </div>
@@ -89,19 +109,19 @@
 
     <!-- Card 2: Cash in Vault (Physical Cash Closing Balance) -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-success shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-success small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Cash In Vault</span>
-                <div class="bg-success text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
-                    <i class="bi bi-cash-stack fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-success shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-success small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.68rem;">Cash In Vault</span>
+                <div class="bg-success text-white kpi-icon-badge shadow-sm">
+                    <i class="bi bi-cash-stack"></i>
                 </div>
             </div>
             <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
                 Rs. {{ number_format($cashInVault, 2) }}
             </div>
-            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.7rem;">
                 <span>
-                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>Physical Cash
+                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.45rem;"></i>Physical Cash
                 </span>
                 <a href="{{ route('ledgers.cash-book') }}" class="text-success text-decoration-none fw-semibold">Cash Book &rarr;</a>
             </div>
@@ -110,17 +130,17 @@
 
     <!-- Card 3: Bank Accounts (Commercial Bank Balances) -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: #0284c7 !important;">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="small fw-semibold text-uppercase" style="color: #0284c7; letter-spacing: 0.5px; font-size: 0.72rem;">Bank Accounts</span>
-                <div class="text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #0284c7;">
-                    <i class="bi bi-bank2 fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 shadow-sm position-relative overflow-hidden" style="border-color: #0284c7 !important;">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="small fw-semibold text-uppercase" style="color: #0284c7; letter-spacing: 0.5px; font-size: 0.68rem;">Bank Accounts</span>
+                <div class="text-white kpi-icon-badge shadow-sm" style="background: #0284c7;">
+                    <i class="bi bi-bank2"></i>
                 </div>
             </div>
             <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
                 Rs. {{ number_format($bankFunds, 2) }}
             </div>
-            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.7rem;">
                 <span>
                     <i class="bi bi-building me-1" style="color: #0284c7;"></i><strong class="text-dark">{{ $accounts->where('type', 'bank')->count() }}</strong> {{ Str::plural('Bank', $accounts->where('type', 'bank')->count()) }}
                 </span>
@@ -131,17 +151,17 @@
 
     <!-- Card 4: JazzCash / Digital Wallet Balance -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-danger shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-danger small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">JazzCash / Digital</span>
-                <div class="bg-danger text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
-                    <i class="bi bi-phone fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-danger shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-danger small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.68rem;">JazzCash / Digital</span>
+                <div class="bg-danger text-white kpi-icon-badge shadow-sm">
+                    <i class="bi bi-phone"></i>
                 </div>
             </div>
             <div class="fw-bold text-dark mb-1 font-monospace kpi-value-text">
                 Rs. {{ number_format($jazzFunds, 2) }}
             </div>
-            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.7rem;">
                 <span>
                     <i class="bi bi-phone-vibrate me-1 text-danger"></i><strong class="text-dark">{{ $accounts->where('type', 'jazzcash')->count() }}</strong> {{ Str::plural('Channel', $accounts->where('type', 'jazzcash')->count()) }}
                 </span>
@@ -154,27 +174,27 @@
 </div>
 
 <!-- Row 2: Today's Shift & Cash Operations -->
-<div class="d-flex align-items-center justify-content-between mb-2">
+<div class="d-flex align-items-center justify-content-between mb-1.5">
     <div class="d-flex align-items-center gap-2">
-        <span class="text-uppercase text-muted fw-bold" style="letter-spacing: 0.6px; font-size: 0.73rem;">
+        <span class="text-uppercase text-muted fw-bold" style="letter-spacing: 0.5px; font-size: 0.7rem;">
             <i class="bi bi-activity text-success me-1"></i>Today's Operations & Shift Activity
         </span>
     </div>
 </div>
-<div class="row g-2 g-md-3 mb-3 mb-md-4">
+<div class="row g-2 g-md-2.5 mb-2.5 mb-md-3">
     <!-- Card 1: Today's Total Inflow -->
     <div class="col-12 col-md-4">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-success shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-success small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Collections (In)</span>
-                <div class="bg-success text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
-                    <i class="bi bi-arrow-down-left-circle fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-success shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-success small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.68rem;">Today's Collections (In)</span>
+                <div class="bg-success text-white kpi-icon-badge shadow-sm">
+                    <i class="bi bi-arrow-down-left-circle"></i>
                 </div>
             </div>
             <div class="fw-bold text-success mb-1 font-monospace kpi-value-text">
                 + Rs. {{ number_format($todayInflow, 2) }}
             </div>
-            <div class="text-muted small text-truncate" style="font-size: 0.74rem;">
+            <div class="text-muted small text-truncate" style="font-size: 0.7rem;">
                 <i class="bi bi-check-circle-fill text-success me-1"></i>Shift cash sales + customer receipts
             </div>
         </div>
@@ -182,17 +202,17 @@
 
     <!-- Card 2: Today's Total Outflow -->
     <div class="col-12 col-md-4">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 border-danger shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-danger small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Today's Disbursements (Out)</span>
-                <div class="bg-danger text-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 36px; height: 36px;">
-                    <i class="bi bi-arrow-up-right-circle fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-danger shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-danger small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.68rem;">Today's Disbursements (Out)</span>
+                <div class="bg-danger text-white kpi-icon-badge shadow-sm">
+                    <i class="bi bi-arrow-up-right-circle"></i>
                 </div>
             </div>
             <div class="fw-bold text-danger mb-1 font-monospace kpi-value-text">
                 - Rs. {{ number_format($todayOutflow, 2) }}
             </div>
-            <div class="text-muted small text-truncate" style="font-size: 0.74rem;">
+            <div class="text-muted small text-truncate" style="font-size: 0.7rem;">
                 <i class="bi bi-dash-circle-fill text-danger me-1"></i>Shift expenses, returns + supplier & staff payments
             </div>
         </div>
@@ -200,17 +220,17 @@
 
     <!-- Card 3: Monthly Average Day Sale (Sales minus Returns divided by operating days) -->
     <div class="col-12 col-md-4">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-4 shadow-sm position-relative overflow-hidden" style="border-color: #6366f1 !important;">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="small fw-semibold text-uppercase" style="color: #6366f1; letter-spacing: 0.5px; font-size: 0.72rem;">Month Avg Day Sale</span>
-                <div class="rounded-3 p-2 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0" style="width: 36px; height: 36px; background: #6366f1;">
-                    <i class="bi bi-graph-up-arrow fs-5"></i>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 shadow-sm position-relative overflow-hidden" style="border-color: #6366f1 !important;">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="small fw-semibold text-uppercase" style="color: #6366f1; letter-spacing: 0.5px; font-size: 0.68rem;">Month Avg Day Sale</span>
+                <div class="text-white kpi-icon-badge shadow-sm" style="background: #6366f1;">
+                    <i class="bi bi-graph-up-arrow"></i>
                 </div>
             </div>
             <div class="fw-bold mb-1 font-monospace kpi-value-text text-dark">
                 Rs. {{ number_format($monthlyAvgDaySale, 2) }}
             </div>
-            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.74rem;">
+            <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1" style="font-size: 0.7rem;">
                 <span class="text-truncate">
                     <i class="bi bi-calendar-event me-1 text-primary"></i>Sale minus returns ({{ $monthlyDaysCount }} {{ Str::plural('Day', $monthlyDaysCount) }})
                 </span>

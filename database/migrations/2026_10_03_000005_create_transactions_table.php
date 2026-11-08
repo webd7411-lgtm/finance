@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->date('date');
-            $table->enum('type', ['payment_in', 'payment_out']);
+            $table->enum('type', ['payment_in', 'payment_out', 'purchase_bill', 'purchase_return']);
             $table->foreignId('shift_closing_id')->nullable()->constrained('shift_closings')->nullOnDelete();
             $table->foreignId('party_id')->nullable()->constrained('parties')->nullOnDelete();
-            $table->foreignId('account_id')->constrained('accounts')->onDelete('cascade');
+            $table->foreignId('account_id')->nullable()->constrained('accounts')->onDelete('cascade');
             $table->foreignId('category_id')->nullable()->constrained('expense_categories')->nullOnDelete();
             
             $table->decimal('amount', 14, 2);

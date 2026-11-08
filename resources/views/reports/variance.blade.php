@@ -53,7 +53,7 @@
         html, body {
             background: #ffffff !important;
             color: #0f172a !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
             font-size: 8.8pt !important;
             line-height: 1.3 !important;
             width: 100% !important;
@@ -209,11 +209,11 @@
     <div class="bank-stmt-header d-none d-print-block">
         <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;">
+                <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Caltex Rao Filling Station" style="height: 52px; max-width: 175px; object-fit: contain;">
                 <div>
-                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">CALTEX - RAO FILLING STATION</h3>
                     <div class="small fw-semibold text-secondary">CENTRAL AUDIT &amp; CASH RECONCILIATION DIVISION</div>
-                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; 24/7 &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Ph: +92 317 3836223</div>
+                    <div class="small text-muted" style="font-size: 8pt;">Caltex Petroleum &bull; 24/7 &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Ph: +92 317 3836223</div>
                 </div>
             </div>
             <div class="text-end">
@@ -268,11 +268,11 @@
     <!-- Header Section (Screen Only) -->
     <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
         <div class="d-flex align-items-center gap-3">
-            <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1">
+            <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Caltex Rao Filling Station" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1">
             <div>
-                <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                <h4 class="fw-bold text-dark m-0">Caltex Rao Filling Station</h4>
                 <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Cash Variance & Difference Audit Register</h5>
-                <small class="text-muted">Your Health Companion &bull; Cash Discrepancy & Shift Audit Trail &bull; Software by <strong>Prowave Technologies</strong> (+92 317 3836223)</small>
+                <small class="text-muted">Caltex Petroleum &bull; Cash Discrepancy & Shift Audit Trail &bull; Software by <strong>Prowave Technologies</strong> (+92 317 3836223)</small>
             </div>
         </div>
         <div class="text-start text-md-end">

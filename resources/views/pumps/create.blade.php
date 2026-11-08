@@ -1,0 +1,397 @@
+@extends('layouts.app')
+
+@section('title', 'Add Petrol Pump Machine')
+@section('page_title', 'Register New Pump Machine / Dispenser')
+
+@section('page_badge')
+    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2.5 py-1 rounded-pill" style="font-size: 0.75rem; font-weight: 600;">
+        <i class="bi bi-speedometer2 me-1"></i> Dispenser Hardware Setup
+    </span>
+@endsection
+
+@section('page_actions')
+    <a href="{{ route('pumps.index') }}" class="btn btn-outline-secondary btn-sm px-3 py-1.5 rounded-3 fw-semibold shadow-xs" style="font-size: 0.81rem;">
+        <i class="bi bi-arrow-left me-1"></i> Back to Machines
+    </a>
+@endsection
+
+@push('styles')
+<!-- Google Font: Plus Jakarta Sans -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+
+<style>
+    body, body *, input, button, select, textarea, .form-monospace, code, kbd, samp, pre {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+        letter-spacing: normal !important;
+    }
+    .bi, [class^="bi-"], [class*=" bi-"] {
+        font-family: "bootstrap-icons" !important;
+    }
+
+    /* Full Page Form Card */
+    .pump-form-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        padding: 1.1rem 1.4rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (max-width: 767.98px) {
+        .pump-form-card {
+            padding: 0.9rem 0.85rem;
+            border-radius: 10px;
+        }
+    }
+
+    /* Section Numbered Step Badge */
+    .section-step-badge {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #1e40af;
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .section-title {
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        color: #0f172a;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    /* Labels & Helpers */
+    .field-label {
+        font-size: 0.73rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        line-height: 1.2;
+    }
+    .field-helper-right {
+        font-size: 0.67rem;
+        font-weight: 400;
+        color: #94a3b8;
+    }
+    .field-helper-bottom {
+        font-size: 0.67rem;
+        color: #64748b;
+        margin-top: 3px;
+        line-height: 1.2;
+    }
+
+    /* Clean Compact Inputs */
+    .compact-input {
+        height: 35px !important;
+        padding: 0.3rem 0.7rem !important;
+        font-size: 0.82rem !important;
+        border-radius: 7px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .compact-input:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        outline: none !important;
+    }
+    .compact-addon {
+        height: 35px !important;
+        padding: 0.3rem 0.7rem !important;
+        font-size: 0.78rem !important;
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #64748b !important;
+    }
+    .compact-addon-prefix {
+        border-top-left-radius: 7px !important;
+        border-bottom-left-radius: 7px !important;
+    }
+    .compact-addon-suffix {
+        border-top-right-radius: 7px !important;
+        border-bottom-right-radius: 7px !important;
+    }
+
+    /* Reading highlight boxes */
+    .reading-highlight-box {
+        background: #f0f7ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+    }
+    .reading-live-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="row">
+    <div class="col-12">
+        <!-- Main Pump Entry Form Card (Full Page Space Occupied) -->
+        <div class="pump-form-card">
+            
+            <!-- Card Header -->
+            <div class="d-flex align-items-center justify-content-between pb-2.5 mb-3 border-bottom flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="text-white rounded-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 36px; height: 36px; background-color: #1e40af !important;">
+                        <i class="bi bi-fuel-pump-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark m-0" style="font-size: 0.95rem;">Pump Machine &amp; Meter Baseline Setup</h6>
+                        <small class="text-secondary" style="font-size: 0.73rem;">Configure dispenser hardware, connect to storage tanks, and set opening meter readings.</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-secondary border px-2.5 py-1" style="font-size: 0.7rem; font-weight: 500;">
+                        <i class="bi bi-cpu me-1 text-primary"></i>Dispenser Registration
+                    </span>
+                </div>
+            </div>
+
+            <form action="{{ route('pumps.store') }}" method="POST" id="pumpForm">
+                @csrf
+
+                <!-- SECTION 1: HARDWARE IDENTIFICATION & OPERATIONAL STATUS -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="section-step-badge">1</span>
+                        <h6 class="section-title">HARDWARE IDENTIFICATION &amp; OPERATIONAL STATUS</h6>
+                    </div>
+
+                    <div class="row g-2.5">
+                        <!-- Machine Name -->
+                        <div class="col-12 col-md-5">
+                            <label class="field-label">
+                                <span>Pump Machine / Dispenser Name <span class="text-danger">*</span></span>
+                                <span class="field-helper-right">e.g. Pump 01</span>
+                            </label>
+                            <input type="text" name="name" class="form-control compact-input @error('name') is-invalid @enderror"
+                                   placeholder="e.g. Pump Machine 1 (Super Petrol) or Dispenser 02"
+                                   value="{{ old('name') }}" required autofocus>
+                            @error('name')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Machine Code -->
+                        <div class="col-12 col-md-3">
+                            <label class="field-label">
+                                <span>Machine Code / ID</span>
+                                <span class="field-helper-right">Optional</span>
+                            </label>
+                            <input type="text" name="code" class="form-control compact-input text-uppercase @error('code') is-invalid @enderror"
+                                   placeholder="e.g. PUMP-01, NZL-01"
+                                   value="{{ old('code') }}">
+                            @error('code')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Initial Status -->
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">
+                                <span>Initial Status <span class="text-danger">*</span></span>
+                                <span class="field-helper-right">Shift Availability</span>
+                            </label>
+                            <select name="status" class="form-select compact-input @error('status') is-invalid @enderror" required>
+                                <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Active (Available for Shifts)</option>
+                                <option value="maintenance" {{ old('status') === 'maintenance' ? 'selected' : '' }}>Under Maintenance</option>
+                                <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive / Decommissioned</option>
+                            </select>
+                            @error('status')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: FUEL PRODUCT & TANK CONFIGURATION -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="section-step-badge">2</span>
+                        <h6 class="section-title">FUEL PRODUCT &amp; TANK CONFIGURATION</h6>
+                    </div>
+
+                    <div class="row g-2.5">
+                        <!-- Dispensed Fuel Product -->
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">
+                                <span>Dispensed Fuel Product <span class="text-danger">*</span></span>
+                            </label>
+                            <select name="product_id" id="product_id" class="form-select compact-input @error('product_id') is-invalid @enderror" required onchange="handleProductChange(this)">
+                                <option value="">-- Select Fuel Product --</option>
+                                @foreach($fuelProducts as $fp)
+                                    <option value="{{ $fp->id }}"
+                                            data-tank="{{ $fp->tank_or_shelf }}"
+                                            data-price="{{ $fp->sale_price }}"
+                                            data-unit="{{ $fp->unit_label }}"
+                                            data-stock="{{ $fp->current_stock }}"
+                                            {{ old('product_id') == $fp->id ? 'selected' : '' }}>
+                                        {{ $fp->name }} (Rs. {{ number_format($fp->sale_price, 2) }} / {{ $fp->unit_label }}) - Stock: {{ number_format($fp->current_stock, 2) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('product_id')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Connected Underground Storage Tank -->
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">
+                                <span>Connected Underground Storage Tank</span>
+                                <span class="field-helper-right">Auto-syncs or type new</span>
+                            </label>
+                            <input type="text" name="tank_no" id="tank_no" class="form-control compact-input @error('tank_no') is-invalid @enderror"
+                                   list="tankList" placeholder="e.g. Underground Tank #1"
+                                   value="{{ old('tank_no') }}">
+                            <datalist id="tankList">
+                                @foreach($existingTanks as $tank)
+                                    <option value="{{ $tank }}">
+                                @endforeach
+                            </datalist>
+                            @error('tank_no')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Nozzle Configuration / Identifier -->
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">
+                                <span>Nozzle Configuration / Identifier</span>
+                                <span class="field-helper-right">Optional</span>
+                            </label>
+                            <input type="text" name="nozzle_number" class="form-control compact-input @error('nozzle_number') is-invalid @enderror"
+                                   placeholder="e.g. Dual Nozzle 1 &amp; 2 or High-Flow Commercial"
+                                   value="{{ old('nozzle_number') }}">
+                            @error('nozzle_number')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: METER TYPE & BASELINE COUNTER READINGS -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="section-step-badge">3</span>
+                        <h6 class="section-title">METER TYPE &amp; BASELINE COUNTER READINGS</h6>
+                    </div>
+
+                    <div class="row g-2.5">
+                        <!-- Dispenser Meter Type -->
+                        <div class="col-12 col-md-4">
+                            <label class="field-label">
+                                <span>Dispenser Meter Type <span class="text-danger">*</span></span>
+                            </label>
+                            <select name="meter_type" class="form-select compact-input @error('meter_type') is-invalid @enderror" required>
+                                <option value="electronic" {{ old('meter_type', 'electronic') === 'electronic' ? 'selected' : '' }}>Electronic / Digital Totalizer</option>
+                                <option value="mechanical" {{ old('meter_type') === 'mechanical' ? 'selected' : '' }}>Mechanical Roller Counter</option>
+                            </select>
+                            <div class="field-helper-bottom">Digital counter or mechanical roller numbers</div>
+                            @error('meter_type')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Initial / Opening Meter Reading -->
+                        <div class="col-12 col-md-4">
+                            <div class="reading-highlight-box">
+                                <label class="field-label text-primary">
+                                    <span class="fw-bold"><i class="bi bi-speedometer2 me-1"></i>Initial / Opening Reading <span class="text-danger">*</span></span>
+                                    <span class="badge bg-primary text-white" style="font-size: 0.62rem;">Baseline</span>
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text compact-addon compact-addon-prefix bg-white border-end-0 text-primary fw-semibold"><i class="bi bi-play-fill"></i></span>
+                                    <input type="number" step="0.01" min="0" name="initial_reading" id="initial_reading"
+                                           class="form-control compact-input fw-bold border-start-0 @error('initial_reading') is-invalid @enderror"
+                                           placeholder="0.00" value="{{ old('initial_reading', '0.00') }}" required
+                                           oninput="document.getElementById('last_reading').value = this.value;">
+                                    <span class="input-group-text compact-addon compact-addon-suffix bg-white text-muted">Ltr</span>
+                                </div>
+                                <div class="field-helper-bottom text-primary-emphasis" style="font-size: 0.66rem;">Baseline reading when dispenser is installed in ERP.</div>
+                                @error('initial_reading')
+                                    <div class="invalid-feedback small d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Current / Live Meter Reading -->
+                        <div class="col-12 col-md-4">
+                            <div class="reading-live-box">
+                                <label class="field-label text-dark">
+                                    <span class="fw-bold"><i class="bi bi-clock-history me-1"></i>Current / Live Reading</span>
+                                    <span class="badge bg-secondary text-white" style="font-size: 0.62rem;">Live Counter</span>
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text compact-addon compact-addon-prefix bg-white border-end-0 text-muted"><i class="bi bi-stop-fill text-danger"></i></span>
+                                    <input type="number" step="0.01" min="0" name="last_reading" id="last_reading"
+                                           class="form-control compact-input fw-bold border-start-0 @error('last_reading') is-invalid @enderror"
+                                           placeholder="0.00" value="{{ old('last_reading', '0.00') }}">
+                                    <span class="input-group-text compact-addon compact-addon-suffix bg-white text-muted">Ltr</span>
+                                </div>
+                                <div class="field-helper-bottom" style="font-size: 0.66rem;">Will automatically advance with each shift closing.</div>
+                                @error('last_reading')
+                                    <div class="invalid-feedback small d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: HARDWARE SPECIFICATIONS & NOTES -->
+                <div class="mb-3">
+                    <label class="field-label">
+                        <span>Machine Specifications &amp; Hardware Notes</span>
+                        <span class="field-helper-right">Optional</span>
+                    </label>
+                    <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="2"
+                              placeholder="Hardware details, dispenser serial number, calibration seal notes, model number, etc."
+                              style="font-size: 0.82rem; border-radius: 7px; border: 1px solid #cbd5e1;">{{ old('description') }}</textarea>
+                    @error('description')
+                        <div class="invalid-feedback small">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- CARD FOOTER ACTIONS -->
+                <div class="pt-2.5 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <a href="{{ route('pumps.index') }}" class="btn btn-secondary btn-sm px-3 rounded-2" style="font-size: 0.8rem;">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold rounded-2 d-inline-flex align-items-center gap-1.5 shadow-sm" style="background-color: #2563eb; border-color: #2563eb; font-size: 0.82rem; height: 35px;">
+                        <i class="bi bi-check-circle"></i> Register Pump Machine
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+    function handleProductChange(select) {
+        const selected = select.options[select.selectedIndex];
+        if (selected && selected.dataset.tank && !document.getElementById('tank_no').value) {
+            document.getElementById('tank_no').value = selected.dataset.tank;
+        }
+    }
+</script>
+@endpush

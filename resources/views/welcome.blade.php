@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>FinanceDesk - Closing Sheet & Ledger Management | Prowave Technologies</title>
 
-    <!-- Standard Clean Font: Inter -->
+    <!-- Standard Clean Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Bootstrap 5.3 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -33,7 +33,7 @@
         }
 
         html, body {
-            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
             min-height: 100vh;
@@ -405,9 +405,9 @@
     <!-- Header Navbar -->
     <header class="navbar-custom d-flex justify-content-between align-items-center">
         <a href="{{ url('/') }}" class="brand-logo-container">
-            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 42px; max-width: 150px; object-fit: contain;" class="rounded-1 me-2" onerror="this.onerror=null; this.src='/images/logo.png';">
+            <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 42px; max-width: 150px; object-fit: contain;" class="rounded-1 bg-white me-2" onerror="this.onerror=null; this.src='/images/logo.png';">
             <div class="brand-text-group">
-                <span class="brand-company">Prowave Technologies</span>
+                <span class="brand-company">Caltex Rao Filling Station</span>
                 <span class="brand-product">Finance<span>Desk</span></span>
             </div>
         </a>

@@ -1,76 +1,162 @@
 @extends('layouts.app')
 
-@section('title', 'New Shift Closing')
-@section('page_title', 'New Shift Closing Sheet')
+@section('title', 'Petrol Pump Shift Closing')
+@section('page_title', 'Petrol Pump Shift Closing Sheet')
 
 @section('page_badge')
-    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1 small">
-        <i class="bi bi-clock-history me-1"></i> Register Closing
+    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-0.5 small" style="font-size: 0.72rem;">
+        <i class="bi bi-fuel-pump me-1"></i> Meter Reading & Cash Reconciliation
     </span>
 @endsection
 
 @section('page_actions')
     <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-light text-secondary border px-2 py-1 small d-none d-md-inline-block">
+        <span class="badge bg-light text-secondary border px-2 py-1 small d-none d-md-inline-block" style="font-size: 0.72rem;">
             <i class="bi bi-person-circle me-1 text-primary"></i> {{ auth()->user()->name }} ({{ ucfirst(auth()->user()->role) }})
         </span>
-        <a href="{{ route('shift-closings.index') }}" class="btn btn-outline-secondary btn-sm rounded-3">
-            <i class="bi bi-arrow-left me-1"></i> <span class="d-none d-sm-inline">Back to Register</span><span class="d-sm-none">Back</span>
+        <a href="{{ route('shift-closings.index') }}" class="btn btn-outline-secondary btn-sm py-0.5 px-2 rounded-2" style="font-size: 0.75rem;">
+            <i class="bi bi-arrow-left me-1"></i> History
         </a>
     </div>
 @endsection
 
 @push('styles')
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+    body, body *, input, button, select, textarea, .font-monospace, code, kbd, samp, pre {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+        letter-spacing: normal !important;
+    }
+    /* Preserve Icon Fonts */
+    .fa, .fas, .fa-solid, [class^="fa-"], [class*=" fa-"] {
+        font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+        font-weight: 900 !important;
+    }
+    .far, .fa-regular {
+        font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+        font-weight: 400 !important;
+    }
+    .fab, .fa-brands {
+        font-family: "Font Awesome 6 Brands", "FontAwesome" !important;
+        font-weight: 400 !important;
+    }
+    .bi, [class^="bi-"], [class*=" bi-"] {
+        font-family: "bootstrap-icons" !important;
+    }
+
+    /* Compact Layout Overrides */
+    .sub-header {
+        padding: 0.3rem 0 !important;
+        margin-bottom: 0.4rem !important;
+    }
+    .sub-header h5 {
+        font-size: 0.95rem !important;
+        margin: 0 !important;
+    }
+
+    /* Compact Cards */
+    .closing-card {
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        padding: 0.45rem 0.75rem;
+        margin-bottom: 0.45rem;
+    }
+    .closing-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 0.25rem;
+        margin-bottom: 0.35rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .closing-step-num {
+        width: 19px;
+        height: 19px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .closing-card-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    /* Form Inputs */
+    .compact-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        line-height: 1.2;
+    }
+    .compact-input {
+        height: 29px !important;
+        padding: 0.15rem 0.45rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 5px !important;
+    }
+    .compact-addon {
+        height: 29px !important;
+        padding: 0.15rem 0.45rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Top KPI Ribbon */
+    .kpi-compact-card {
+        background: #ffffff;
+        border-radius: 6px;
+        padding: 0.3rem 0.55rem;
+        border-left: 3.5px solid;
+        border-top: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        min-height: 52px;
+    }
+    .kpi-title {
+        font-size: 0.62rem;
+        letter-spacing: 0.4px;
+        line-height: 1.1;
+    }
+    .kpi-value {
+        font-size: 1.02rem;
+        line-height: 1.2;
+        margin-top: 1px;
+    }
+
+    /* Denomination Table */
     .denomination-table {
         table-layout: fixed;
         width: 100%;
+        margin-bottom: 0.3rem;
     }
     .denomination-table th, .denomination-table td {
-        padding: 0.35rem 0.4rem;
+        padding: 0.15rem 0.35rem !important;
         vertical-align: middle;
+        font-size: 0.78rem;
     }
     .note-input {
-        font-size: 0.92rem;
-        padding: 0.25rem 0.35rem;
+        height: 23px !important;
+        font-size: 0.8rem !important;
+        padding: 0.05rem 0.3rem !important;
+        text-align: center;
+        border-radius: 4px;
     }
     .note-input::-webkit-inner-spin-button,
     .note-input::-webkit-outer-spin-button {
         -webkit-appearance: none;
         margin: 0;
-    }
-    .note-input {
-        -moz-appearance: textfield;
-    }
-    .kpi-title {
-        font-size: 0.68rem;
-        letter-spacing: 0.5px;
-    }
-    .kpi-value {
-        font-size: clamp(0.95rem, 3.5vw, 1.25rem);
-    }
-    @keyframes pulseFieldHighlight {
-        0% {
-            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.75);
-            border-color: #dc3545;
-        }
-        50% {
-            box-shadow: 0 0 0 8px rgba(220, 53, 69, 0.2);
-            border-color: #dc3545;
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            border-color: #dc3545;
-        }
-    }
-    .field-highlight-error {
-        border-color: #dc3545 !important;
-        animation: pulseFieldHighlight 1.5s infinite !important;
-        background-color: #fff8f8 !important;
-    }
-    .validation-error-feedback {
-        font-size: 0.75rem;
-        line-height: 1.2;
     }
 </style>
 @endpush
@@ -79,96 +165,105 @@
 <form action="{{ route('shift-closings.store') }}" method="POST" id="shiftClosingForm" novalidate>
     @csrf
 
-    <!-- Top Live KPI Ribbon (Instant Financial Health) -->
-    <div class="row g-2 mb-3">
-        <div class="col-6 col-lg-3">
-            <div class="card-custom p-2 p-sm-3 bg-white border-start border-4 border-primary h-100 shadow-sm">
-                <div class="text-muted small fw-semibold text-uppercase kpi-title text-truncate">Gross Total Sales</div>
-                <div class="fw-bold text-dark mt-1 font-monospace kpi-value text-truncate" id="kpi_sales">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.72rem;">Shift gross billings</small>
+    <!-- Top Live KPI Ribbon (Instant Shift Position) -->
+    <div class="row g-1.5 mb-2 row-cols-2 row-cols-md-3 row-cols-lg-5">
+        <!-- KPI 1: Total Volume Dispensed -->
+        <div class="col">
+            <div class="kpi-compact-card border-start border-4 border-primary h-100">
+                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Fuel Dispensed</div>
+                <div class="fw-bold text-primary kpi-value text-truncate" id="kpi_liters">0.00 Ltr</div>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">End - Start Reading</small>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card-custom p-2 p-sm-3 bg-white border-start border-4 border-info h-100 shadow-sm">
-                <div class="text-muted small fw-semibold text-uppercase kpi-title text-truncate">Expected Net Cash</div>
-                <div class="fw-bold text-info mt-1 font-monospace kpi-value text-truncate" id="kpi_expected">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.72rem;">Sales minus returns & payouts</small>
+
+        <!-- KPI 2: Total Gross Sales -->
+        <div class="col">
+            <div class="kpi-compact-card border-start border-4 border-info h-100">
+                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Gross Total Sales</div>
+                <div class="fw-bold text-dark kpi-value text-truncate" id="kpi_sales">Rs. 0.00</div>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">Liters &times; Fuel Rate</small>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card-custom p-2 p-sm-3 bg-white border-start border-4 border-success h-100 shadow-sm">
-                <div class="text-muted small fw-semibold text-uppercase kpi-title text-truncate">Actual Collected</div>
-                <div class="fw-bold text-success mt-1 font-monospace kpi-value text-truncate" id="kpi_actual">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.72rem;">Cash & digital funds</small>
+
+        <!-- KPI 3: Expected Cash -->
+        <div class="col">
+            <div class="kpi-compact-card border-start border-4 border-warning h-100">
+                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Expected Net Cash</div>
+                <div class="fw-bold text-warning-emphasis kpi-value text-truncate" id="kpi_expected">Rs. 0.00</div>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">Total Sale - Expenses</small>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card-custom p-2 p-sm-3 bg-white border-start border-4 border-secondary h-100 shadow-sm" id="kpi_variance_card">
+
+        <!-- KPI 4: Actual Received -->
+        <div class="col">
+            <div class="kpi-compact-card border-start border-4 border-success h-100">
+                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Actual Collected</div>
+                <div class="fw-bold text-success kpi-value text-truncate" id="kpi_actual">Rs. 0.00</div>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">Cash + Digital</small>
+            </div>
+        </div>
+
+        <!-- KPI 5: Shift Variance / Reconciliation -->
+        <div class="col col-12 col-md-12 col-lg">
+            <div class="kpi-compact-card border-start border-4 border-secondary h-100" id="kpi_variance_card">
                 <div class="d-flex justify-content-between align-items-center gap-1">
-                    <span class="text-muted small fw-semibold text-uppercase kpi-title text-truncate">Shift Variance</span>
-                    <span class="badge bg-success small py-0 px-1" id="kpi_variance_badge" style="font-size: 0.68rem;">Balanced</span>
+                    <span class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Shift Variance</span>
+                    <span class="badge bg-success small py-0 px-1" id="kpi_variance_badge" style="font-size: 0.62rem;">Balanced</span>
                 </div>
-                <div class="fw-bold text-dark mt-1 font-monospace kpi-value text-truncate" id="kpi_variance">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" id="kpi_variance_text" style="font-size: 0.72rem;">Zero variance</small>
+                <div class="fw-bold text-dark kpi-value text-truncate" id="kpi_variance">Rs. 0.00</div>
+                <small class="text-secondary d-none d-sm-block" id="kpi_variance_text" style="font-size: 0.65rem; line-height: 1;">Actual minus Expected</small>
             </div>
         </div>
     </div>
 
-    <!-- Step 1: Shift & Invoice Header Card -->
-    <div class="card-custom p-3 mb-3 bg-white shadow-sm border">
-        <div class="d-flex align-items-center justify-content-between pb-2 mb-3 border-bottom flex-wrap gap-2">
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-primary text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 0.8rem;">1</span>
-                <div>
-                    <h6 class="fw-bold text-dark m-0">Shift Details & Invoice Serial Range</h6>
-                    <small class="text-muted" style="font-size: 0.72rem;">Session configuration, assigned cashier and invoice serial sequence</small>
-                </div>
+    <!-- Step 1: Shift & Pump Machine Configuration -->
+    <div class="closing-card">
+        <div class="closing-card-header">
+            <div class="d-flex align-items-center gap-1.5">
+                <span class="badge bg-primary text-white closing-step-num">1</span>
+                <h6 class="closing-card-title">Shift Session & Pump Machine Setup</h6>
             </div>
-            <div class="text-muted small d-none d-md-flex align-items-center gap-2">
-                <span class="badge bg-light text-secondary border px-2 py-1">
-                    <i class="bi bi-person-circle text-primary me-1"></i> Logged in: {{ auth()->user()->name }}
-                </span>
-            </div>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-1.5 py-0.5" style="font-size: 0.68rem;">
+                <i class="bi bi-infinity me-1"></i> Multiple Shifts Daily
+            </span>
         </div>
 
-        <div class="row g-2 g-md-3">
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="closing_date">
-                        <i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span>
-                    </label>
-                </div>
-                <input type="date" id="closing_date" name="date" class="form-control form-control-sm fw-semibold @error('date') is-invalid @enderror" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
+        <div class="row g-1.5">
+            <!-- Date -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label class="compact-label" for="closing_date">
+                    <span><i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span></span>
+                </label>
+                <input type="date" id="closing_date" name="date"
+                       class="form-control compact-input fw-semibold @error('date') is-invalid @enderror"
+                       value="{{ old('date', date('Y-m-d')) }}"
+                       min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
                 @error('date')
-                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
                 @enderror
-                <small class="text-muted" style="font-size: 0.68rem;">Today or Yesterday only</small>
             </div>
 
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="shift_type_select">
-                        <i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span>
-                    </label>
-                </div>
-                <select name="shift_type" id="shift_type_select" class="form-select form-select-sm fw-semibold @error('shift_type') is-invalid @enderror" required style="height: 36px;">
+            <!-- Shift Type (Multiple allowed per day) -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label class="compact-label" for="shift_type_select">
+                    <span><i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span></span>
+                </label>
+                <select name="shift_type" id="shift_type_select" class="form-select compact-input fw-semibold @error('shift_type') is-invalid @enderror" required>
                     <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
                     <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
                 </select>
                 @error('shift_type')
-                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
                 @enderror
-                <div id="shift_duplicate_warning" class="text-danger small mt-1 fw-bold d-none" style="font-size: 0.68rem;"></div>
             </div>
 
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="cashier_id">
-                        <i class="bi bi-person-badge text-primary me-1"></i>Shift Cashier <span class="text-danger">*</span>
-                    </label>
-                    <a href="{{ route('cashiers.index') }}" target="_blank" class="text-primary text-decoration-none small" style="font-size: 0.68rem;" title="Manage Cashiers in Master Setup">+ Add</a>
-                </div>
-                <select name="cashier_id" id="cashier_id" class="form-select form-select-sm fw-semibold @error('cashier_id') is-invalid @enderror" required style="height: 36px;">
+            <!-- Cashier Selection -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label class="compact-label" for="cashier_id">
+                    <span><i class="bi bi-person-badge text-primary me-1"></i>Shift Cashier <span class="text-danger">*</span></span>
+                    <a href="{{ route('hr.employees.index') }}" target="_blank" class="text-primary text-decoration-none" style="font-size: 0.65rem;">+ Add / Manage</a>
+                </label>
+                <select name="cashier_id" id="cashier_id" class="form-select compact-input fw-semibold @error('cashier_id') is-invalid @enderror" required>
                     <option value="">-- Choose Cashier --</option>
                     @foreach($cashiers as $c)
                         <option value="{{ $c->id }}" {{ old('cashier_id') == $c->id ? 'selected' : '' }}>
@@ -177,575 +272,734 @@
                     @endforeach
                 </select>
                 @error('cashier_id')
-                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
                 @enderror
             </div>
 
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="invoice_start">
-                        <i class="bi bi-receipt text-primary me-1"></i>Start Invoice
-                    </label>
-                    @if(!empty($suggestedInvoiceStart))
-                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next serial after {{ number_format($suggestedInvoiceStart - 1) }}">Auto {{ number_format($suggestedInvoiceStart) }}</span>
-                    @endif
+            <!-- Dynamic Pump Machine Selection -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label class="compact-label" for="pump_id">
+                    <span><i class="bi bi-fuel-pump text-primary me-1"></i>Pump Machine <span class="badge bg-light text-primary border ms-1" style="font-size: 0.63rem;">{{ count($pumps) }} Units</span> <span class="text-danger">*</span></span>
+                    <div class="d-flex gap-1.5 align-items-center">
+                        <button type="button" class="btn btn-link p-0 text-primary text-decoration-none fw-semibold" style="font-size: 0.65rem;" data-bs-toggle="modal" data-bs-target="#quickAddPumpModal">
+                            + Add New
+                        </button>
+                        <span class="text-muted" style="font-size: 0.6rem;">|</span>
+                        <a href="{{ route('pumps.index') }}" target="_blank" class="text-primary text-decoration-none" style="font-size: 0.65rem;">Manage</a>
+                    </div>
+                </label>
+                <select name="pump_id" id="pump_id" class="form-select compact-input fw-bold @error('pump_id') is-invalid @enderror" onchange="handlePumpSelection()">
+                    <option value="">-- Choose Pump Machine ({{ count($pumps) }} Available) --</option>
+                    @foreach($pumps as $pump)
+                        <option value="{{ $pump->id }}"
+                                data-name="{{ $pump->name }}"
+                                data-reading="{{ $pump->last_reading }}"
+                                data-product-id="{{ $pump->product_id }}"
+                                data-product-rate="{{ $pump->product?->sale_price ?? 0 }}"
+                                data-product-unit="{{ $pump->product?->unit_label ?? 'Ltr' }}"
+                                data-tank="{{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}"
+                                data-stock="{{ $pump->product?->current_stock ?? 0 }}"
+                                {{ (old('pump_id', $selectedPumpId ?? null) == $pump->id) ? 'selected' : '' }}>
+                            #{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }} • {{ $pump->name }} (Last: {{ number_format($pump->last_reading, 2) }})
+                        </option>
+                    @endforeach
+                </select>
+                <input type="hidden" name="pump_machine" id="pump_machine" value="{{ old('pump_machine') }}">
+                <div id="pump_stock_sync_badge" class="mt-1 d-none">
+                    <span class="badge bg-light text-dark border py-0.5 px-1.5 small" style="font-size: 0.65rem;">
+                        <i class="bi bi-database text-primary me-1"></i><span id="pump_tank_display">Tank</span>:
+                        <strong id="pump_stock_display" class="text-success">0 Ltr</strong> stock
+                    </span>
                 </div>
-                <div class="input-group input-group-sm" style="height: 36px;">
-                    <span class="input-group-text bg-light text-muted h-100"><i class="bi bi-hash"></i></span>
-                    <input type="number" min="1" id="invoice_start" name="invoice_start" class="form-control form-control-sm fw-bold font-monospace h-100 {{ !empty($suggestedInvoiceStart) ? 'bg-light text-muted' : '' }}" placeholder="e.g. 1201" value="{{ old('invoice_start', $suggestedInvoiceStart ?? '') }}" oninput="calculateInvoiceCount()" {{ !empty($suggestedInvoiceStart) ? 'readonly' : '' }}>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="invoice_end">
-                        <i class="bi bi-receipt text-primary me-1"></i>End Invoice
-                    </label>
-                </div>
-                <div class="input-group input-group-sm" style="height: 36px;">
-                    <span class="input-group-text bg-light text-muted h-100"><i class="bi bi-hash"></i></span>
-                    <input type="number" min="1" id="invoice_end" name="invoice_end" class="form-control form-control-sm fw-bold font-monospace h-100 @error('invoice_end') is-invalid @enderror" placeholder="e.g. 1250" value="{{ old('invoice_end') }}" oninput="calculateInvoiceCount()">
-                </div>
-                @error('invoice_end')
-                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                @error('pump_id')
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
                 @enderror
-            </div>
-
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
-                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                        <i class="bi bi-receipt text-primary me-1"></i>Total Invoices
-                    </label>
-                </div>
-                <div class="input-group input-group-sm" style="height: 36px;">
-                    <input type="number" id="invoice_count_display" class="form-control form-control-sm bg-light fw-bold text-center text-primary font-monospace h-100" value="0" readonly>
-                    <span class="input-group-text bg-light small text-muted h-100">Bills</span>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Workspace (2-Column Balanced Premium Grid) -->
-    <div class="row g-3">
-        <!-- LEFT COLUMN: Sales, Adjustments, Party Payments & Digital Collections -->
-        <div class="col-12 col-lg-6">
-            <div class="d-flex flex-column gap-3">
-                <!-- Step 2: Shift Gross Sales & Deductions -->
-                <div class="card-custom p-3 bg-white shadow-sm border">
-                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
-                        <span class="badge bg-primary text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">2</span>
-                        <h6 class="fw-bold text-dark m-0">
-                            <i class="bi bi-receipt text-primary me-1"></i> Shift Sales & Deductions
-                        </h6>
-                    </div>
+    <!-- Step 2: Petrol Pump Meter Reading & Auto-Calculation System (Single Unified Row) -->
+    <div class="closing-card border-primary border-opacity-25" style="border-left: 3.5px solid #2563eb;">
+        <div class="closing-card-header">
+            <div class="d-flex align-items-center gap-1.5">
+                <span class="badge bg-primary text-white closing-step-num">2</span>
+                <h6 class="closing-card-title">
+                    <i class="bi bi-speedometer2 text-primary me-1"></i> Meter Readings & Automatic Sale Calculation
+                </h6>
+            </div>
+            <div class="badge bg-light text-primary border px-1.5 py-0.5" style="font-size: 0.68rem;">
+                Liters = End - Start Reading
+            </div>
+        </div>
 
-                    <!-- Gross Sale & Net Sale Row -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1" for="total_sale">
-                                Total Shift Gross Sale (Rs.) <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light fw-bold text-dark">Rs.</span>
-                                <input type="text" inputmode="decimal" class="form-control fw-bold fs-5 text-dark amount-format @error('total_sale') is-invalid @enderror" id="total_sale" name="total_sale" value="{{ old('total_sale', '') }}" required placeholder="0.00" autocomplete="off">
-                            </div>
-                            @error('total_sale')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
-                            <small class="text-muted" style="font-size: 0.72rem;">Total sales billing recorded on POS terminal during this shift</small>
-                        </div>
+        <div class="row g-1.5 align-items-end">
+            <!-- 1. Fuel Product Selection -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="compact-label" for="product_id">
+                    <span>Fuel Product <span class="text-danger">*</span></span>
+                </label>
+                <select name="product_id" id="product_id" class="form-select compact-input fw-semibold" onchange="handleProductRateChange()">
+                    <option value="">-- Choose Product --</option>
+                    @foreach($fuelProducts as $fProd)
+                        <option value="{{ $fProd->id }}"
+                                data-rate="{{ $fProd->sale_price }}"
+                                data-unit="{{ $fProd->unit_label }}"
+                                {{ old('product_id') == $fProd->id ? 'selected' : '' }}>
+                            {{ $fProd->name }} (Rs. {{ number_format($fProd->sale_price, 2) }})
+                        </option>
+                    @endforeach
+                </select>
+                @error('product_id')
+                    <div class="text-danger small mt-0.5" style="font-size: 0.68rem;">{{ $message }}</div>
+                @enderror
+            </div>
 
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">
-                                Shift Net Sale (Rs.) <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1" style="font-size: 0.68rem;">Gross - Return</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light fw-bold text-success">Rs.</span>
-                                <input type="text" class="form-control fw-bold fs-5 text-success bg-light" id="net_sale_display" value="0.00" readonly tabindex="-1">
-                            </div>
-                            <small class="text-muted" style="font-size: 0.72rem;">Net sales after subtracting sale returns</small>
-                        </div>
-                    </div>
-
-                    <!-- Sale Returns Card (Optional) -->
-                    <div class="p-3 rounded bg-light border border-danger-subtle">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small fw-bold text-danger">
-                                <i class="bi bi-arrow-return-left me-1"></i> (-) Sale Returns (Optional)
-                            </span>
-                            <span class="badge bg-danger-subtle text-danger border border-danger small py-0 px-2" style="font-size: 0.68rem;">Deduction</span>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6 col-sm-6 col-md-3">
-                                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                                        <i class="bi bi-receipt text-danger me-1"></i>Return Start
-                                    </label>
-                                    @if(!empty($suggestedReturnInvoiceStart))
-                                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success" style="font-size: 0.65rem;" title="Next return serial after {{ number_format($suggestedReturnInvoiceStart - 1) }}">Auto {{ number_format($suggestedReturnInvoiceStart) }}</span>
-                                    @endif
-                                </div>
-                                <div class="input-group input-group-sm" style="height: 34px;">
-                                    <span class="input-group-text bg-white text-muted h-100"><i class="bi bi-hash"></i></span>
-                                    <input type="number" min="1" id="return_invoice_start" name="return_invoice_start" class="form-control form-control-sm font-monospace h-100 {{ !empty($suggestedReturnInvoiceStart) ? 'bg-light text-muted' : '' }}" placeholder="e.g. 15" value="{{ old('return_invoice_start', $suggestedReturnInvoiceStart ?? '') }}" oninput="calculateReturnInvoiceCount()" {{ !empty($suggestedReturnInvoiceStart) ? 'readonly' : '' }}>
-                                </div>
-                            </div>
-                            <div class="col-6 col-sm-6 col-md-3">
-                                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate" for="return_invoice_end">
-                                        <i class="bi bi-receipt text-danger me-1"></i>Return End
-                                    </label>
-                                </div>
-                                <div class="input-group input-group-sm" style="height: 34px;">
-                                    <span class="input-group-text bg-white text-muted h-100"><i class="bi bi-hash"></i></span>
-                                    <input type="number" min="1" id="return_invoice_end" name="return_invoice_end" class="form-control form-control-sm font-monospace h-100 @error('return_invoice_end') is-invalid @enderror" placeholder="e.g. 18" value="{{ old('return_invoice_end', '') }}" oninput="calculateReturnInvoiceCount()">
-                                </div>
-                                @error('return_invoice_end')
-                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-6 col-sm-6 col-md-3">
-                                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                                        <i class="bi bi-receipt text-danger me-1"></i>Total Return Bills
-                                    </label>
-                                </div>
-                                <div class="input-group input-group-sm" style="height: 34px;">
-                                    <input type="number" id="return_invoice_count_display" class="form-control form-control-sm bg-white fw-bold text-center text-danger font-monospace h-100" value="0" readonly>
-                                    <span class="input-group-text bg-white small text-muted h-100">Bills</span>
-                                </div>
-                            </div>
-                            <div class="col-6 col-sm-6 col-md-3">
-                                <div class="d-flex align-items-center justify-content-between mb-1" style="height: 22px;">
-                                    <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">
-                                        Return Amount (Rs.)
-                                    </label>
-                                </div>
-                                <div class="input-group input-group-sm" style="height: 34px;">
-                                    <span class="input-group-text bg-white text-muted h-100">Rs.</span>
-                                    <input type="text" inputmode="decimal" class="form-control form-control-sm text-danger fw-bold amount-format h-100" id="returns_amount" name="returns_amount" value="{{ old('returns_amount', '') }}" placeholder="0.00" autocomplete="off">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Hidden Inputs for Shift Expenses (Feature disabled as requested) -->
-                    <input type="hidden" id="expenses_amount" name="expenses_amount" value="0">
-                    <input type="hidden" name="expenses_details" value="">
+            <!-- 2. Start Meter Reading -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="compact-label" for="start_reading">
+                    <span>Start Reading <span class="text-danger">*</span></span>
+                    <span class="text-muted" style="font-size: 0.62rem;">Opening</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-success compact-addon"><i class="bi bi-play-fill"></i></span>
+                    <input type="number" step="0.01" min="0" id="start_reading" name="start_reading"
+                           class="form-control compact-input fw-bold @error('start_reading') is-invalid @enderror"
+                           placeholder="0.00" value="{{ old('start_reading', '0.00') }}" required oninput="calculateReadings()">
                 </div>
+                @error('start_reading')
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
+                @enderror
+            </div>
 
-                <!-- Step 3: Digital & Online Collections (Account Wise) -->
-                <div class="card-custom p-3 bg-white shadow-sm border">
-                    <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-info text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">3</span>
-                            <h6 class="fw-bold text-dark m-0">
-                                <i class="bi bi-bank text-primary me-1"></i> Digital & Online Collections Received
-                            </h6>
-                        </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="addAccountPayment">
-                            <i class="bi bi-plus-lg me-1"></i> Add Row
-                        </button>
-                    </div>
-                    <small class="text-muted d-block mb-3" style="font-size: 0.75rem;">
-                        Select destination account for digital receipts (JazzCash, Bank, Wallets). Balance will be automatically updated.
-                    </small>
-
-                    <div id="accountPaymentRows">
-                        @php
-                            $oldAccounts = old('account_payments');
-                            if (!is_array($oldAccounts) || empty($oldAccounts)) {
-                                $oldAccounts = [['account_id' => '', 'amount' => '', 'description' => '']];
-                            }
-                        @endphp
-                        @foreach($oldAccounts as $aIdx => $oldAcc)
-                        <div class="p-2 mb-2 rounded bg-light border" data-account-payment-row>
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-5">
-                                    <label class="form-label small fw-semibold text-secondary">Destination Account</label>
-                                    <select class="form-select form-select-sm shift-account-select" name="account_payments[{{ $aIdx }}][account_id]" onchange="calculateClosing()">
-                                        <option value="">-- Choose Account / Wallet --</option>
-                                        @foreach($accounts as $acc)
-                                            <option value="{{ $acc->id }}" data-type="{{ $acc->type }}" {{ (string)($oldAcc['account_id'] ?? '') === (string)$acc->id ? 'selected' : '' }}>
-                                                {{ $acc->name }} ({{ ucfirst($acc->type) }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white text-muted">Rs.</span>
-                                        <input type="text" inputmode="decimal" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary amount-format" name="account_payments[{{ $aIdx }}][amount]" value="{{ $oldAcc['amount'] ?? '' }}" placeholder="0.00" autocomplete="off">
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label small fw-semibold text-secondary">Transaction Ref / Note</label>
-                                    <input type="text" class="form-control form-control-sm" name="account_payments[{{ $aIdx }}][description]" value="{{ $oldAcc['description'] ?? '' }}" maxlength="500" placeholder="Txn ID / payer name">
-                                </div>
-                                <div class="col-12 col-md-1">
-                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-account-payment title="Remove row">
-                                        <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove Row</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center pt-2 small text-secondary">
-                        <span>Total Online Collections:</span>
-                        <span class="font-monospace fw-bold text-primary fs-6" id="display_account_total">Rs. 0.00</span>
-                    </div>
-
-                    <!-- Hidden legacy inputs for total sum -->
-                    <input type="hidden" id="jazzcash_amount" name="jazzcash_amount" value="0">
-                    <input type="hidden" id="bank_amount" name="bank_amount" value="0">
+            <!-- 3. End Meter Reading -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="compact-label" for="end_reading">
+                    <span>End Reading <span class="text-danger">*</span></span>
+                    <span class="text-muted" style="font-size: 0.62rem;">Closing</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-danger compact-addon"><i class="bi bi-stop-fill"></i></span>
+                    <input type="number" step="0.01" min="0" id="end_reading" name="end_reading"
+                           class="form-control compact-input fw-bold @error('end_reading') is-invalid @enderror"
+                           placeholder="0.00" value="{{ old('end_reading', '0.00') }}" required oninput="calculateReadings()">
                 </div>
+                @error('end_reading')
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
+                @enderror
+            </div>
 
-                <!-- Step 4: Cash Paid to Parties / Suppliers (Outflow) -->
-                <div class="card-custom p-3 bg-white shadow-sm border">
-                    <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-danger text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">4</span>
-                            <h6 class="fw-bold text-dark m-0">
-                                <i class="bi bi-cash-coin text-danger me-1"></i> Cash Paid to Parties / Suppliers (Outflow)
-                            </h6>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#quickAddPartyModal">
-                                <i class="bi bi-person-plus me-1"></i> Add Party
-                            </button>
-                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="addPartyPayment">
-                                <i class="bi bi-plus-lg me-1"></i> Add Row
-                            </button>
-                        </div>
-                    </div>
-                    <small class="text-muted d-block mb-3" style="font-size: 0.75rem;">
-                        Instant cash payments given to suppliers or staff directly from register cash during this shift.
-                    </small>
+            <!-- 4. Fuel Unit Rate -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="compact-label" for="fuel_rate">
+                    <span>Rate / Ltr (Rs.) <span class="text-danger">*</span></span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light fw-semibold compact-addon">Rs.</span>
+                    <input type="number" step="0.01" min="0" id="fuel_rate" name="fuel_rate"
+                           class="form-control compact-input fw-bold @error('fuel_rate') is-invalid @enderror"
+                           placeholder="0.00" value="{{ old('fuel_rate', '0.00') }}" required oninput="calculateReadings()">
+                </div>
+                @error('fuel_rate')
+                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
+                @enderror
+            </div>
 
-                    <div id="partyPaymentRows">
-                        @php
-                            $oldParties = old('party_payments');
-                            if (!is_array($oldParties) || empty($oldParties)) {
-                                $oldParties = [['party_id' => '', 'expense_category_id' => '', 'amount' => '', 'details' => '']];
-                            }
-                        @endphp
-                        @foreach($oldParties as $pIdx => $oldP)
-                        @php
-                            $matchedParty = !empty($oldP['party_id']) ? $parties->firstWhere('id', (int)$oldP['party_id']) : null;
-                            $partySearchText = $matchedParty ? ($matchedParty->name . ($matchedParty->phone ? ' (' . $matchedParty->phone . ')' : '') . ' [' . ucfirst($matchedParty->type) . '] #' . $matchedParty->id) : '';
-                        @endphp
-                        <div class="p-2 mb-2 rounded bg-light border" data-party-payment-row>
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold text-secondary">Search Party / Payee</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                        <input type="search" class="form-control form-control-sm" list="shiftClosingPartyList" data-party-search value="{{ $partySearchText }}" placeholder="Type name or phone..." autocomplete="off">
-                                    </div>
-                                    <input type="hidden" name="party_payments[{{ $pIdx }}][party_id]" value="{{ $oldP['party_id'] ?? '' }}" data-party-id>
-                                </div>
-                                <div class="col-12 col-md-3">
-                                    <label class="form-label small fw-semibold text-secondary">Expense Category / Reason</label>
-                                    <select name="party_payments[{{ $pIdx }}][expense_category_id]" class="form-select form-select-sm">
-                                        <option value="">-- Select Purpose --</option>
-                                        @foreach($expenseCategories as $cat)
-                                            <option value="{{ $cat->id }}" {{ (string)($oldP['expense_category_id'] ?? '') === (string)$cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6 col-md-2">
-                                    <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[{{ $pIdx }}][amount]" value="{{ $oldP['amount'] ?? '' }}" placeholder="0.00" autocomplete="off">
-                                </div>
-                                <div class="col-6 col-md-2">
-                                    <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
-                                    <input type="text" class="form-control form-control-sm" name="party_payments[{{ $pIdx }}][details]" value="{{ $oldP['details'] ?? '' }}" maxlength="1000" placeholder="Bill / memo reference">
-                                </div>
-                                <div class="col-12 col-md-1">
-                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-party-payment title="Remove row">
-                                        <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
+            <!-- 5. Total Liters (Calculated) -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="compact-label">
+                    <span>Total Dispensed</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" step="0.01" id="total_liters" name="total_liters"
+                           class="form-control compact-input fw-bold text-center text-primary bg-light"
+                           value="{{ old('total_liters', '0.00') }}" readonly>
+                    <span class="input-group-text bg-light text-muted compact-addon" id="litersUnitBadge">Ltr</span>
+                </div>
+            </div>
 
-                    <datalist id="shiftClosingPartyList">
-                        @foreach($parties as $party)
-                            <option value="{{ $party->name }}{{ $party->phone ? ' (' . $party->phone . ')' : '' }} [{{ ucfirst($party->type) }}] #{{ $party->id }}" data-party-id="{{ $party->id }}"></option>
-                        @endforeach
-                    </datalist>
-
-                    <div class="d-flex justify-content-between align-items-center pt-2 small text-secondary">
-                        <span>Total Cash Paid to Parties:</span>
-                        <span class="font-monospace fw-bold text-danger fs-6" id="display_party_total">Rs. 0.00</span>
-                    </div>
+            <!-- 6. Gross Sale (Auto Calculated & Inline) -->
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="compact-label text-success" for="total_sale">
+                    <span class="fw-bold">Gross Sale (Rs.) <span class="text-danger">*</span></span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-success bg-opacity-10 text-success fw-bold compact-addon">Rs.</span>
+                    <input type="number" step="0.01" min="0" id="total_sale" name="total_sale"
+                           class="form-control compact-input fw-bold text-dark text-end bg-success bg-opacity-10 border-success"
+                           value="{{ old('total_sale', '0.00') }}" required oninput="calculateCashBalance()">
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Physical Currency Denomination Counter & Audit Reconciliation Deck -->
+        <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top border-light-subtle">
+            <span class="text-secondary" style="font-size: 0.68rem;">
+                <i class="bi bi-info-circle me-1"></i>Formula: <span id="saleFormulaDisplay" class="fw-semibold text-dark">0.00 Liters &times; Rs. 0.00</span>
+            </span>
+            <span class="text-muted" style="font-size: 0.65rem;">Gross sale editable if manual adjustment needed</span>
+        </div>
+    </div>
+
+    <!-- Main Workspace (2-Column Balanced Grid) -->
+    <div class="row g-2">
+        <!-- LEFT COLUMN: Shift Expenses & Digital / Online Collections -->
         <div class="col-12 col-lg-6">
-            <div class="d-flex flex-column gap-3">
-                <!-- Step 5: Currency Denominations -->
-                <div class="card-custom p-3 bg-white shadow-sm border">
-                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-success text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">5</span>
-                            <h6 class="fw-bold text-dark m-0">
-                                <i class="bi bi-cash-stack text-success me-1"></i> Currency Denominations (Physical Drawer Count)
+            <div class="d-flex flex-column gap-2">
+
+                <!-- Step 3: Shift Counter Expenses -->
+                <div class="closing-card">
+                    <div class="closing-card-header">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-primary text-white closing-step-num">3</span>
+                            <h6 class="closing-card-title">
+                                <i class="bi bi-wallet2 text-danger me-1"></i> Shift Counter Expenses
                             </h6>
                         </div>
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 small" onclick="resetNotes()" style="font-size: 0.72rem;">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Notes
-                        </button>
+                        <span class="text-muted" style="font-size: 0.65rem;">Petty cash from counter</span>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0 denomination-table">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 33%;">Denomination</th>
-                                    <th style="width: 33%;" class="text-center">Count</th>
-                                    <th style="width: 34%;" class="text-end">Subtotal (Rs.)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#e0e7ff; color:#3730a3; font-weight:700;">Rs. 5,000</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_5000" name="note_5000" value="{{ old('note_5000', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_5000">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#f1f5f9; color:#0f172a; font-weight:700; border: 1px solid #cbd5e1;">Rs. 1,000</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_1000" name="note_1000" value="{{ old('note_1000', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_1000">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#dcfce7; color:#166534; font-weight:700;">Rs. 500</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_500" name="note_500" value="{{ old('note_500', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_500">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#e0f2fe; color:#075985; font-weight:700;">Rs. 100</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_100" name="note_100" value="{{ old('note_100', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_100">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#ffedd5; color:#9a3412; font-weight:700;">Rs. 50</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_50" name="note_50" value="{{ old('note_50', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_50">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#ccfbf1; color:#115e59; font-weight:700;">Rs. 20</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_20" name="note_20" value="{{ old('note_20', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_20">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#f3e8ff; color:#6b21a8; font-weight:700;">Rs. 10</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold note-input" id="note_10" name="note_10" value="{{ old('note_10', '') }}" placeholder="0" oninput="calculateClosing()" onfocus="this.select()">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_10">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <span class="badge px-2 py-1" style="background:#fef3c7; color:#92400e; font-weight:700;">Coins & Change</span>
-                                    </td>
-                                    <td>
-                                        <input type="text" inputmode="decimal" class="form-control form-control-sm text-center fw-bold note-input amount-format" id="coins" name="coins" value="{{ old('coins', '') }}" placeholder="0.00" onfocus="this.select()" autocomplete="off">
-                                    </td>
-                                    <td class="text-end font-monospace fw-semibold text-dark text-nowrap" id="sub_coins">0.00</td>
-                                </tr>
-                            </tbody>
-                            <tfoot class="table-light border-top-2">
-                                <tr>
-                                    <th colspan="2" class="text-dark py-2">
-                                        <i class="bi bi-wallet2 text-success me-1"></i> Total Physical Cash:
-                                    </th>
-                                    <th class="text-end font-monospace fw-bold text-success py-2 text-nowrap" id="display_total_cash" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">
-                                        Rs. 0.00
-                                    </th>
-                                </tr>
-                            </tfoot>
-                        </table>
+                    <div class="row g-1.5">
+                        <div class="col-12 col-sm-5">
+                            <label class="compact-label" for="expenses_amount">Total Cash Expenses</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-danger fw-bold compact-addon">Rs.</span>
+                                <input type="number" step="0.01" min="0" class="form-control compact-input text-danger fw-bold"
+                                       id="expenses_amount" name="expenses_amount"
+                                       value="{{ old('expenses_amount', '0.00') }}" placeholder="0.00" oninput="calculateCashBalance()">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-7">
+                            <label class="compact-label" for="expenses_details">Expense Details / Category</label>
+                            <input type="text" class="form-control compact-input" id="expenses_details" name="expenses_details"
+                                   value="{{ old('expenses_details') }}" placeholder="e.g. Pump cleaning, Tea, Generator oil">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Step 6: Real-time Reconciliation & Submission Deck -->
-                <div class="card-custom p-3 bg-white shadow border border-2 border-primary">
-                    <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-primary text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">6</span>
-                            <h6 class="fw-bold text-dark m-0">Audit Reconciliation & Handover</h6>
+                <!-- Step 4: Digital & Card Collections -->
+                <div class="closing-card">
+                    <div class="closing-card-header">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-primary text-white closing-step-num">4</span>
+                            <h6 class="closing-card-title">
+                                <i class="bi bi-bank text-info me-1"></i> Digital & Card Collections
+                            </h6>
                         </div>
-                        <span class="badge bg-success small px-2 py-1" id="calc_status_badge">Balanced</span>
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0.5 px-2" style="font-size: 0.72rem;" id="addAccountPayment">
+                            <i class="bi bi-plus-circle me-1"></i> Add Digital
+                        </button>
                     </div>
 
-                    <div class="p-2 rounded bg-light mb-3">
-                        <div class="d-flex justify-content-between align-items-center small text-secondary py-1 border-bottom gap-2">
-                            <span>(+) Total Gross Sales:</span>
-                            <span class="font-monospace fw-semibold text-nowrap" id="audit_gross">Rs. 0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center small text-danger py-1 border-bottom gap-2">
-                            <span>(-) Returns & Party Payouts:</span>
-                            <span class="font-monospace fw-semibold text-nowrap" id="audit_deductions">- Rs. 0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center small text-dark fw-bold py-1 border-bottom gap-2">
-                            <span>(=) Expected Register Cash:</span>
-                            <span class="font-monospace text-primary text-nowrap" id="audit_expected">Rs. 0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center small text-secondary py-1 border-bottom gap-2">
-                            <span>Total Cash Collected (Drawer):</span>
-                            <span class="font-monospace text-success fw-semibold text-nowrap" id="audit_cash">Rs. 0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center small text-success fw-bold py-1 border-bottom gap-2">
-                            <span>Actual Collected (Physical Cash + Digital):</span>
-                            <span class="font-monospace text-nowrap" id="audit_actual">Rs. 0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center pt-2 gap-2 flex-wrap">
-                            <span class="fw-bold text-dark">Net Variance / Difference:</span>
-                            <span class="font-monospace fw-bold fs-5 text-nowrap" id="display_difference">Rs. 0.00</span>
-                        </div>
+                    <div id="accountPaymentRows" class="d-flex flex-column gap-1.5">
+                        <!-- Dynamic Account Payment Rows Added by JS -->
                     </div>
 
-                    <div class="small text-center py-2 px-3 rounded mb-3" id="diff_alert_box" style="background-color: #f8fafc; font-size: 0.8rem;">
-                        Cash and sales match with zero variance.
+                    <div class="p-1.5 px-2 bg-light rounded-2 mt-1.5 d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-secondary" style="font-size: 0.75rem;">Total Online Collections:</span>
+                        <span class="fw-bold text-primary" id="display_digital_total" style="font-size: 0.85rem;">Rs. 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Shift Remarks -->
+                <div class="closing-card">
+                    <label class="compact-label mb-1" for="remarks">
+                        <span><i class="bi bi-chat-text text-primary me-1"></i> Shift Operator Remarks / Notes</span>
+                    </label>
+                    <textarea class="form-control compact-input" id="remarks" name="remarks" rows="1"
+                              style="height: 32px; resize: vertical;"
+                              placeholder="Optional pump calibration notes, power outage, or dip details...">{{ old('remarks') }}</textarea>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Physical Cash Denomination Counter & Variance -->
+        <div class="col-12 col-lg-6">
+            <div class="d-flex flex-column gap-2">
+
+                <!-- Step 5: Cash Note Denominations -->
+                <div class="closing-card border-success border-opacity-25" style="border-left: 3.5px solid #16a34a;">
+                    <div class="closing-card-header">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-success text-white closing-step-num">5</span>
+                            <h6 class="closing-card-title">
+                                <i class="bi bi-cash-stack text-success me-1"></i> Physical Cash Denomination Counter
+                            </h6>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size: 0.65rem;">
+                            Drawer Cash
+                        </span>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Closing Remarks / Handover Notes</label>
-                        <textarea name="remarks" class="form-control form-control-sm" rows="2" placeholder="Optional cashier handover remarks or explanation for any variance...">{{ old('remarks', '') }}</textarea>
+                    <table class="table table-sm denomination-table table-bordered align-middle mb-1">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 32%;">Note</th>
+                                <th style="width: 33%;" class="text-center">Count</th>
+                                <th style="width: 35%;" class="text-end">Total (Rs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $notes = [
+                                    ['name' => 'note_5000', 'value' => 5000, 'label' => 'Rs. 5,000'],
+                                    ['name' => 'note_1000', 'value' => 1000, 'label' => 'Rs. 1,000'],
+                                    ['name' => 'note_500',  'value' => 500,  'label' => 'Rs. 500'],
+                                    ['name' => 'note_100',  'value' => 100,  'label' => 'Rs. 100'],
+                                    ['name' => 'note_50',   'value' => 50,   'label' => 'Rs. 50'],
+                                    ['name' => 'note_20',   'value' => 20,   'label' => 'Rs. 20'],
+                                    ['name' => 'note_10',   'value' => 10,   'label' => 'Rs. 10'],
+                                ];
+                            @endphp
+
+                            @foreach($notes as $note)
+                                <tr>
+                                    <td class="fw-bold text-dark py-0.5">{{ $note['label'] }}</td>
+                                    <td class="py-0.5">
+                                        <input type="number" min="0" name="{{ $note['name'] }}" id="{{ $note['name'] }}"
+                                               class="form-control form-control-sm note-input fw-bold"
+                                               value="{{ old($note['name'], 0) }}" data-multiplier="{{ $note['value'] }}"
+                                               oninput="calculateDenominations()">
+                                    </td>
+                                    <td class="text-end fw-semibold text-secondary py-0.5" id="total_{{ $note['name'] }}">
+                                        0.00
+                                    </td>
+                                </tr>
+                            @endforeach
+
+                            <!-- Coins -->
+                            <tr>
+                                <td class="fw-bold text-dark py-0.5">Coins</td>
+                                <td class="py-0.5">
+                                    <input type="number" step="0.01" min="0" name="coins" id="coins"
+                                           class="form-control form-control-sm note-input fw-bold"
+                                           value="{{ old('coins', '0.00') }}" oninput="calculateDenominations()">
+                                </td>
+                                <td class="text-end fw-semibold text-secondary py-0.5" id="total_coins">
+                                    0.00
+                                </td>
+                            </tr>
+
+                            <!-- Counted Cash Total Row -->
+                            <tr class="table-success bg-opacity-25">
+                                <th colspan="2" class="fw-bold text-dark py-1">Total Counted Cash:</th>
+                                <th class="text-end text-success fw-bold py-1" id="display_counted_cash">
+                                    Rs. 0.00
+                                </th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Final Reconciliation Summary & Submit Card -->
+                <div class="closing-card border-dark border-opacity-25">
+                    <h6 class="fw-bold text-dark mb-1.5 pb-1 border-bottom" style="font-size: 0.8rem;">
+                        <i class="bi bi-shield-check text-primary me-1"></i> Final Shift Reconciliation
+                    </h6>
+
+                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.75rem;">
+                        <span class="text-secondary">Expected Cash (Sale - Expenses):</span>
+                        <strong class="text-dark fw-bold" id="summary_expected">Rs. 0.00</strong>
                     </div>
 
-                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 pt-2 border-top">
-                        <a href="{{ route('shift-closings.index') }}" class="btn btn-light btn-sm px-3 rounded-3 text-center order-2 order-sm-1">Cancel</a>
-                        <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 order-1 order-sm-2" id="submitBtn">
-                            <i class="bi bi-lock-fill"></i>
-                            <span>Submit & Lock Shift Closing</span>
+                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.75rem;">
+                        <span class="text-secondary">Actual Received (Cash + Digital):</span>
+                        <strong class="text-success fw-bold" id="summary_actual">Rs. 0.00</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border" id="summary_variance_box" style="font-size: 0.75rem;">
+                        <span class="fw-bold">Shift Variance (Difference):</span>
+                        <strong class="fw-bold" id="summary_difference">Rs. 0.00</strong>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-2 fw-bold shadow-sm py-1.5" id="submitClosingBtn" style="font-size: 0.88rem;">
+                            <i class="bi bi-lock-fill me-1"></i> Lock & Finalize Shift Closing
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
+
 </form>
 
-<!-- Quick Add Party Modal -->
-<div class="modal fade" id="quickAddPartyModal" tabindex="-1" aria-labelledby="quickAddPartyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow text-start">
-            <div class="modal-header border-bottom py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-success-subtle text-success p-2 rounded-circle">
-                        <i class="bi bi-person-plus-fill fs-5"></i>
-                    </span>
-                    <div>
-                        <h6 class="modal-title fw-bold text-dark m-0" id="quickAddPartyModalLabel">Register New Party</h6>
-                        <small class="text-muted" style="font-size: 0.78rem;">Quick add supplier, trader, or payee for cash outflow</small>
+@push('scripts')
+<script>
+    // Accounts dataset for online payment row creation
+    const availableAccounts = @json($accounts);
+
+    // 1. Pump Selection Handler
+    function handlePumpSelection() {
+        const pumpSelect = document.getElementById('pump_id');
+        const selected = pumpSelect.options[pumpSelect.selectedIndex];
+        const syncBadge = document.getElementById('pump_stock_sync_badge');
+
+        if (selected && selected.value) {
+            const name = selected.getAttribute('data-name');
+            const lastReading = parseFloat(selected.getAttribute('data-reading')) || 0;
+            const prodId = selected.getAttribute('data-product-id');
+            const prodRate = parseFloat(selected.getAttribute('data-product-rate')) || 0;
+            const tank = selected.getAttribute('data-tank') || 'Storage Tank';
+            const stock = parseFloat(selected.getAttribute('data-stock')) || 0;
+
+            document.getElementById('pump_machine').value = name;
+            document.getElementById('start_reading').value = lastReading.toFixed(2);
+
+            // Update Tank and Stock badge
+            if (syncBadge) {
+                syncBadge.classList.remove('d-none');
+                document.getElementById('pump_tank_display').textContent = tank;
+                const stockDisplay = document.getElementById('pump_stock_display');
+                stockDisplay.textContent = stock.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' Ltr';
+                if (stock <= 3000) {
+                    stockDisplay.className = 'text-danger fw-bold';
+                } else {
+                    stockDisplay.className = 'text-success fw-bold';
+                }
+            }
+
+            // Select corresponding fuel product
+            if (prodId) {
+                const prodSelect = document.getElementById('product_id');
+                prodSelect.value = prodId;
+                handleProductRateChange();
+            } else if (prodRate > 0) {
+                document.getElementById('fuel_rate').value = prodRate.toFixed(2);
+            }
+        } else {
+            if (syncBadge) {
+                syncBadge.classList.add('d-none');
+            }
+        }
+        calculateReadings();
+    }
+
+    // 2. Product Rate Selection Handler
+    function handleProductRateChange() {
+        const prodSelect = document.getElementById('product_id');
+        const selected = prodSelect.options[prodSelect.selectedIndex];
+
+        if (selected && selected.value) {
+            const rate = parseFloat(selected.getAttribute('data-rate')) || 0;
+            const unit = selected.getAttribute('data-unit') || 'Ltr';
+            document.getElementById('fuel_rate').value = rate.toFixed(2);
+            document.getElementById('litersUnitBadge').textContent = unit;
+        }
+        calculateReadings();
+    }
+
+    // 3. Real-Time Meter Reading & Sale Calculation (Core Feature!)
+    function calculateReadings() {
+        const start = parseFloat(document.getElementById('start_reading').value) || 0;
+        const end = parseFloat(document.getElementById('end_reading').value) || 0;
+        const rate = parseFloat(document.getElementById('fuel_rate').value) || 0;
+
+        const liters = Math.max(0, end - start);
+        const sale = liters * rate;
+
+        document.getElementById('total_liters').value = liters.toFixed(2);
+        document.getElementById('total_sale').value = sale.toFixed(2);
+
+        document.getElementById('kpi_liters').textContent = liters.toFixed(2) + ' Ltr';
+        document.getElementById('kpi_sales').textContent = 'Rs. ' + sale.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('saleFormulaDisplay').textContent = `${liters.toFixed(2)} Liters × Rs. ${rate.toFixed(2)}`;
+
+        calculateCashBalance();
+    }
+
+    // 4. Denomination Calculator
+    function calculateDenominations() {
+        let totalCounted = 0;
+        const multipliers = [5000, 1000, 500, 100, 50, 20, 10];
+
+        multipliers.forEach(mult => {
+            const input = document.getElementById('note_' + mult);
+            const count = parseInt(input.value) || 0;
+            const noteTotal = count * mult;
+            totalCounted += noteTotal;
+            document.getElementById('total_note_' + mult).textContent = noteTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        });
+
+        const coins = parseFloat(document.getElementById('coins').value) || 0;
+        totalCounted += coins;
+        document.getElementById('total_coins').textContent = coins.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        document.getElementById('display_counted_cash').textContent = 'Rs. ' + totalCounted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        calculateCashBalance();
+    }
+
+    // 5. Total Digital Collections
+    function calculateDigitalTotal() {
+        let digitalTotal = 0;
+        document.querySelectorAll('.digital-account-amount').forEach(inp => {
+            digitalTotal += parseFloat(inp.value) || 0;
+        });
+        document.getElementById('display_digital_total').textContent = 'Rs. ' + digitalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return digitalTotal;
+    }
+
+    // 6. Overall Cash Reconciliation & Variance Calculator
+    function calculateCashBalance() {
+        const totalSale = parseFloat(document.getElementById('total_sale').value) || 0;
+        const expenses = parseFloat(document.getElementById('expenses_amount').value) || 0;
+
+        // Expected Cash = Total Sale - Shift Expenses
+        const expectedCash = Math.max(0, totalSale - expenses);
+
+        // Counted Cash
+        let countedCash = 0;
+        [5000, 1000, 500, 100, 50, 20, 10].forEach(mult => {
+            countedCash += (parseInt(document.getElementById('note_' + mult)?.value) || 0) * mult;
+        });
+        countedCash += (parseFloat(document.getElementById('coins')?.value) || 0);
+
+        // Digital Collections
+        const digitalCollections = calculateDigitalTotal();
+
+        // Actual Received
+        const actualReceived = countedCash + digitalCollections;
+
+        // Variance = Actual - Expected
+        const difference = actualReceived - expectedCash;
+
+        // Update KPIs & Summary
+        document.getElementById('kpi_expected').textContent = 'Rs. ' + expectedCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpi_actual').textContent = 'Rs. ' + actualReceived.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('summary_expected').textContent = 'Rs. ' + expectedCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('summary_actual').textContent = 'Rs. ' + actualReceived.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const varianceCard = document.getElementById('kpi_variance_card');
+        const varianceBadge = document.getElementById('kpi_variance_badge');
+        const varianceText = document.getElementById('kpi_variance');
+        const summaryDiff = document.getElementById('summary_difference');
+        const summaryBox = document.getElementById('summary_variance_box');
+
+        if (Math.abs(difference) < 0.01) {
+            varianceCard.className = 'kpi-compact-card border-start border-4 border-success h-100 shadow-sm';
+            varianceBadge.className = 'badge bg-success small py-0 px-1';
+            varianceBadge.textContent = 'Balanced';
+            varianceText.className = 'fw-bold text-success kpi-value text-truncate';
+            varianceText.textContent = 'Rs. 0.00';
+            summaryDiff.className = 'fs-6 text-success fw-bold';
+            summaryDiff.textContent = 'Rs. 0.00 (Balanced)';
+            summaryBox.className = 'd-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border bg-success bg-opacity-10 border-success-subtle';
+        } else if (difference > 0) {
+            varianceCard.className = 'kpi-compact-card border-start border-4 border-info h-100 shadow-sm';
+            varianceBadge.className = 'badge bg-info text-dark small py-0 px-1';
+            varianceBadge.textContent = 'Surplus';
+            varianceText.className = 'fw-bold text-info kpi-value text-truncate';
+            varianceText.textContent = '+Rs. ' + difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            summaryDiff.className = 'fs-6 text-info fw-bold';
+            summaryDiff.textContent = '+Rs. ' + difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Surplus)';
+            summaryBox.className = 'd-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border bg-info bg-opacity-10 border-info-subtle';
+        } else {
+            varianceCard.className = 'kpi-compact-card border-start border-4 border-danger h-100 shadow-sm';
+            varianceBadge.className = 'badge bg-danger small py-0 px-1';
+            varianceBadge.textContent = 'Shortage';
+            varianceText.className = 'fw-bold text-danger kpi-value text-truncate';
+            varianceText.textContent = '-Rs. ' + Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            summaryDiff.className = 'fs-6 text-danger fw-bold';
+            summaryDiff.textContent = '-Rs. ' + Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Shortage)';
+            summaryBox.className = 'd-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border bg-danger bg-opacity-10 border-danger-subtle';
+        }
+    }
+
+    // 7. Dynamic Online Payment Row Addition
+    let digitalRowCounter = 0;
+    function addDigitalAccountRow() {
+        const container = document.getElementById('accountPaymentRows');
+        const rowId = 'digital_row_' + digitalRowCounter++;
+
+        let optionsHtml = '<option value="">-- Choose Account --</option>';
+        availableAccounts.forEach(acc => {
+            optionsHtml += `<option value="${acc.id}">${acc.name} (${acc.type})</option>`;
+        });
+
+        const rowHtml = `
+            <div class="row g-1 align-items-center p-1 bg-light rounded-2 border" id="${rowId}">
+                <div class="col-12 col-md-5">
+                    <select name="account_payments[${digitalRowCounter}][account_id]" class="form-select compact-input" style="height: 27px !important; font-size: 0.75rem !important;" required>
+                        ${optionsHtml}
+                    </select>
+                </div>
+                <div class="col-7 col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white compact-addon py-0 px-1" style="height: 27px !important; font-size: 0.7rem !important;">Rs.</span>
+                        <input type="number" step="0.01" min="0.01" name="account_payments[${digitalRowCounter}][amount]"
+                               class="form-control compact-input fw-bold digital-account-amount" style="height: 27px !important; font-size: 0.75rem !important;" placeholder="0.00" required oninput="calculateCashBalance()">
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="col-3 col-md-3">
+                    <input type="text" name="account_payments[${digitalRowCounter}][description]" class="form-control compact-input" style="height: 27px !important; font-size: 0.75rem !important;" placeholder="Ref/Note">
+                </div>
+                <div class="col-2 col-md-1 text-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm p-0 px-1.5" style="height: 27px; line-height: 25px;" onclick="document.getElementById('${rowId}').remove(); calculateCashBalance();">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </div>
-            <form id="quickAddPartyForm">
-                <div class="modal-body p-3 p-sm-4 text-start">
-                    <div id="quickPartyErrorAlert" class="alert alert-danger py-2 small d-none" role="alert"></div>
+        `;
 
-                    <div class="mb-3 position-relative">
-                        <label for="quickPartyName" class="form-label small fw-semibold text-secondary">Party / Payee Name <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control form-control-sm py-2" id="quickPartyName" name="name" placeholder="e.g. Al-Madina Traders / Haji Rashid" autocomplete="off" required>
-                            <span class="input-group-text bg-white" id="quickPartyNameSpinner" style="display: none;">
-                                <span class="spinner-border spinner-border-sm text-primary" role="status" style="width: 0.9rem; height: 0.9rem;"></span>
-                            </span>
-                        </div>
-                        <!-- Suggestions / Live Duplicate Alert container -->
-                        <div id="quickPartyNameFeedback" class="mt-2" style="display: none;"></div>
+        container.insertAdjacentHTML('beforeend', rowHtml);
+    }
+
+    document.getElementById('addAccountPayment').addEventListener('click', addDigitalAccountRow);
+
+    // Quick Add Pump Machine AJAX Handler
+    const quickAddForm = document.getElementById('quickAddPumpForm');
+    if (quickAddForm) {
+        quickAddForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('quickAddSubmitBtn');
+            const alertBox = document.getElementById('quickAddAlert');
+            alertBox.classList.add('d-none');
+            alertBox.textContent = '';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+            const formData = new FormData(quickAddForm);
+
+            fetch("{{ route('pumps.quick-store') }}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(res => res.json().then(data => ({ status: res.status, body: data })))
+            .then(result => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Select Machine';
+
+                if (result.status === 200 && result.body.success) {
+                    const pump = result.body.pump;
+                    const select = document.getElementById('pump_id');
+
+                    // Create new option
+                    const opt = document.createElement('option');
+                    opt.value = pump.id;
+                    opt.setAttribute('data-name', pump.name);
+                    opt.setAttribute('data-reading', pump.last_reading);
+                    opt.setAttribute('data-product-id', pump.product_id);
+                    opt.setAttribute('data-product-rate', pump.fuel_rate);
+                    opt.setAttribute('data-product-unit', pump.unit);
+                    opt.setAttribute('data-tank', pump.tank_no);
+                    opt.setAttribute('data-stock', pump.current_stock);
+                    opt.textContent = `${pump.name} (Last: ${pump.last_reading.toFixed(2)})`;
+                    opt.selected = true;
+
+                    select.appendChild(opt);
+                    handlePumpSelection();
+
+                    // Close modal
+                    const modalEl = document.getElementById('quickAddPumpModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    quickAddForm.reset();
+                } else {
+                    const msg = result.body.message || (result.body.errors ? Object.values(result.body.errors).flat().join('<br>') : 'Error creating machine.');
+                    alertBox.innerHTML = msg;
+                    alertBox.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Select Machine';
+                alertBox.textContent = 'Server communication error. Please try again.';
+                alertBox.classList.remove('d-none');
+            });
+        });
+    }
+
+    // Initial page load triggers
+    document.addEventListener('DOMContentLoaded', () => {
+        calculateDenominations();
+        if (document.getElementById('pump_id').value) {
+            handlePumpSelection();
+        } else {
+            calculateReadings();
+        }
+    });
+</script>
+@endpush
+
+<!-- Modal: Quick Add Pump Machine -->
+<div class="modal fade" id="quickAddPumpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="quickAddPumpForm">
+                @csrf
+                <div class="modal-header bg-primary text-white py-2 px-3">
+                    <h6 class="modal-title fw-bold mb-0">
+                        <i class="bi bi-fuel-pump-diesel me-1.5"></i> Add New Pump Machine / Dispenser
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div id="quickAddAlert" class="alert alert-danger py-2 px-3 small d-none mb-2.5"></div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-dark mb-1">Dispenser Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Pump Machine 5 (Super Petrol)" required>
                     </div>
 
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label for="quickPartyType" class="form-label small fw-semibold text-secondary">Party Type <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm py-2" id="quickPartyType" name="type" required>
-                                <option value="supplier" selected>Supplier</option>
-                                <option value="trader">Trader</option>
-                                <option value="staff">Staff (Advance)</option>
-                                <option value="customer">Customer</option>
+                            <label class="form-label small fw-semibold text-dark mb-1">Code / ID</label>
+                            <input type="text" name="code" class="form-control form-control-sm text-uppercase" placeholder="e.g. PUMP-05">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark mb-1">Meter Type <span class="text-danger">*</span></label>
+                            <select name="meter_type" class="form-select form-select-sm" required>
+                                <option value="electronic" selected>Electronic Digital</option>
+                                <option value="mechanical">Mechanical Roller</option>
                             </select>
-                        </div>
-                        <div class="col-6">
-                            <label for="quickPartyPhone" class="form-label small fw-semibold text-secondary">Phone Number</label>
-                            <input type="text" class="form-control form-control-sm py-2" id="quickPartyPhone" name="phone" placeholder="0300-1234567">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="quickPartyAddress" class="form-label small fw-semibold text-secondary">Address / Location</label>
-                        <input type="text" class="form-control form-control-sm py-2" id="quickPartyAddress" name="address" placeholder="Shop / Market / City address">
-                    </div>
-
-                    <!-- Dealing Terms / Mode (Credit & Cash) -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary d-flex justify-content-between align-items-center mb-1">
-                            <span>Dealing Mode <span class="text-danger">*</span></span>
-                            <span class="text-muted fw-normal" style="font-size: 0.72rem;">Credit, Cash, or both</span>
-                        </label>
-                        <div class="p-2.5 rounded-3 bg-light border d-flex align-items-center gap-4">
-                            <div class="form-check m-0">
-                                <input class="form-check-input" type="checkbox" id="quickPartyCredit" value="1" checked>
-                                <label class="form-check-label small fw-semibold text-dark user-select-none" for="quickPartyCredit">
-                                    <i class="bi bi-credit-card text-primary me-1"></i> Credit
-                                </label>
-                            </div>
-                            <div class="form-check m-0">
-                                <input class="form-check-input" type="checkbox" id="quickPartyCash" value="1">
-                                <label class="form-check-label small fw-semibold text-dark user-select-none" for="quickPartyCash">
-                                    <i class="bi bi-cash-stack text-success me-1"></i> Cash
-                                </label>
-                            </div>
                         </div>
                     </div>
 
                     <div class="mb-2">
-                        <label for="quickPartyOpeningBalance" class="form-label small fw-semibold text-secondary">Opening Balance (Rs.)</label>
-                        <input type="number" step="0.01" class="form-control form-control-sm py-2" id="quickPartyOpeningBalance" name="opening_balance" value="0.00">
-                        <small class="text-muted" style="font-size: 0.72rem;">Starting ledger balance if already owed or paid.</small>
+                        <label class="form-label small fw-semibold text-dark mb-1">Dispensed Fuel Product <span class="text-danger">*</span></label>
+                        <select name="product_id" class="form-select form-select-sm" required>
+                            <option value="">-- Select Fuel --</option>
+                            @foreach($fuelProducts as $fp)
+                                <option value="{{ $fp->id }}">
+                                    {{ $fp->name }} (Rs. {{ number_format($fp->sale_price, 2) }}/{{ $fp->unit_label }}) - Stock: {{ number_format($fp->current_stock, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark mb-1">Storage Tank</label>
+                            <input type="text" name="tank_no" class="form-control form-control-sm" placeholder="e.g. Tank #1">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-dark mb-1">Nozzle Config</label>
+                            <input type="text" name="nozzle_number" class="form-control form-control-sm" placeholder="e.g. Nozzle 1 & 2">
+                        </div>
+                    </div>
+
+                    <div class="mb-2 p-2 bg-light rounded border">
+                        <label class="form-label small fw-bold text-primary mb-1">
+                            <i class="bi bi-speedometer2 me-1"></i>Initial / Starting Meter Reading <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" step="0.01" min="0" name="initial_reading" class="form-control form-control-sm fw-bold" placeholder="0.00" value="0.00" required>
+                        <small class="text-muted" style="font-size: 0.65rem;">Opening reading on this dispenser.</small>
+                    </div>
+
+                    <input type="hidden" name="status" value="active">
                 </div>
-                <div class="modal-footer border-top py-2 bg-light">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success btn-sm px-4 fw-semibold rounded-3 shadow-sm" id="btnSubmitQuickParty">
-                        <i class="bi bi-check-lg me-1"></i> Save Party
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="quickAddSubmitBtn" class="btn btn-primary btn-sm px-3 fw-semibold">
+                        <i class="bi bi-check-circle me-1"></i>Save & Select Machine
                     </button>
                 </div>
             </form>
@@ -753,1137 +1007,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-function calculateInvoiceCount() {
-    const startVal = document.getElementById('invoice_start').value.trim();
-    const endVal = document.getElementById('invoice_end').value.trim();
-    const start = parseInt(startVal) || 0;
-    const end = parseInt(endVal) || 0;
-    const display = document.getElementById('invoice_count_display');
-    if (startVal !== '' && endVal !== '') {
-        if (end >= start) {
-            display.value = end - start + 1;
-            display.classList.remove('text-danger');
-            display.classList.add('text-primary');
-        } else {
-            display.value = 0;
-            display.classList.remove('text-primary');
-            display.classList.add('text-danger');
-        }
-    } else {
-        display.value = 0;
-        display.classList.remove('text-danger');
-        display.classList.add('text-primary');
-    }
-}
-
-function calculateReturnInvoiceCount() {
-    const startVal = document.getElementById('return_invoice_start').value.trim();
-    const endVal = document.getElementById('return_invoice_end').value.trim();
-    const start = parseInt(startVal) || 0;
-    const end = parseInt(endVal) || 0;
-    const display = document.getElementById('return_invoice_count_display');
-
-    if (startVal !== '' && endVal !== '') {
-        if (end >= start) {
-            display.value = end - start + 1;
-            display.classList.remove('text-secondary');
-            display.classList.add('text-danger');
-        } else {
-            display.value = 0;
-            display.classList.remove('text-danger');
-            display.classList.add('text-secondary');
-        }
-    } else {
-        display.value = 0;
-        display.classList.remove('text-danger');
-        display.classList.add('text-secondary');
-    }
-}
-
-let partyPaymentIndex = {{ !empty($oldParties) ? count($oldParties) : 1 }};
-const partyPaymentRows = document.getElementById('partyPaymentRows');
-
-function getPartyOptions() {
-    return Array.from(document.querySelectorAll('#shiftClosingPartyList option'));
-}
-
-function bindPartyPaymentRow(row) {
-    if (!row) return;
-    const partyInput = row.querySelector('[data-party-search]');
-    const partyIdInput = row.querySelector('[data-party-id]');
-    const amtInput = row.querySelector('.shift-party-payment-amount');
-
-    if (partyInput && partyIdInput) {
-        partyInput.addEventListener('input', function () {
-            const partyOptions = getPartyOptions();
-            const matchedParty = partyOptions.find(function (option) { return option.value === partyInput.value; });
-            partyIdInput.value = matchedParty ? matchedParty.dataset.partyId : '';
-            calculateClosing();
-        });
-    }
-
-    if (amtInput) {
-        attachAmountFormatListeners(amtInput);
-    }
-
-    row.querySelector('[data-remove-party-payment]')?.addEventListener('click', function () {
-        if (partyPaymentRows.querySelectorAll('[data-party-payment-row]').length > 1) {
-            row.remove();
-        } else {
-            row.querySelectorAll('input').forEach(function (input) { input.value = ''; });
-            const cat = row.querySelector('select');
-            if (cat) cat.value = '';
-        }
-        calculateClosing();
-    });
-}
-
-document.querySelectorAll('#partyPaymentRows [data-party-payment-row]').forEach(function(row) {
-    bindPartyPaymentRow(row);
-});
-
-document.getElementById('addPartyPayment').addEventListener('click', function () {
-    const row = document.createElement('div');
-    row.className = 'p-2 mb-2 rounded bg-light border';
-    row.dataset.partyPaymentRow = '';
-    row.innerHTML = `
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-4">
-                <label class="form-label small fw-semibold text-secondary">Search Party / Payee</label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                    <input type="search" class="form-control form-control-sm" list="shiftClosingPartyList" data-party-search placeholder="Type name or phone..." autocomplete="off">
-                </div>
-                <input type="hidden" name="party_payments[${partyPaymentIndex}][party_id]" data-party-id>
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-semibold text-secondary">Expense Category / Reason</label>
-                <select name="party_payments[${partyPaymentIndex}][expense_category_id]" class="form-select form-select-sm">
-                    <option value="">-- Select Purpose --</option>
-                    @foreach($expenseCategories as $cat)
-                        <option value="{{ $cat->id }}">{{ addslashes($cat->name) }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                <input type="text" inputmode="decimal" class="form-control form-control-sm shift-party-payment-amount fw-bold text-danger amount-format" name="party_payments[${partyPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label small fw-semibold text-secondary">Detail / Note</label>
-                <input type="text" class="form-control form-control-sm" name="party_payments[${partyPaymentIndex}][details]" maxlength="1000" placeholder="Bill / memo reference">
-            </div>
-            <div class="col-12 col-md-1">
-                <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-party-payment title="Remove row">
-                    <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove</span>
-                </button>
-            </div>
-        </div>`;
-    partyPaymentRows.appendChild(row);
-    bindPartyPaymentRow(row);
-    partyPaymentIndex++;
-});
-
-// Quick Add Party AJAX & Live Duplicate Checker handling
-const quickAddPartyForm = document.getElementById('quickAddPartyForm');
-const quickPartyModalEl = document.getElementById('quickAddPartyModal');
-const btnSubmitQuickParty = document.getElementById('btnSubmitQuickParty');
-const quickPartyErrorAlert = document.getElementById('quickPartyErrorAlert');
-const quickPartyNameInput = document.getElementById('quickPartyName');
-const quickPartyNameFeedback = document.getElementById('quickPartyNameFeedback');
-const quickPartyNameSpinner = document.getElementById('quickPartyNameSpinner');
-const checkPartyDuplicateUrl = "{{ route('parties.check-duplicate') }}";
-
-let quickPartyDebounceTimer = null;
-let quickPartyAbortController = null;
-let quickPartyHasExactDuplicate = false;
-
-function resetQuickPartyDuplicateState() {
-    if (quickPartyDebounceTimer) clearTimeout(quickPartyDebounceTimer);
-    if (quickPartyAbortController) quickPartyAbortController.abort();
-    if (quickPartyNameFeedback) {
-        quickPartyNameFeedback.innerHTML = '';
-        quickPartyNameFeedback.style.display = 'none';
-    }
-    if (quickPartyNameInput) {
-        quickPartyNameInput.classList.remove('is-invalid', 'is-valid');
-    }
-    if (quickPartyNameSpinner) {
-        quickPartyNameSpinner.style.display = 'none';
-    }
-    quickPartyHasExactDuplicate = false;
-    if (btnSubmitQuickParty) {
-        btnSubmitQuickParty.disabled = false;
-    }
-}
-
-// Function to select an existing party directly from suggestions
-window.selectQuickParty = function(id, name, type, phone) {
-    const partyTypeCapitalized = type ? (type.charAt(0).toUpperCase() + type.slice(1)) : '';
-    const partyLabel = `${name}${phone ? ' (' + phone + ')' : ''}${partyTypeCapitalized ? ' [' + partyTypeCapitalized + ']' : ''} #${id}`;
-
-    // Ensure party exists in the datalist
-    const datalist = document.getElementById('shiftClosingPartyList');
-    if (datalist && !datalist.querySelector(`option[data-party-id="${id}"]`)) {
-        const newOption = document.createElement('option');
-        newOption.value = partyLabel;
-        newOption.dataset.partyId = id;
-        datalist.appendChild(newOption);
-    }
-
-    // Auto-fill into first empty row or the last row
-    const rows = partyPaymentRows.querySelectorAll('[data-party-payment-row]');
-    let targetRow = null;
-    for (let i = 0; i < rows.length; i++) {
-        const searchInp = rows[i].querySelector('[data-party-search]');
-        if (searchInp && !searchInp.value) {
-            targetRow = rows[i];
-            break;
-        }
-    }
-    if (!targetRow && rows.length > 0) {
-        targetRow = rows[rows.length - 1];
-    }
-
-    if (targetRow) {
-        const partyInput = targetRow.querySelector('[data-party-search]');
-        const partyIdInput = targetRow.querySelector('[data-party-id]');
-        if (partyInput && partyIdInput) {
-            partyInput.value = partyLabel;
-            partyIdInput.value = id;
-            calculateClosing();
-        }
-    }
-
-    // Reset & close modal
-    if (quickAddPartyForm) quickAddPartyForm.reset();
-    document.getElementById('quickPartyOpeningBalance').value = '0.00';
-    resetQuickPartyDuplicateState();
-    const modalInstance = bootstrap.Modal.getInstance(quickPartyModalEl) || new bootstrap.Modal(quickPartyModalEl);
-    modalInstance.hide();
-};
-
-if (quickPartyNameInput && quickPartyNameFeedback) {
-    quickPartyNameInput.addEventListener('input', function() {
-        const query = quickPartyNameInput.value.trim();
-
-        if (quickPartyDebounceTimer) clearTimeout(quickPartyDebounceTimer);
-        if (quickPartyAbortController) quickPartyAbortController.abort();
-
-        if (query.length < 1) {
-            resetQuickPartyDuplicateState();
-            return;
-        }
-
-        if (quickPartyNameSpinner) quickPartyNameSpinner.style.display = 'inline-block';
-
-        quickPartyDebounceTimer = setTimeout(() => {
-            quickPartyAbortController = new AbortController();
-            const url = checkPartyDuplicateUrl + '?name=' + encodeURIComponent(query);
-
-            fetch(url, {
-                signal: quickPartyAbortController.signal,
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (quickPartyNameSpinner) quickPartyNameSpinner.style.display = 'none';
-
-                if (data.exact_match && data.exact_party) {
-                    quickPartyHasExactDuplicate = true;
-                    quickPartyNameInput.classList.add('is-invalid');
-                    quickPartyNameInput.classList.remove('is-valid');
-                    if (btnSubmitQuickParty) btnSubmitQuickParty.disabled = true;
-
-                    const safeName = data.exact_party.name.replace(/'/g, "\\'");
-                    const safePhone = data.exact_party.phone && data.exact_party.phone !== 'N/A' ? data.exact_party.phone.replace(/'/g, "\\'") : '';
-
-                    quickPartyNameFeedback.innerHTML = `
-                        <div class="alert alert-danger p-2.5 mb-0 rounded-3 shadow-xs border border-danger-subtle">
-                            <div class="d-flex align-items-center gap-1.5 fw-bold text-danger mb-1" style="font-size: 0.83rem;">
-                                <i class="bi bi-exclamation-octagon-fill text-danger fs-6"></i>
-                                <span>Already Registered! Duplicate not allowed.</span>
-                            </div>
-                            <div class="small text-dark mb-2" style="font-size: 0.8rem;">
-                                A party named <strong class="text-danger">"${data.exact_party.name}"</strong> is already registered as 
-                                <span class="badge bg-secondary">${data.exact_party.type}</span>
-                                ${data.exact_party.phone && data.exact_party.phone !== 'N/A' ? `<span class="text-muted ms-1">(Phone: ${data.exact_party.phone})</span>` : ''}.
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between pt-1.5 border-top border-danger-subtle flex-wrap gap-2">
-                                <div class="d-flex align-items-center gap-1.5">
-                                    <button type="button" class="btn btn-success btn-xs py-1 px-2 fw-semibold" style="font-size: 0.75rem;" onclick="selectQuickParty(${data.exact_party.id}, '${safeName}', '${data.exact_party.type}', '${safePhone}')">
-                                        <i class="bi bi-check2 me-1"></i> Select Existing Party
-                                    </button>
-                                    <a href="${data.exact_party.ledger_url}" target="_blank" class="btn btn-outline-danger btn-xs py-1 px-2 fw-semibold text-decoration-none" style="font-size: 0.75rem;">
-                                        <i class="bi bi-box-arrow-up-right me-1"></i> View Ledger
-                                    </a>
-                                </div>
-                                <span class="text-muted small" style="font-size: 0.73rem;">Change the name to proceed</span>
-                            </div>
-                        </div>
-                    `;
-                    quickPartyNameFeedback.style.display = 'block';
-                } else if (data.suggestions && data.suggestions.length > 0) {
-                    quickPartyHasExactDuplicate = false;
-                    quickPartyNameInput.classList.remove('is-invalid', 'is-valid');
-                    if (btnSubmitQuickParty) btnSubmitQuickParty.disabled = false;
-
-                    const listItems = data.suggestions.map(item => {
-                        const sName = item.name.replace(/'/g, "\\'");
-                        const sPhone = item.phone && item.phone !== 'N/A' ? item.phone.replace(/'/g, "\\'") : '';
-                        return `
-                            <div class="list-group-item d-flex justify-content-between align-items-center py-1.5 px-2.5 bg-white">
-                                <div class="me-2 text-truncate">
-                                    <span class="fw-semibold text-dark" style="font-size: 0.82rem;">${item.name}</span>
-                                    <span class="badge bg-light text-secondary border ms-1" style="font-size: 0.7rem;">${item.type}</span>
-                                    ${item.phone && item.phone !== 'N/A' ? `<small class="text-muted ms-2"><i class="bi bi-telephone"></i> ${item.phone}</small>` : ''}
-                                </div>
-                                <div class="d-flex align-items-center gap-1">
-                                    <button type="button" class="btn btn-outline-success btn-xs py-0.5 px-1.5 fw-semibold" style="font-size: 0.72rem;" onclick="selectQuickParty(${item.id}, '${sName}', '${item.type}', '${sPhone}')">
-                                        <i class="bi bi-check2"></i> Select
-                                    </button>
-                                    <a href="${item.ledger_url}" target="_blank" class="btn btn-light btn-xs border text-primary fw-semibold py-0.5 px-1.5 text-nowrap" style="font-size: 0.72rem;">
-                                        Ledger <i class="bi bi-box-arrow-up-right ms-0.5"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    quickPartyNameFeedback.innerHTML = `
-                        <div class="card border border-warning-subtle bg-warning bg-opacity-10 rounded-3 shadow-xs p-2 mb-0">
-                            <div class="d-flex align-items-center justify-content-between mb-1.5 px-1">
-                                <span class="small fw-bold text-dark d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <i class="bi bi-search text-warning me-1.5"></i>
-                                    Existing similar parties (${data.suggestions.length} found):
-                                </span>
-                                <small class="text-muted" style="font-size: 0.72rem;">Check to prevent duplicate</small>
-                            </div>
-                            <div class="list-group list-group-flush rounded border overflow-hidden">
-                                ${listItems}
-                            </div>
-                            <div class="text-muted px-1 mt-1.5 small" style="font-size: 0.73rem;">
-                                <i class="bi bi-info-circle text-primary me-1"></i> If you are registering a different party, you can proceed.
-                            </div>
-                        </div>
-                    `;
-                    quickPartyNameFeedback.style.display = 'block';
-                } else {
-                    quickPartyHasExactDuplicate = false;
-                    quickPartyNameInput.classList.remove('is-invalid');
-                    quickPartyNameInput.classList.add('is-valid');
-                    if (btnSubmitQuickParty) btnSubmitQuickParty.disabled = false;
-
-                    quickPartyNameFeedback.innerHTML = `
-                        <div class="text-success small d-flex align-items-center px-1" style="font-size: 0.78rem;">
-                            <i class="bi bi-check-circle-fill me-1.5 text-success"></i>
-                            <span>Party name is unique & available.</span>
-                        </div>
-                    `;
-                    quickPartyNameFeedback.style.display = 'block';
-                }
-            })
-            .catch(err => {
-                if (err.name !== 'AbortError') {
-                    if (quickPartyNameSpinner) quickPartyNameSpinner.style.display = 'none';
-                }
-            });
-        }, 250);
-    });
-}
-
-if (quickPartyModalEl) {
-    quickPartyModalEl.addEventListener('hidden.bs.modal', function () {
-        if (quickAddPartyForm) quickAddPartyForm.reset();
-        document.getElementById('quickPartyOpeningBalance').value = '0.00';
-        quickPartyErrorAlert.classList.add('d-none');
-        quickPartyErrorAlert.innerText = '';
-        resetQuickPartyDuplicateState();
-    });
-}
-
-if (quickAddPartyForm) {
-    quickAddPartyForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        if (quickPartyHasExactDuplicate) {
-            quickPartyNameInput.focus();
-            alert('A party with this exact name already exists. Please choose a different name.');
-            return;
-        }
-
-        quickPartyErrorAlert.classList.add('d-none');
-        quickPartyErrorAlert.innerText = '';
-
-        const originalBtnHtml = btnSubmitQuickParty.innerHTML;
-        btnSubmitQuickParty.disabled = true;
-        btnSubmitQuickParty.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
-
-        const formData = {
-            name: document.getElementById('quickPartyName').value.trim(),
-            type: document.getElementById('quickPartyType').value,
-            is_credit: document.getElementById('quickPartyCredit')?.checked ?? true,
-            is_cash: document.getElementById('quickPartyCash')?.checked ?? false,
-            phone: document.getElementById('quickPartyPhone').value.trim(),
-            address: document.getElementById('quickPartyAddress').value.trim(),
-            opening_balance: document.getElementById('quickPartyOpeningBalance').value.trim() || '0'
-        };
-
-        try {
-            const response = await fetch("{{ route('parties.store') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                let errorMsg = data.message || 'Error creating party.';
-                if (data.errors) {
-                    const firstErr = Object.values(data.errors)[0];
-                    if (Array.isArray(firstErr) && firstErr.length > 0) {
-                        errorMsg = firstErr[0];
-                    }
-                }
-                quickPartyErrorAlert.innerText = errorMsg;
-                quickPartyErrorAlert.classList.remove('d-none');
-                btnSubmitQuickParty.disabled = false;
-                btnSubmitQuickParty.innerHTML = originalBtnHtml;
-                return;
-            }
-
-            // Party created successfully
-            const party = data.party;
-            const partyTypeCapitalized = party.type.charAt(0).toUpperCase() + party.type.slice(1);
-            const partyLabel = `${party.name}${party.phone ? ' (' + party.phone + ')' : ''} [${partyTypeCapitalized}] #${party.id}`;
-
-            // Add to datalist
-            const datalist = document.getElementById('shiftClosingPartyList');
-            const newOption = document.createElement('option');
-            newOption.value = partyLabel;
-            newOption.dataset.partyId = party.id;
-            datalist.appendChild(newOption);
-
-            // Auto-fill into first empty row or the last row
-            const rows = partyPaymentRows.querySelectorAll('[data-party-payment-row]');
-            let targetRow = null;
-            for (let i = 0; i < rows.length; i++) {
-                const searchInp = rows[i].querySelector('[data-party-search]');
-                if (searchInp && !searchInp.value) {
-                    targetRow = rows[i];
-                    break;
-                }
-            }
-            if (!targetRow && rows.length > 0) {
-                targetRow = rows[rows.length - 1];
-            }
-
-            if (targetRow) {
-                const partyInput = targetRow.querySelector('[data-party-search]');
-                const partyIdInput = targetRow.querySelector('[data-party-id]');
-                if (partyInput && partyIdInput) {
-                    partyInput.value = partyLabel;
-                    partyIdInput.value = party.id;
-                    calculateClosing();
-                }
-            }
-
-            // Reset form & close modal
-            quickAddPartyForm.reset();
-            resetQuickPartyDuplicateState();
-            document.getElementById('quickPartyOpeningBalance').value = '0.00';
-            const modalInstance = bootstrap.Modal.getInstance(quickPartyModalEl) || new bootstrap.Modal(quickPartyModalEl);
-            modalInstance.hide();
-
-        } catch (err) {
-            quickPartyErrorAlert.innerText = 'Network error occurred. Please try again.';
-            quickPartyErrorAlert.classList.remove('d-none');
-        } finally {
-            btnSubmitQuickParty.disabled = false;
-            btnSubmitQuickParty.innerHTML = originalBtnHtml;
-        }
-    });
-}
-
-let accountPaymentIndex = {{ !empty($oldAccounts) ? count($oldAccounts) : 1 }};
-const accountPaymentRows = document.getElementById('accountPaymentRows');
-
-function bindAccountPaymentRow(row) {
-    if (!row) return;
-    row.querySelector('.shift-account-select')?.addEventListener('change', calculateClosing);
-    const amtInput = row.querySelector('.shift-account-payment-amount');
-    if (amtInput) {
-        attachAmountFormatListeners(amtInput);
-    }
-    row.querySelector('[data-remove-account-payment]')?.addEventListener('click', function () {
-        if (accountPaymentRows.querySelectorAll('[data-account-payment-row]').length > 1) {
-            row.remove();
-        } else {
-            row.querySelectorAll('input').forEach(function (input) { input.value = ''; });
-            const sel = row.querySelector('select');
-            if (sel) sel.value = '';
-        }
-        calculateClosing();
-    });
-}
-
-document.querySelectorAll('#accountPaymentRows [data-account-payment-row]').forEach(function(row) {
-    bindAccountPaymentRow(row);
-});
-
-document.getElementById('addAccountPayment').addEventListener('click', function () {
-    const row = document.createElement('div');
-    row.className = 'p-2 mb-2 rounded bg-light border';
-    row.dataset.accountPaymentRow = '';
-    
-    const firstSelect = accountPaymentRows.querySelector('.shift-account-select');
-    const optionsHtml = firstSelect ? firstSelect.innerHTML : '';
-
-    row.innerHTML = `
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-5">
-                <label class="form-label small fw-semibold text-secondary">Destination Account</label>
-                <select class="form-select form-select-sm shift-account-select" name="account_payments[${accountPaymentIndex}][account_id]" onchange="calculateClosing()">
-                    ${optionsHtml}
-                </select>
-            </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label small fw-semibold text-secondary">Amount (Rs.)</label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white text-muted">Rs.</span>
-                    <input type="text" inputmode="decimal" class="form-control form-control-sm shift-account-payment-amount fw-bold text-primary amount-format" name="account_payments[${accountPaymentIndex}][amount]" placeholder="0.00" autocomplete="off">
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label small fw-semibold text-secondary">Transaction Ref / Note</label>
-                <input type="text" class="form-control form-control-sm" name="account_payments[${accountPaymentIndex}][description]" maxlength="500" placeholder="Txn ID / payer name">
-            </div>
-            <div class="col-12 col-md-1">
-                <button type="button" class="btn btn-outline-danger btn-sm w-100" data-remove-account-payment title="Remove row">
-                    <i class="bi bi-trash"></i> <span class="d-md-none ms-1">Remove Row</span>
-                </button>
-            </div>
-        </div>`;
-    accountPaymentRows.appendChild(row);
-    bindAccountPaymentRow(row);
-    accountPaymentIndex++;
-});
-
-function resetNotes() {
-    if (!confirm('Are you sure you want to reset currency note counts to 0?')) return;
-    document.querySelectorAll('.note-input').forEach(function(input) { input.value = 0; });
-    calculateClosing();
-}
-
-function formatRs(num) {
-    return 'Rs. ' + Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatWithCommas(raw) {
-    if (raw === null || raw === undefined) return '';
-    let str = String(raw).trim();
-    if (!str) return '';
-    
-    // Only allow digits and at most one decimal point
-    let clean = str.replace(/[^\d.]/g, '');
-    const parts = clean.split('.');
-    let integerPart = parts[0] || '';
-    let decimalPart = parts.length > 1 ? parts.slice(1).join('') : null;
-
-    if (integerPart.length > 1) {
-        integerPart = integerPart.replace(/^0+(?=\d)/, '');
-    }
-
-    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-    if (decimalPart !== null) {
-        return integerPart + '.' + decimalPart;
-    }
-    return integerPart;
-}
-
-function parseAmount(val) {
-    if (val === null || val === undefined) return 0;
-    const clean = String(val).replace(/,/g, '').trim();
-    const num = parseFloat(clean);
-    return isNaN(num) ? 0 : num;
-}
-
-function handleAmountInput(e) {
-    const input = e.target;
-    const initialVal = input.value;
-    const cursorPosition = input.selectionStart || 0;
-
-    const rawBefore = initialVal.slice(0, cursorPosition).replace(/,/g, '');
-    const charsBeforeCursor = rawBefore.length;
-
-    const formatted = formatWithCommas(initialVal);
-    input.value = formatted;
-
-    let newCursorPos = 0;
-    let count = 0;
-    for (let i = 0; i < formatted.length; i++) {
-        if (formatted[i] !== ',') {
-            count++;
-        }
-        if (count === charsBeforeCursor) {
-            newCursorPos = i + 1;
-            break;
-        }
-    }
-    if (charsBeforeCursor === 0) {
-        newCursorPos = 0;
-    } else if (count < charsBeforeCursor) {
-        newCursorPos = formatted.length;
-    }
-
-    try {
-        input.setSelectionRange(newCursorPos, newCursorPos);
-    } catch (err) {}
-
-    calculateClosing();
-}
-
-function handleAmountKeydown(e) {
-    const input = e.target;
-    if (e.key === 'Backspace') {
-        const pos = input.selectionStart;
-        if (pos === input.selectionEnd && pos > 0 && input.value[pos - 1] === ',') {
-            e.preventDefault();
-            const val = input.value;
-            const newVal = val.slice(0, pos - 2) + val.slice(pos - 1);
-            input.value = formatWithCommas(newVal);
-            const rawBefore = val.slice(0, pos - 2).replace(/,/g, '').length;
-            let newPos = 0;
-            let count = 0;
-            for (let i = 0; i < input.value.length; i++) {
-                if (input.value[i] !== ',') count++;
-                if (count === rawBefore) {
-                    newPos = i + 1;
-                    break;
-                }
-            }
-            if (rawBefore === 0) newPos = 0;
-            input.setSelectionRange(newPos, newPos);
-            calculateClosing();
-        }
-    }
-}
-
-function attachAmountFormatListeners(input) {
-    if (!input || input.dataset.formatAttached) return;
-    input.dataset.formatAttached = 'true';
-    input.addEventListener('input', handleAmountInput);
-    input.addEventListener('keydown', handleAmountKeydown);
-}
-
-function calculateClosing() {
-    // 1. Note Calculations
-    const n5000 = (parseInt(document.getElementById('note_5000').value) || 0);
-    const n1000 = (parseInt(document.getElementById('note_1000').value) || 0);
-    const n500  = (parseInt(document.getElementById('note_500').value) || 0);
-    const n100  = (parseInt(document.getElementById('note_100').value) || 0);
-    const n50   = (parseInt(document.getElementById('note_50').value) || 0);
-    const n20   = (parseInt(document.getElementById('note_20').value) || 0);
-    const n10   = (parseInt(document.getElementById('note_10').value) || 0);
-    const coins = parseAmount(document.getElementById('coins').value);
-
-    const sub5000 = n5000 * 5000;
-    const sub1000 = n1000 * 1000;
-    const sub500  = n500 * 500;
-    const sub100  = n100 * 100;
-    const sub50   = n50 * 50;
-    const sub20   = n20 * 20;
-    const sub10   = n10 * 10;
-
-    document.getElementById('sub_5000').innerText = sub5000.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_1000').innerText = sub1000.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_500').innerText  = sub500.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_100').innerText  = sub100.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_50').innerText   = sub50.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_20').innerText   = sub20.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_10').innerText   = sub10.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('sub_coins').innerText = coins.toLocaleString('en-US', {minimumFractionDigits: 2});
-
-    const totalCashCounted = sub5000 + sub1000 + sub500 + sub100 + sub50 + sub20 + sub10 + coins;
-    document.getElementById('display_total_cash').innerText = formatRs(totalCashCounted);
-
-    // 2. Sales, Returns & Expenses
-    const totalSale = parseAmount(document.getElementById('total_sale').value);
-    const returns   = parseAmount(document.getElementById('returns_amount').value);
-    const expenses  = parseAmount(document.getElementById('expenses_amount').value);
-
-    // Calculate Net Sale (Total Gross Sale minus Sale Returns)
-    const netSale = totalSale - returns;
-    const netSaleDisplay = document.getElementById('net_sale_display');
-    if (netSaleDisplay) {
-        netSaleDisplay.value = formatWithCommas(netSale.toFixed(2));
-    }
-
-    // 3. Party Payments
-    let totalPartyPayments = 0;
-    document.querySelectorAll('[data-party-payment-row]').forEach(function(row) {
-        const amt = parseAmount(row.querySelector('.shift-party-payment-amount')?.value);
-        totalPartyPayments += amt;
-    });
-    document.getElementById('display_party_total').innerText = formatRs(totalPartyPayments);
-
-    // Expected cash = Total Sale - Returns - Expenses - Party Payments
-    const totalDeductions = returns + expenses + totalPartyPayments;
-    const expectedCash = totalSale - totalDeductions;
-
-    // 4. Digital Collections from Dynamic Account Rows
-    let totalDigitalCollections = 0;
-    let totalJazzcash = 0;
-    let totalBank = 0;
-
-    document.querySelectorAll('[data-account-payment-row]').forEach(function(row) {
-        const select = row.querySelector('.shift-account-select');
-        const amt = parseAmount(row.querySelector('.shift-account-payment-amount')?.value);
-        if (select && select.value && amt > 0) {
-            totalDigitalCollections += amt;
-            const selectedOpt = select.options[select.selectedIndex];
-            const accType = selectedOpt ? selectedOpt.dataset.type : '';
-            if (accType === 'jazzcash') {
-                totalJazzcash += amt;
-            } else {
-                totalBank += amt;
-            }
-        }
-    });
-
-    document.getElementById('display_account_total').innerText = formatRs(totalDigitalCollections);
-    document.getElementById('jazzcash_amount').value = totalJazzcash;
-    document.getElementById('bank_amount').value = totalBank;
-
-    const actualCollected = totalCashCounted + totalDigitalCollections;
-
-    // 5. Variance / Difference
-    const diff = actualCollected - expectedCash;
-
-    // 6. Update Top KPI Ribbon
-    document.getElementById('kpi_sales').innerText = formatRs(totalSale);
-    document.getElementById('kpi_expected').innerText = formatRs(expectedCash);
-    document.getElementById('kpi_actual').innerText = formatRs(actualCollected);
-    document.getElementById('kpi_variance').innerText = (diff > 0 ? '+' : '') + formatRs(diff);
-
-    // 7. Update Audit Box
-    document.getElementById('audit_gross').innerText = formatRs(totalSale);
-    document.getElementById('audit_deductions').innerText = '- ' + formatRs(totalDeductions);
-    document.getElementById('audit_expected').innerText = formatRs(expectedCash);
-    const auditCashEl = document.getElementById('audit_cash');
-    if (auditCashEl) {
-        auditCashEl.innerText = formatRs(totalCashCounted);
-    }
-    document.getElementById('audit_actual').innerText = formatRs(actualCollected);
-
-    const diffEl = document.getElementById('display_difference');
-    const badgeEl = document.getElementById('calc_status_badge');
-    const kpiBadge = document.getElementById('kpi_variance_badge');
-    const kpiCard = document.getElementById('kpi_variance_card');
-    const kpiText = document.getElementById('kpi_variance_text');
-    const alertBox = document.getElementById('diff_alert_box');
-
-    const submitBtn = document.getElementById('submitBtn');
-    window.currentShiftVariance = diff;
-
-    if (diff === 0) {
-        diffEl.innerText = 'Rs. 0.00';
-        diffEl.className = 'font-monospace fw-bold fs-5 text-success text-nowrap';
-        badgeEl.className = 'badge bg-success';
-        badgeEl.innerText = 'Balanced';
-        kpiBadge.className = 'badge bg-success small py-0 px-1';
-        kpiBadge.innerText = 'Balanced';
-        kpiCard.className = 'card-custom p-2 p-sm-3 bg-white border-start border-4 border-success h-100 shadow-sm';
-        kpiText.innerText = 'Exact match (Rs. 0)';
-        alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-success bg-opacity-10 text-success fw-semibold border border-success';
-        alertBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Register is perfectly balanced. Counted funds match calculated sales.';
-
-        if (submitBtn) {
-            if (window.isShiftAlreadyClosed) {
-                submitBtn.disabled = true;
-                submitBtn.classList.remove('btn-primary', 'btn-danger');
-                submitBtn.classList.add('btn-secondary');
-                submitBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> <span>Blocked: Shift Already Closed</span>';
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn-danger', 'btn-secondary');
-                submitBtn.classList.add('btn-primary');
-                submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
-            }
-        }
-    } else if (diff > 0) {
-        const text = '+Rs. ' + diff.toLocaleString('en-US', {minimumFractionDigits: 2});
-        diffEl.innerText = text + ' (Surplus)';
-        diffEl.className = 'font-monospace fw-bold fs-5 text-info text-nowrap';
-        badgeEl.className = 'badge bg-info text-dark';
-        badgeEl.innerText = 'Cash Surplus';
-        kpiBadge.className = 'badge bg-info text-dark small py-0 px-1';
-        kpiBadge.innerText = 'Surplus';
-        kpiCard.className = 'card-custom p-2 p-sm-3 bg-white border-start border-4 border-info h-100 shadow-sm';
-        kpiText.innerText = 'Excess received: ' + text;
-        alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-info bg-opacity-10 text-info fw-semibold border border-info';
-        alertBox.innerHTML = '<i class="bi bi-info-circle-fill me-1"></i> <strong>Cash Surplus:</strong> Received ' + text + ' more than expected sales.';
-
-        if (submitBtn) {
-            if (window.isShiftAlreadyClosed) {
-                submitBtn.disabled = true;
-                submitBtn.classList.remove('btn-primary', 'btn-danger');
-                submitBtn.classList.add('btn-secondary');
-                submitBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> <span>Blocked: Shift Already Closed</span>';
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn-danger', 'btn-secondary');
-                submitBtn.classList.add('btn-primary');
-                submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> <span>Submit & Lock Shift Closing</span>';
-            }
-        }
-    } else {
-        const text = '-Rs. ' + Math.abs(diff).toLocaleString('en-US', {minimumFractionDigits: 2});
-        diffEl.innerText = text + ' (Shortage)';
-        diffEl.className = 'font-monospace fw-bold fs-5 text-danger text-nowrap';
-        badgeEl.className = 'badge bg-danger';
-        badgeEl.innerText = 'Cash Shortage';
-        kpiBadge.className = 'badge bg-danger small py-0 px-1';
-        kpiBadge.innerText = 'Shortage';
-        kpiCard.className = 'card-custom p-2 p-sm-3 bg-white border-start border-4 border-danger h-100 shadow-sm';
-        kpiText.innerText = 'Shortage: ' + text;
-        alertBox.className = 'small text-center py-2 px-3 rounded mb-3 bg-danger bg-opacity-10 text-danger fw-bold border border-danger';
-        alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Shift Close Blocked:</strong> Cash shortage of ' + text + ' detected. Negative variance shift cannot be closed.';
-
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.classList.remove('btn-primary', 'btn-secondary');
-            submitBtn.classList.add('btn-danger');
-            submitBtn.innerHTML = '<i class="bi bi-slash-circle me-1"></i> <span>Blocked: Negative Variance (Shortage)</span>';
-        }
-    }
-}
-
-// 8. Prevent duplicate shift closing for the same date & shift cycle
-const existingClosings = @json($existingClosings ?? []);
-
-function validateShiftAvailability() {
-    const dateInput = document.getElementById('closing_date');
-    const shiftSelect = document.getElementById('shift_type_select');
-    const warningEl = document.getElementById('shift_duplicate_warning');
-    const submitBtn = document.getElementById('submitBtn');
-
-    if (!dateInput || !shiftSelect) return;
-
-    // Update options labels
-    Array.from(shiftSelect.options).forEach(function(opt) {
-        const optKey = dateInput.value + '_' + opt.value;
-        const optClosed = existingClosings.includes(optKey);
-        const baseName = opt.value === 'morning' ? '☀️ Morning Shift' : '🌙 Evening Shift';
-        if (optClosed) {
-            opt.textContent = baseName + ' (Already Closed)';
-        } else {
-            opt.textContent = baseName;
-        }
-    });
-
-    const currentKey = dateInput.value + '_' + shiftSelect.value;
-    const isClosed = existingClosings.includes(currentKey);
-
-    if (isClosed) {
-        window.isShiftAlreadyClosed = true;
-        if (warningEl) {
-            warningEl.classList.remove('d-none');
-            warningEl.innerHTML = '<i class="bi bi-exclamation-octagon-fill me-1"></i> This shift is already closed! A shift cannot be closed twice.';
-        }
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.classList.remove('btn-primary', 'btn-danger');
-            submitBtn.classList.add('btn-secondary');
-            submitBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> <span>Blocked: Shift Already Closed</span>';
-        }
-    } else {
-        window.isShiftAlreadyClosed = false;
-        if (warningEl) {
-            warningEl.classList.add('d-none');
-            warningEl.innerHTML = '';
-        }
-        calculateClosing();
-    }
-}
-
-document.getElementById('closing_date')?.addEventListener('change', validateShiftAvailability);
-document.getElementById('shift_type_select')?.addEventListener('change', validateShiftAvailability);
-
-// Keyboard shortcuts: pressing Enter in note inputs moves to next note input (Ctrl+Enter submits form)
-const noteInputs = Array.from(document.querySelectorAll('.note-input'));
-noteInputs.forEach(function(input, index) {
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            if (index + 1 < noteInputs.length) {
-                noteInputs[index + 1].focus();
-            } else {
-                document.getElementById('total_sale').focus();
-            }
-        }
-    });
-});
-
-// Floating toast alert function
-function showFloatingToastAlert(message) {
-    let toast = document.getElementById('shiftValidationToast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'shiftValidationToast';
-        toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 shadow-lg rounded-3 py-2 px-3 text-white bg-danger border border-white d-flex align-items-center gap-2';
-        toast.style.zIndex = '99999';
-        toast.style.maxWidth = '90vw';
-        toast.style.fontSize = '0.9rem';
-        toast.style.fontWeight = '600';
-        document.body.appendChild(toast);
-    }
-    toast.innerHTML = `<i class="bi bi-exclamation-triangle-fill fs-5"></i> <span>${message}</span> <button type="button" class="btn-close btn-close-white ms-2 btn-sm" aria-label="Close" onclick="this.parentElement.remove()"></button>`;
-    toast.style.display = 'flex';
-
-    if (window.shiftToastTimeout) clearTimeout(window.shiftToastTimeout);
-    window.shiftToastTimeout = setTimeout(function() {
-        if (toast && toast.parentElement) {
-            toast.remove();
-        }
-    }, 4500);
-}
-
-// Clear all validation highlights and messages
-function clearAllValidationHighlights() {
-    document.querySelectorAll('.field-highlight-error, .is-invalid').forEach(function(el) {
-        el.classList.remove('field-highlight-error', 'is-invalid');
-    });
-    document.querySelectorAll('.validation-error-feedback').forEach(function(el) {
-        el.remove();
-    });
-}
-
-// Focus and highlight the invalid field with message
-function triggerValidationError(element, message) {
-    clearAllValidationHighlights();
-
-    if (!element) return false;
-
-    element.classList.add('is-invalid', 'field-highlight-error');
-
-    let feedback = document.createElement('div');
-    feedback.className = 'validation-error-feedback text-danger fw-bold small mt-1 d-flex align-items-center gap-1';
-    feedback.innerHTML = '<i class="bi bi-exclamation-circle-fill text-danger me-1"></i> ' + message;
-
-    if (element.closest('.input-group')) {
-        element.closest('.input-group').insertAdjacentElement('afterend', feedback);
-    } else {
-        element.insertAdjacentElement('afterend', feedback);
-    }
-
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    setTimeout(function() {
-        try {
-            element.focus();
-            if (element.select && typeof element.select === 'function') {
-                element.select();
-            }
-        } catch (e) {}
-    }, 150);
-
-    showFloatingToastAlert(message);
-
-    const clearHandler = function() {
-        element.classList.remove('is-invalid', 'field-highlight-error');
-        if (feedback && feedback.parentElement) {
-            feedback.remove();
-        }
-        element.removeEventListener('input', clearHandler);
-        element.removeEventListener('change', clearHandler);
-    };
-    element.addEventListener('input', clearHandler);
-    element.addEventListener('change', clearHandler);
-
-    return false;
-}
-
-// Validate form before submission
-function validateShiftFormOnSubmit(e) {
-    // 1. Closing Date
-    const dateInput = document.getElementById('closing_date');
-    if (!dateInput || !dateInput.value.trim()) {
-        e.preventDefault();
-        return triggerValidationError(dateInput, 'Please select a Closing Date.');
-    }
-
-    // 2. Shift Cycle
-    const shiftSelect = document.getElementById('shift_type_select');
-    if (!shiftSelect || !shiftSelect.value.trim()) {
-        e.preventDefault();
-        return triggerValidationError(shiftSelect, 'Please select Shift Cycle (Morning or Evening).');
-    }
-    if (window.isShiftAlreadyClosed) {
-        e.preventDefault();
-        return triggerValidationError(shiftSelect, 'This shift has already been closed for the selected date. Choose another shift or date.');
-    }
-
-    // 3. Shift Cashier
-    const cashierSelect = document.getElementById('cashier_id') || document.querySelector('select[name="cashier_id"]');
-    if (!cashierSelect || !cashierSelect.value.trim()) {
-        e.preventDefault();
-        return triggerValidationError(cashierSelect, 'Please select a Shift Cashier before submitting.');
-    }
-
-    // 4. Shift Gross Sales
-    const totalSaleInput = document.getElementById('total_sale');
-    const totalSaleVal = parseAmount(totalSaleInput ? totalSaleInput.value : '');
-    if (!totalSaleInput || totalSaleInput.value.trim() === '' || isNaN(totalSaleVal) || totalSaleVal < 0) {
-        e.preventDefault();
-        return triggerValidationError(totalSaleInput, 'Please enter Total Shift Gross Sale (Rs.).');
-    }
-
-    // 5. Invoices Range check
-    const invStartInput = document.getElementById('invoice_start');
-    const invEndInput = document.getElementById('invoice_end');
-    if (invEndInput && invEndInput.value.trim() !== '') {
-        const invStart = parseInt(invStartInput?.value) || 0;
-        const invEnd = parseInt(invEndInput.value) || 0;
-        if (invStart > 0 && invEnd < invStart) {
-            e.preventDefault();
-            return triggerValidationError(invEndInput, 'End Invoice (' + invEnd + ') cannot be less than Start Invoice (' + invStart + ').');
-        }
-    }
-
-    // 6. Return Invoices Range check
-    const retStartInput = document.getElementById('return_invoice_start');
-    const retEndInput = document.getElementById('return_invoice_end');
-    if (retEndInput && retEndInput.value.trim() !== '') {
-        const retStart = parseInt(retStartInput?.value) || 0;
-        const retEnd = parseInt(retEndInput.value) || 0;
-        if (retStart > 0 && retEnd < retStart) {
-            e.preventDefault();
-            return triggerValidationError(retEndInput, 'Return End Invoice (' + retEnd + ') cannot be less than Return Start Invoice (' + retStart + ').');
-        }
-    }
-
-    // 7. Digital Collections Validation
-    const accountRows = document.querySelectorAll('#accountPaymentRows [data-account-payment-row]');
-    for (let i = 0; i < accountRows.length; i++) {
-        const row = accountRows[i];
-        const accSelect = row.querySelector('.shift-account-select');
-        const amtInput = row.querySelector('.shift-account-payment-amount');
-        const descInput = row.querySelector('input[name*="[description]"]');
-
-        const hasAcc = accSelect && accSelect.value.trim() !== '';
-        const amtVal = parseAmount(amtInput?.value);
-        const hasAmt = amtInput && amtInput.value.trim() !== '' && amtVal > 0;
-        const hasDesc = descInput && descInput.value.trim() !== '';
-
-        if (hasAcc || hasAmt || hasDesc) {
-            if (!hasAcc) {
-                e.preventDefault();
-                return triggerValidationError(accSelect, 'Please select a destination account/wallet for this collection.');
-            }
-            if (!hasAmt) {
-                e.preventDefault();
-                return triggerValidationError(amtInput, 'Please enter a valid amount greater than 0 for this online collection.');
-            }
-        }
-    }
-
-    // 8. Party / Supplier Payouts Validation
-    const partyRows = document.querySelectorAll('#partyPaymentRows [data-party-payment-row]');
-    for (let i = 0; i < partyRows.length; i++) {
-        const row = partyRows[i];
-        const partySearch = row.querySelector('[data-party-search]');
-        const partyId = row.querySelector('[data-party-id]');
-        const amtInput = row.querySelector('.shift-party-payment-amount');
-        const catSelect = row.querySelector('select[name*="[expense_category_id]"]');
-        const detailInput = row.querySelector('input[name*="[details]"]');
-
-        const hasSearch = partySearch && partySearch.value.trim() !== '';
-        const hasPartyId = partyId && partyId.value.trim() !== '';
-        const amtVal = parseAmount(amtInput?.value);
-        const hasAmt = amtInput && amtInput.value.trim() !== '' && amtVal > 0;
-        const hasCat = catSelect && catSelect.value.trim() !== '';
-        const hasDetail = detailInput && detailInput.value.trim() !== '';
-
-        if (hasSearch || hasPartyId || hasAmt || hasCat || hasDetail) {
-            if (!hasPartyId) {
-                e.preventDefault();
-                return triggerValidationError(partySearch, 'Please choose a valid registered party from the list or add new party.');
-            }
-            if (!hasAmt) {
-                e.preventDefault();
-                return triggerValidationError(amtInput, 'Please enter a valid amount greater than 0 for this party payment.');
-            }
-        }
-    }
-
-    // 9. Negative Variance (Cash Shortage) Check
-    if (typeof window.currentShiftVariance !== 'undefined' && window.currentShiftVariance < 0) {
-        e.preventDefault();
-        const diffCard = document.getElementById('kpi_variance_card') || document.getElementById('note_5000');
-        showFloatingToastAlert('Negative Variance: Shortage of Rs. ' + Math.abs(window.currentShiftVariance).toFixed(2) + '. Counted cash cannot be less than expected sales.');
-        if (diffCard) {
-            diffCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return false;
-    }
-
-    // All validation passed: strip commas before submission
-    document.querySelectorAll('.amount-format').forEach(function(input) {
-        input.value = input.value.replace(/,/g, '');
-    });
-
-    return true;
-}
-
-const shiftForm = document.getElementById('shiftClosingForm');
-shiftForm?.addEventListener('submit', validateShiftFormOnSubmit);
-
-// Intercept submit button click
-document.getElementById('submitBtn')?.addEventListener('click', function(e) {
-    if (this.disabled) {
-        e.preventDefault();
-        return false;
-    }
-});
-
-// Auto focus first invalid element if rendered from server errors on page load
-window.addEventListener('DOMContentLoaded', function() {
-    const firstServerError = document.querySelector('.is-invalid');
-    if (firstServerError) {
-        firstServerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(function() {
-            try {
-                firstServerError.focus();
-                if (firstServerError.select) firstServerError.select();
-            } catch (e) {}
-        }, 200);
-    }
-});
-
-// Initialize amount formatting for all existing inputs
-document.querySelectorAll('.amount-format').forEach(function(input) {
-    if (input.value) {
-        input.value = formatWithCommas(input.value);
-    }
-    attachAmountFormatListeners(input);
-});
-
-calculateInvoiceCount();
-calculateReturnInvoiceCount();
-validateShiftAvailability();
-calculateClosing();
-</script>
-@endpush

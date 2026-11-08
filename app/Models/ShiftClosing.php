@@ -15,6 +15,13 @@ class ShiftClosing extends Model
         'shift_type',
         'cashier_id',
         'closed_by',
+        'pump_id',
+        'pump_machine',
+        'product_id',
+        'start_reading',
+        'end_reading',
+        'total_liters',
+        'fuel_rate',
         'total_invoices',
         'invoice_start',
         'invoice_end',
@@ -48,6 +55,10 @@ class ShiftClosing extends Model
 
     protected $casts = [
         'date' => 'date',
+        'start_reading' => 'decimal:2',
+        'end_reading' => 'decimal:2',
+        'total_liters' => 'decimal:2',
+        'fuel_rate' => 'decimal:2',
         'total_sale' => 'decimal:2',
         'returns_amount' => 'decimal:2',
         'expenses_amount' => 'decimal:2',
@@ -58,6 +69,21 @@ class ShiftClosing extends Model
         'expected_cash' => 'decimal:2',
         'difference' => 'decimal:2',
     ];
+
+    public function pump()
+    {
+        return $this->belongsTo(Pump::class, 'pump_id');
+    }
+
+    public function meterReading()
+    {
+        return $this->hasOne(PumpMeterReading::class, 'shift_closing_id');
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
 
     public function cashier()
     {

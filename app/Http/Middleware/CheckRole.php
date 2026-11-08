@@ -24,11 +24,17 @@ class CheckRole
 
         if ($user->status !== 'active') {
             auth()->logout();
-            return redirect()->route('login')->withErrors(['email' => 'Aap ka account ghair-faal (inactive) hai. Administrator se rabta karein.']);
+            return redirect()->route('login')->withErrors(['email' => 'Your account is inactive. Please contact the administrator.']);
         }
 
-        if (!empty($roles) && !in_array($user->role, $roles)) {
-            abort(403, 'Aap ke paas is page ko dekhne ke ikhtiyarat (permissions) nahi hain.');
+        if (!empty($roles)) {
+            $hasRole = false;
+            if (method_exists($user, 'hasAnyRole')) {
+                $hasRole = $user->hasAnyRole($roles);
+            }
+            if (!$hasRole && !in_array($user->role, $roles)) {
+                abort(403, 'Unauthorized access.');
+            }
         }
 
         return $next($request);

@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Sign In - FinanceDesk | Prowave Technologies</title>
+    <title>Sign In - Caltex Rao Filling Station</title>
     
-    <!-- Standard Clean Font: Inter -->
+    <!-- Standard Clean Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Bootstrap 5.3 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -34,7 +34,7 @@
         }
 
         html, body {
-            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
             min-height: 100vh;
@@ -362,9 +362,9 @@
             
             <!-- Brand Header -->
             <div class="text-center mb-4">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 58px; max-width: 220px; object-fit: contain;" class="mb-2" onerror="this.onerror=null; this.src='/images/logo.png';">
-                <h1 class="brand-title" style="font-size: 1.5rem;">Green<span>Pharmacie</span></h1>
-                <p class="brand-desc mb-1">Your Health Companion &bull; 24/7 Financial Portal</p>
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 58px; max-width: 220px; object-fit: contain;" class="rounded-2 bg-white p-1 mb-2" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <h1 class="brand-title" style="font-size: 1.5rem;">Caltex <span>Rao Filling Station</span></h1>
+                <p class="brand-desc mb-1">Fuel &amp; Service Station &bull; 24/7 Financial Portal</p>
                 <div class="small text-secondary" style="font-size: 0.78rem;">
                     Developed by <strong class="text-info">Prowave Technologies</strong> &bull; <a href="tel:+923173836223" class="text-decoration-none text-light"><i class="bi bi-telephone-fill text-success me-1"></i>+92 317 3836223</a>
                 </div>

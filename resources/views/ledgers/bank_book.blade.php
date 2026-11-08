@@ -22,23 +22,85 @@
 
 @push('styles')
 <style>
+    /* Tighten page top spacing for maximum viewport efficiency */
+    .sub-header {
+        padding: 0.35rem 0 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    main.container-fluid {
+        margin-bottom: 0.5rem !important;
+    }
     .shadow-xs {
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .kpi-title {
-        font-size: 0.7rem;
-        letter-spacing: 0.4px;
+        font-size: 0.63rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        font-weight: 700;
     }
     .kpi-amount {
-        font-size: clamp(1.05rem, 3.5vw, 1.35rem);
-        line-height: 1.25;
+        font-size: 1.05rem;
+        line-height: 1.2;
         word-break: break-word;
     }
+
+    /* High-Density Sticky Table Container */
+    .bank-book-scroll-container {
+        max-height: calc(100vh - 315px);
+        min-height: 110px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+    }
+    .bank-book-scroll-container::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .bank-book-scroll-container::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 3px;
+    }
+    .bank-book-scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+    }
+    .bank-book-scroll-container::-webkit-scrollbar-track {
+        background-color: #f8fafc;
+    }
+    .bank-book-scroll-container table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background-color: #f1f5f9 !important;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+        padding: 5px 8px !important;
+        font-size: 0.77rem !important;
+    }
+    .bank-book-scroll-container table td {
+        padding: 4px 8px !important;
+        font-size: 0.81rem !important;
+    }
+    .bank-book-scroll-container table tfoot td {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 9 !important;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 1px 0 #cbd5e1;
+        padding: 5px 8px !important;
+        font-weight: 700 !important;
+        font-size: 0.82rem !important;
+    }
+
     @media (max-width: 575.98px) {
         .card-custom {
-            border-radius: 10px;
+            border-radius: 8px;
+        }
+        .bank-book-scroll-container {
+            max-height: calc(100vh - 280px);
         }
     }
+
     /* =========================================================
        BANK STATEMENT PRINT & PDF STYLES
        ========================================================= */
@@ -50,7 +112,7 @@
         html, body {
             background: #ffffff !important;
             color: #0f172a !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
             font-size: 8.8pt !important;
             line-height: 1.3 !important;
             width: 100% !important;
@@ -103,6 +165,17 @@
             overflow: visible !important;
             display: block !important;
         }
+        .bank-book-scroll-container {
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .bank-book-scroll-container table thead th,
+        .bank-book-scroll-container table tfoot td {
+            position: static !important;
+            box-shadow: none !important;
+        }
 
         /* Statement Grid & Tables */
         table {
@@ -147,6 +220,7 @@
 
         /* Signatures block */
         .statement-signatures {
+            display: block !important;
             page-break-inside: avoid;
             margin-top: 25px !important;
             padding-top: 15px !important;
@@ -165,11 +239,11 @@
 
 @section('content')
 <!-- Filter & Selection Bar (No-Print) -->
-<div class="card-custom p-3 mb-3 mb-md-4 no-print">
+<div class="card-custom p-2 px-3 mb-2 no-print bg-white border shadow-xs">
     <form method="GET" action="{{ route('ledgers.bank-book') }}" class="row g-2 align-items-end">
         <div class="col-12 col-md-4">
-            <label class="form-label text-muted small fw-semibold mb-1">Select Bank / Wallet Account</label>
-            <select name="account_id" class="form-select form-select-sm py-2" onchange="this.form.submit()">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">Select Bank / Wallet Account</label>
+            <select name="account_id" class="form-select form-select-sm py-1" style="height: 32px; font-size: 0.81rem;" onchange="this.form.submit()">
                 <option value="">All Bank & Wallet Accounts</option>
                 @foreach($bankAccounts as $acc)
                     <option value="{{ $acc->id }}" {{ $selectedAccountId == $acc->id ? 'selected' : '' }}>
@@ -179,15 +253,15 @@
             </select>
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
-            <input type="date" name="from_date" class="form-control form-control-sm py-2" value="{{ $fromDate }}">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">From Date</label>
+            <input type="date" name="from_date" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" value="{{ $fromDate }}">
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label text-muted small fw-semibold mb-1">To Date</label>
-            <input type="date" name="to_date" class="form-control form-control-sm py-2" value="{{ $toDate }}">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">To Date</label>
+            <input type="date" name="to_date" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" value="{{ $toDate }}">
         </div>
         <div class="col-12 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm rounded-3 w-100 fw-semibold py-2">
+            <button type="submit" class="btn btn-primary btn-sm rounded-2 w-100 fw-semibold py-1 d-flex align-items-center justify-content-center" style="height: 32px; font-size: 0.81rem;">
                 <i class="bi bi-filter me-1"></i> Apply Filter
             </button>
         </div>
@@ -195,16 +269,16 @@
 </div>
 
 <!-- Printable Bank Book Card -->
-<div class="card-custom p-3 p-md-5 bg-white shadow-sm mb-4" id="bankBookSheet">
+<div class="card-custom p-2.5 p-md-3 bg-white shadow-xs mb-2 border rounded-3" id="bankBookSheet">
     <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
     <div class="bank-stmt-header d-none d-print-block">
         <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div>
-                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">CALTEX - RAO FILLING STATION</h3>
                     <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY &amp; COMMERCIAL AUDIT</div>
-                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; Institutional Liquidity Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                    <div class="small text-muted" style="font-size: 8pt;">Caltex Petroleum &bull; Institutional Liquidity Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                 </div>
             </div>
             <div class="text-end">
@@ -250,59 +324,60 @@
         </tbody>
     </table>
 
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
-        <div class="d-flex align-items-center gap-3">
-            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+    <!-- Header Section (Screen View - Compact) -->
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-1.5 mb-2 flex-wrap gap-2 d-print-none">
+        <div class="d-flex align-items-center gap-2.5">
+            <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 32px; max-width: 120px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
             <div>
-                <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
-                <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Bank & Digital Wallet Register</h5>
-                <small class="text-muted">Your Health Companion &bull; Institutional Liquidity Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="fw-bold text-dark" style="font-size: 1rem;">Caltex Rao Filling Station</span>
+                    <span class="text-secondary fw-semibold" style="font-size: 0.85rem;">&bull; Bank &amp; Digital Wallet Register</span>
+                </div>
+                <div class="text-muted" style="font-size: 0.68rem; line-height: 1.2;">Caltex Petroleum &bull; Institutional Liquidity Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
             </div>
         </div>
         <div class="text-start text-md-end">
-            <span class="badge bg-light text-dark border px-2 py-1 mb-1 font-monospace d-inline-block">
+            <span class="badge bg-light text-dark border px-2 py-0.5 mb-0.5 font-monospace d-inline-block" style="font-size: 0.72rem;">
                 Period: {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}
             </span>
-            <div class="small text-muted" style="font-size: 0.72rem;">Audited: {{ now()->format('d M, Y - h:i A') }}</div>
-            <div class="small text-muted" style="font-size: 0.72rem;">Operator: <strong>{{ auth()->user()->name }}</strong></div>
+            <div class="text-muted" style="font-size: 0.67rem;">Audited: {{ now()->format('d M, Y - h:i A') }} &bull; Operator: <strong>{{ auth()->user()->name }}</strong></div>
         </div>
     </div>
 
-    <!-- Executive Metric Cards -->
-    <div class="row g-2 g-md-3 mb-3 mb-md-4 d-print-none">
+    <!-- Executive Metric Cards (High-Density) -->
+    <div class="row g-2 mb-2 d-print-none">
         <div class="col-6 col-md-3">
-            <div class="p-3 bg-light rounded-3 border h-100">
-                <span class="text-muted small d-block mb-1 kpi-title">Opening Bank Balance</span>
-                <h5 class="fw-bold font-monospace text-dark m-0 kpi-amount">Rs. {{ number_format($openingBalance, 2) }}</h5>
-                <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</small>
+            <div class="p-2 px-2.5 bg-light rounded-2 border h-100">
+                <span class="text-muted text-uppercase fw-bold d-block kpi-title">Opening Bank Balance</span>
+                <div class="fw-bold font-monospace text-dark kpi-amount my-0.5">Rs. {{ number_format($openingBalance, 2) }}</div>
+                <div class="text-muted text-truncate" style="font-size: 0.65rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
-                <span class="text-success small fw-semibold d-block mb-1 kpi-title">(+) Total Deposits</span>
-                <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">+ Rs. {{ number_format($totalIn, 2) }}</h5>
-                <small class="text-success-emphasis" style="font-size: 0.7rem;">Bank & Wallet Collections</small>
+            <div class="p-2 px-2.5 bg-success-subtle rounded-2 border border-success-subtle h-100">
+                <span class="text-success text-uppercase fw-bold d-block kpi-title">(+) Total Deposits</span>
+                <div class="fw-bold font-monospace text-success kpi-amount my-0.5">+ Rs. {{ number_format($totalIn, 2) }}</div>
+                <div class="text-success-emphasis text-truncate" style="font-size: 0.65rem;">Bank &amp; Wallet Collections</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
-                <span class="text-danger small fw-semibold d-block mb-1 kpi-title">(-) Total Withdrawals</span>
-                <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">- Rs. {{ number_format($totalOut, 2) }}</h5>
-                <small class="text-danger-emphasis" style="font-size: 0.7rem;">Disbursements & Payments</small>
+            <div class="p-2 px-2.5 bg-danger-subtle rounded-2 border border-danger-subtle h-100">
+                <span class="text-danger text-uppercase fw-bold d-block kpi-title">(-) Total Withdrawals</span>
+                <div class="fw-bold font-monospace text-danger kpi-amount my-0.5">- Rs. {{ number_format($totalOut, 2) }}</div>
+                <div class="text-danger-emphasis text-truncate" style="font-size: 0.65rem;">Disbursements &amp; Payments</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="p-3 bg-primary text-white rounded-3 shadow-sm h-100">
-                <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">(=) Ending Bank Balance</span>
-                <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format($closingBalance, 2) }}</h5>
-                <small class="text-white-50" style="font-size: 0.7rem;">As of {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</small>
+            <div class="p-2 px-2.5 bg-primary text-white rounded-2 shadow-xs h-100">
+                <span class="text-white-50 text-uppercase fw-bold d-block kpi-title">(=) Ending Bank Balance</span>
+                <div class="fw-bold font-monospace text-white kpi-amount my-0.5">Rs. {{ number_format($closingBalance, 2) }}</div>
+                <div class="text-white-50 text-truncate" style="font-size: 0.65rem;">As of {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</div>
             </div>
         </div>
     </div>
 
     <!-- Desktop View: Table -->
-    <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
+    <div class="d-none d-md-block statement-desktop-table table-responsive bank-book-scroll-container mb-2">
         <table class="table table-sm table-bordered table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
@@ -476,7 +551,7 @@
     </div>
 
     <!-- Official Bank Statement Signatures (Visible on Print) -->
-    <div class="statement-signatures pt-4 mt-4">
+    <div class="statement-signatures pt-4 mt-3 d-none d-print-block">
         <div class="row text-center w-100 m-0">
             <div class="col-4">
                 <div class="statement-sig-line">
@@ -499,8 +574,8 @@
         </div>
     </div>
 
-    <!-- Statement Footer Notice -->
-    <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+    <!-- Statement Footer Notice (Visible on Print) -->
+    <div class="text-center pt-2 mt-2 border-top text-muted small d-none d-print-block" style="font-size: 8pt;">
         <span>Official Bank &amp; Wallet Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
     </div>
 

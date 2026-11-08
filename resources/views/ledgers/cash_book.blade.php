@@ -22,21 +22,31 @@
 
 @push('styles')
 <style>
+    /* Tighten page top spacing for maximum viewport efficiency */
+    .sub-header {
+        padding: 0.35rem 0 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    main.container-fluid {
+        margin-bottom: 0.5rem !important;
+    }
     .shadow-xs {
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .kpi-title {
-        font-size: 0.7rem;
-        letter-spacing: 0.4px;
+        font-size: 0.63rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        font-weight: 700;
     }
     .kpi-amount {
-        font-size: clamp(1.05rem, 3.5vw, 1.35rem);
-        line-height: 1.25;
+        font-size: 1.05rem;
+        line-height: 1.2;
         word-break: break-word;
     }
     @media (max-width: 575.98px) {
         .card-custom {
-            border-radius: 10px;
+            border-radius: 8px;
         }
     }
 
@@ -45,19 +55,20 @@
        ========================================================= */
     .cash-book-scroll-container,
     .whole-shop-matrix-container {
-        max-height: 72vh;
+        max-height: calc(100vh - 315px);
+        min-height: 110px;
         overflow-y: auto !important;
         overflow-x: auto !important;
         position: relative;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 6px;
     }
 
     /* Custom Sleek Scrollbar */
     .cash-book-scroll-container::-webkit-scrollbar,
     .whole-shop-matrix-container::-webkit-scrollbar {
-        width: 7px;
-        height: 7px;
+        width: 6px;
+        height: 6px;
     }
     .cash-book-scroll-container::-webkit-scrollbar-thumb,
     .whole-shop-matrix-container::-webkit-scrollbar-thumb {
@@ -116,7 +127,7 @@
         html, body {
             background: #ffffff !important;
             color: #0f172a !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
             @if($isWholeShop ?? false)
                 font-size: 7.8pt !important;
             @else
@@ -339,13 +350,13 @@
 
 @section('content')
 <!-- Filter & Selection Bar (No-Print) -->
-<div class="card-custom p-3 mb-3 mb-md-4 no-print">
+<div class="card-custom p-2 px-3 mb-2 no-print bg-white border shadow-xs">
     <form method="GET" action="{{ route('ledgers.cash-book') }}" class="row g-2 align-items-end">
         <div class="col-12 col-md-4">
-            <label class="form-label text-muted small fw-semibold mb-1">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">
                 <i class="bi bi-wallet2 text-primary me-1"></i>Account / Report Mode
             </label>
-            <select name="account_id" class="form-select form-select-sm py-2 fw-semibold" onchange="this.form.submit()">
+            <select name="account_id" class="form-select form-select-sm py-1 fw-semibold" style="height: 32px; font-size: 0.81rem;" onchange="this.form.submit()">
                 <option value="whole_shop" {{ ($isWholeShop ?? false) ? 'selected' : '' }} class="fw-bold text-primary">
                     🏢 Whole Shop (All Accounts &amp; Sales Report)
                 </option>
@@ -359,15 +370,15 @@
             </select>
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
-            <input type="date" name="from_date" class="form-control form-control-sm py-2" value="{{ $fromDate }}">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">From Date</label>
+            <input type="date" name="from_date" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" value="{{ $fromDate }}">
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label text-muted small fw-semibold mb-1">To Date</label>
-            <input type="date" name="to_date" class="form-control form-control-sm py-2" value="{{ $toDate }}">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">To Date</label>
+            <input type="date" name="to_date" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" value="{{ $toDate }}">
         </div>
         <div class="col-12 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm rounded-3 w-100 fw-semibold py-2">
+            <button type="submit" class="btn btn-primary btn-sm rounded-2 w-100 fw-semibold py-1 d-flex align-items-center justify-content-center" style="height: 32px; font-size: 0.81rem;">
                 <i class="bi bi-filter me-1"></i> Apply Filter
             </button>
         </div>
@@ -375,16 +386,16 @@
 </div>
 
 <!-- Printable Cash Book Card -->
-<div class="card-custom p-3 p-md-5 bg-white shadow-sm mb-4" id="cashBookSheet">
+<div class="card-custom p-2.5 p-md-3 bg-white shadow-xs mb-2 border rounded-3" id="cashBookSheet">
     <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
     <div class="bank-stmt-header d-none d-print-block">
         <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div>
-                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">CALTEX - RAO FILLING STATION</h3>
                     <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY &amp; COMMERCIAL AUDIT</div>
-                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; Primary Liquid Cash Journal &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                    <div class="small text-muted" style="font-size: 8pt;">Caltex Petroleum &bull; Primary Liquid Cash Journal &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                 </div>
             </div>
             <div class="text-end">
@@ -443,88 +454,90 @@
         </tbody>
     </table>
 
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
-        <div class="d-flex align-items-center gap-3">
-            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+    <!-- Header Section (Screen View - Compact) -->
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-1.5 mb-2 flex-wrap gap-2 d-print-none">
+        <div class="d-flex align-items-center gap-2.5">
+            <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 32px; max-width: 120px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
             <div>
-                <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
-                @if($isWholeShop ?? false)
-                    <h5 class="text-primary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Whole Shop Financial &amp; Liquidity Report</h5>
-                    <small class="text-muted">Consolidated Daily Sales &amp; All Account Ledgers &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
-                @else
-                    <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Cash Book &amp; Liquidity Statement</h5>
-                    <small class="text-muted">{{ $cashAccount->name }} Register &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
-                @endif
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="fw-bold text-dark" style="font-size: 1rem;">Caltex Rao Filling Station</span>
+                    @if($isWholeShop ?? false)
+                        <span class="text-primary fw-semibold" style="font-size: 0.85rem;">&bull; Whole Shop Financial &amp; Liquidity Report</span>
+                    @else
+                        <span class="text-secondary fw-semibold" style="font-size: 0.85rem;">&bull; Cash Book &amp; Liquidity Statement</span>
+                    @endif
+                </div>
+                <div class="text-muted" style="font-size: 0.68rem; line-height: 1.2;">
+                    {{ ($isWholeShop ?? false) ? 'Consolidated Daily Sales & All Accounts' : ($cashAccount->name . ' Register') }} &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong>
+                </div>
             </div>
         </div>
         <div class="text-start text-md-end">
-            <span class="badge bg-light text-dark border px-2 py-1 mb-1 font-monospace d-inline-block">
+            <span class="badge bg-light text-dark border px-2 py-0.5 mb-0.5 font-monospace d-inline-block" style="font-size: 0.72rem;">
                 Period: {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}
             </span>
-            <div class="small text-muted" style="font-size: 0.72rem;">Audited: {{ now()->format('d M, Y - h:i A') }}</div>
-            <div class="small text-muted" style="font-size: 0.72rem;">Operator: <strong>{{ auth()->user()->name }}</strong></div>
+            <div class="text-muted" style="font-size: 0.67rem;">Audited: {{ now()->format('d M, Y - h:i A') }} &bull; Operator: <strong>{{ auth()->user()->name }}</strong></div>
         </div>
     </div>
 
-    <!-- Executive Metric Cards -->
-    <div class="row g-2 g-md-3 mb-3 mb-md-4 d-print-none">
+    <!-- Executive Metric Cards (High-Density) -->
+    <div class="row g-2 mb-2 d-print-none">
         @if($isWholeShop ?? false)
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary-subtle h-100">
-                    <span class="text-primary small fw-semibold d-block mb-1 kpi-title">Total Net Sale (Period)</span>
-                    <h5 class="fw-bold font-monospace text-primary m-0 kpi-amount">Rs. {{ number_format($totalNetSale, 2) }}</h5>
-                    <small class="text-muted" style="font-size: 0.7rem;">Gross Sale minus Returns</small>
+                <div class="p-2 px-2.5 bg-primary bg-opacity-10 rounded-2 border border-primary-subtle h-100">
+                    <span class="text-primary text-uppercase fw-bold d-block kpi-title">Total Net Sale (Period)</span>
+                    <div class="fw-bold font-monospace text-primary kpi-amount my-0.5">Rs. {{ number_format($totalNetSale, 2) }}</div>
+                    <div class="text-muted text-truncate" style="font-size: 0.65rem;">Gross Sale minus Returns</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
-                    <span class="text-success small fw-semibold d-block mb-1 kpi-title">(+) Total Inflows (All Accounts)</span>
-                    <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">+ Rs. {{ number_format($totalInAllAccounts, 2) }}</h5>
-                    <small class="text-success-emphasis" style="font-size: 0.7rem;">Cash &amp; Digital Collections</small>
+                <div class="p-2 px-2.5 bg-success-subtle rounded-2 border border-success-subtle h-100">
+                    <span class="text-success text-uppercase fw-bold d-block kpi-title">(+) Inflows (All Accounts)</span>
+                    <div class="fw-bold font-monospace text-success kpi-amount my-0.5">+ Rs. {{ number_format($totalInAllAccounts, 2) }}</div>
+                    <div class="text-success-emphasis text-truncate" style="font-size: 0.65rem;">Cash &amp; Digital Collections</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
-                    <span class="text-danger small fw-semibold d-block mb-1 kpi-title">(-) Total Outflows (All Accounts)</span>
-                    <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">- Rs. {{ number_format($totalOutAllAccounts, 2) }}</h5>
-                    <small class="text-danger-emphasis" style="font-size: 0.7rem;">Supplier &amp; Expense Payouts</small>
+                <div class="p-2 px-2.5 bg-danger-subtle rounded-2 border border-danger-subtle h-100">
+                    <span class="text-danger text-uppercase fw-bold d-block kpi-title">(-) Outflows (All Accounts)</span>
+                    <div class="fw-bold font-monospace text-danger kpi-amount my-0.5">- Rs. {{ number_format($totalOutAllAccounts, 2) }}</div>
+                    <div class="text-danger-emphasis text-truncate" style="font-size: 0.65rem;">Supplier &amp; Expense Payouts</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-dark text-white rounded-3 shadow-sm h-100">
-                    <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">(=) Ending Total Liquidity</span>
-                    <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format($totalClosingAllAccounts, 2) }}</h5>
-                    <small class="text-white-50" style="font-size: 0.7rem;">Combined Balances of All Accounts</small>
+                <div class="p-2 px-2.5 bg-dark text-white rounded-2 shadow-xs h-100">
+                    <span class="text-white-50 text-uppercase fw-bold d-block kpi-title">(=) Ending Liquidity</span>
+                    <div class="fw-bold font-monospace text-white kpi-amount my-0.5">Rs. {{ number_format($totalClosingAllAccounts, 2) }}</div>
+                    <div class="text-white-50 text-truncate" style="font-size: 0.65rem;">All Accounts Combined</div>
                 </div>
             </div>
         @else
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-light rounded-3 border h-100">
-                    <span class="text-muted small d-block mb-1 kpi-title">Opening Balance</span>
-                    <h5 class="fw-bold font-monospace text-dark m-0 kpi-amount">Rs. {{ number_format($openingBalance, 2) }}</h5>
-                    <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</small>
+                <div class="p-2 px-2.5 bg-light rounded-2 border h-100">
+                    <span class="text-muted text-uppercase fw-bold d-block kpi-title">Opening Balance</span>
+                    <div class="fw-bold font-monospace text-dark kpi-amount my-0.5">Rs. {{ number_format($openingBalance, 2) }}</div>
+                    <div class="text-muted text-truncate" style="font-size: 0.65rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
-                    <span class="text-success small fw-semibold d-block mb-1 kpi-title">(+) Total Inflows</span>
-                    <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">+ Rs. {{ number_format($totalIn, 2) }}</h5>
-                    <small class="text-success-emphasis" style="font-size: 0.7rem;">Collections &amp; Receipts</small>
+                <div class="p-2 px-2.5 bg-success-subtle rounded-2 border border-success-subtle h-100">
+                    <span class="text-success text-uppercase fw-bold d-block kpi-title">(+) Total Inflows</span>
+                    <div class="fw-bold font-monospace text-success kpi-amount my-0.5">+ Rs. {{ number_format($totalIn, 2) }}</div>
+                    <div class="text-success-emphasis text-truncate" style="font-size: 0.65rem;">Collections &amp; Receipts</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
-                    <span class="text-danger small fw-semibold d-block mb-1 kpi-title">(-) Total Outflows</span>
-                    <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">- Rs. {{ number_format($totalOut, 2) }}</h5>
-                    <small class="text-danger-emphasis" style="font-size: 0.7rem;">Payments &amp; Disbursements</small>
+                <div class="p-2 px-2.5 bg-danger-subtle rounded-2 border border-danger-subtle h-100">
+                    <span class="text-danger text-uppercase fw-bold d-block kpi-title">(-) Total Outflows</span>
+                    <div class="fw-bold font-monospace text-danger kpi-amount my-0.5">- Rs. {{ number_format($totalOut, 2) }}</div>
+                    <div class="text-danger-emphasis text-truncate" style="font-size: 0.65rem;">Payments &amp; Disbursements</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-primary text-white rounded-3 shadow-sm h-100">
-                    <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">(=) Ending Balance</span>
-                    <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format($closingBalance, 2) }}</h5>
-                    <small class="text-white-50" style="font-size: 0.7rem;">As of {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</small>
+                <div class="p-2 px-2.5 bg-primary text-white rounded-2 shadow-xs h-100">
+                    <span class="text-white-50 text-uppercase fw-bold d-block kpi-title">(=) Ending Balance</span>
+                    <div class="fw-bold font-monospace text-white kpi-amount my-0.5">Rs. {{ number_format($closingBalance, 2) }}</div>
+                    <div class="text-white-50 text-truncate" style="font-size: 0.65rem;">As of {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}</div>
                 </div>
             </div>
         @endif
@@ -847,7 +860,7 @@
     @endif
 
     <!-- Official Bank Statement Signatures (Visible on Print) -->
-    <div class="statement-signatures pt-4 mt-4">
+    <div class="statement-signatures pt-4 mt-3 d-none d-print-block">
         <div class="row text-center w-100 m-0">
             <div class="col-4">
                 <div class="statement-sig-line">
@@ -870,8 +883,8 @@
         </div>
     </div>
 
-    <!-- Statement Footer Notice -->
-    <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+    <!-- Statement Footer Notice (Visible on Print) -->
+    <div class="text-center pt-2 mt-2 border-top text-muted small d-none d-print-block" style="font-size: 8pt;">
         <span>Official Cash Book Statement &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
     </div>
 

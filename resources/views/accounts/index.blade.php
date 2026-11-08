@@ -4,9 +4,14 @@
 @section('page_title', 'Payment Accounts (Cash & Banks)')
 
 @section('page_badge')
-    <span class="badge bg-light text-secondary border px-2 py-1 small">
-        <i class="bi bi-wallet2 me-1 text-primary"></i> Total: {{ $accounts->count() }} Accounts
-    </span>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-light text-secondary border px-2 py-1 small">
+            <i class="bi bi-wallet2 me-1 text-primary"></i> Total: {{ $accounts->count() }} {{ Str::plural('Account', $accounts->count()) }}
+        </span>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2 py-1 small">
+            Liquid Funds: Rs. {{ number_format($totalBalance, 2) }}
+        </span>
+    </div>
 @endsection
 
 @section('page_actions')
@@ -45,46 +50,83 @@
 @section('content')
 <!-- Financial Summary Cards -->
 <div class="row g-2 g-md-3 mb-3 mb-md-4">
-    <div class="col-12 col-sm-6 col-xl-3">
+    <!-- Total Liquid Balance Summary Card -->
+    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
         <div class="card-custom p-3 bg-primary bg-opacity-10 border-primary h-100 shadow-xs">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-primary small fw-semibold text-uppercase kpi-title">Total Liquid Balance</span>
                 <i class="bi bi-wallet2 text-primary fs-5"></i>
             </div>
             <div class="fw-bold font-monospace text-dark kpi-amount">Rs. {{ number_format($totalBalance, 2) }}</div>
-            <div class="text-muted small mt-1" style="font-size: 0.72rem;">All active counter & bank funds</div>
+            <div class="text-muted small mt-1 text-truncate" style="font-size: 0.72rem;">All active counter & bank funds ({{ $accounts->count() }} {{ Str::plural('Account', $accounts->count()) }})</div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom p-3 bg-success bg-opacity-10 border-success h-100 shadow-xs">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-success small fw-semibold text-uppercase kpi-title">Cash in Hand</span>
-                <i class="bi bi-cash-stack text-success fs-5"></i>
+
+    <!-- Dynamic Created Account Cards (Only created accounts are displayed) -->
+    @foreach($accounts as $acc)
+        @php
+            $isCash = $acc->type === 'cash';
+            $isJazz = $acc->type === 'jazzcash';
+            $isBank = $acc->type === 'bank';
+
+            $cardTheme = match($acc->type) {
+                'cash' => [
+                    'border' => 'border-success',
+                    'bg' => 'bg-success bg-opacity-10',
+                    'text' => 'text-success',
+                    'icon' => 'bi-cash-stack',
+                    'subtitle' => 'Physical counter drawer funds',
+                ],
+                'jazzcash' => [
+                    'border' => 'border-danger',
+                    'bg' => 'bg-danger bg-opacity-10',
+                    'text' => 'text-danger',
+                    'icon' => 'bi-phone',
+                    'subtitle' => $acc->account_number ? 'Mobile: ' . $acc->account_number : 'Mobile wallet account',
+                ],
+                'bank' => [
+                    'border' => 'border-info',
+                    'bg' => 'bg-info bg-opacity-10',
+                    'text' => 'text-info',
+                    'icon' => 'bi-bank',
+                    'subtitle' => $acc->account_number ? 'A/C: ' . $acc->account_number : 'Commercial bank account',
+                ],
+                default => [
+                    'border' => 'border-primary',
+                    'bg' => 'bg-primary bg-opacity-10',
+                    'text' => 'text-primary',
+                    'icon' => 'bi-wallet2',
+                    'subtitle' => $acc->account_number ? 'A/C: ' . $acc->account_number : ucfirst($acc->type) . ' account',
+                ],
+            };
+        @endphp
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div class="card-custom p-3 {{ $cardTheme['bg'] }} {{ $cardTheme['border'] }} h-100 shadow-xs">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="d-flex align-items-center gap-1 min-w-0">
+                        <span class="{{ $cardTheme['text'] }} small fw-semibold text-uppercase kpi-title text-truncate" title="{{ $acc->name }}">
+                            {{ $acc->name }}
+                        </span>
+                        @if(!$acc->isActive())
+                            <span class="badge bg-secondary-subtle text-secondary py-0 px-1" style="font-size: 0.65rem;">Inactive</span>
+                        @endif
+                    </div>
+                    <i class="bi {{ $cardTheme['icon'] }} {{ $cardTheme['text'] }} fs-5 flex-shrink-0"></i>
+                </div>
+                <div class="fw-bold font-monospace {{ $acc->current_balance < 0 ? 'text-danger' : $cardTheme['text'] }} kpi-amount">
+                    Rs. {{ number_format($acc->current_balance, 2) }}
+                </div>
+                <div class="d-flex align-items-center justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                    <span class="text-truncate">{{ $cardTheme['subtitle'] }}</span>
+                    @if($isCash)
+                        <a href="{{ route('ledgers.cash-book', ['account_id' => $acc->id]) }}" class="text-success text-decoration-none fw-semibold flex-shrink-0 ms-1">Book &rarr;</a>
+                    @else
+                        <a href="{{ route('ledgers.bank-book', ['account_id' => $acc->id]) }}" class="text-primary text-decoration-none fw-semibold flex-shrink-0 ms-1">Book &rarr;</a>
+                    @endif
+                </div>
             </div>
-            <div class="fw-bold font-monospace text-success kpi-amount">Rs. {{ number_format($cashBalance, 2) }}</div>
-            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Physical counter drawer funds</div>
         </div>
-    </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom p-3 bg-danger bg-opacity-10 border-danger h-100 shadow-xs">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-danger small fw-semibold text-uppercase kpi-title">JazzCash / Wallets</span>
-                <i class="bi bi-phone text-danger fs-5"></i>
-            </div>
-            <div class="fw-bold font-monospace text-danger kpi-amount">Rs. {{ number_format($jazzCashBalance, 2) }}</div>
-            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Mobile wallet accounts</div>
-        </div>
-    </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom p-3 bg-info bg-opacity-10 border-info h-100 shadow-xs">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-info small fw-semibold text-uppercase kpi-title">Bank Accounts</span>
-                <i class="bi bi-bank text-info fs-5"></i>
-            </div>
-            <div class="fw-bold font-monospace text-info kpi-amount">Rs. {{ number_format($bankBalance, 2) }}</div>
-            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Commercial bank balances</div>
-        </div>
-    </div>
+    @endforeach
 </div>
 
 <!-- Accounts Data Card -->

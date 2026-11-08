@@ -53,7 +53,7 @@
         html, body {
             background: #ffffff !important;
             color: #0f172a !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
             font-size: 8.8pt !important;
             line-height: 1.3 !important;
             width: 100% !important;
@@ -249,11 +249,11 @@
     <div class="bank-stmt-header d-none d-print-block">
         <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div>
-                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                    <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">CALTEX - RAO FILLING STATION</h3>
                     <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY &amp; COMMERCIAL AUDIT</div>
-                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; Periodic Expense Audit &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                    <div class="small text-muted" style="font-size: 8pt;">Caltex Petroleum &bull; Periodic Expense Audit &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                 </div>
             </div>
             <div class="text-end">
@@ -299,11 +299,11 @@
     <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
         <div class="d-flex align-items-center gap-3">
-            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+            <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
             <div>
-                <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                <h4 class="fw-bold text-dark m-0">Caltex Rao Filling Station</h4>
                 <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Consolidated Expense & Disbursement Audit Report</h5>
-                <small class="text-muted">Your Health Companion &bull; Detailed Analysis of Daily Expenses &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                <small class="text-muted">Caltex Petroleum &bull; Detailed Analysis of Daily Expenses &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
             </div>
         </div>
         <div class="text-start text-md-end">

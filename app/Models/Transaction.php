@@ -14,6 +14,7 @@ class Transaction extends Model
         'date',
         'type',
         'shift_closing_id',
+        'purchase_id',
         'party_id',
         'account_id',
         'category_id',
@@ -59,6 +60,11 @@ class Transaction extends Model
     public function originalTransaction()
     {
         return $this->belongsTo(Transaction::class, 'original_transaction_id');
+    }
+
+    public function purchase()
+    {
+        return $this->belongsTo(Purchase::class);
     }
 
     public function returns()

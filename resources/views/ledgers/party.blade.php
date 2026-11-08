@@ -42,16 +42,26 @@
 
 @push('styles')
 <style>
+    /* Tighten page top spacing for maximum viewport efficiency */
+    .sub-header {
+        padding: 0.35rem 0 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    main.container-fluid {
+        margin-bottom: 0.5rem !important;
+    }
     .shadow-xs {
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .kpi-title {
-        font-size: 0.7rem;
-        letter-spacing: 0.4px;
+        font-size: 0.63rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        font-weight: 700;
     }
     .kpi-amount {
-        font-size: clamp(1.05rem, 3.5vw, 1.35rem);
-        line-height: 1.25;
+        font-size: 1.05rem;
+        line-height: 1.2;
         word-break: break-word;
     }
     .party-combobox-menu {
@@ -64,11 +74,63 @@
     #singlePartyOptions .d-none {
         display: none !important;
     }
+
+    /* High-Density Sticky Table Container */
+    .party-ledger-scroll-container {
+        max-height: calc(100vh - 315px);
+        min-height: 110px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+    }
+    .party-ledger-scroll-container::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .party-ledger-scroll-container::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 3px;
+    }
+    .party-ledger-scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+    }
+    .party-ledger-scroll-container::-webkit-scrollbar-track {
+        background-color: #f8fafc;
+    }
+    .party-ledger-scroll-container table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background-color: #f1f5f9 !important;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+        padding: 5px 8px !important;
+        font-size: 0.77rem !important;
+    }
+    .party-ledger-scroll-container table td {
+        padding: 4px 8px !important;
+        font-size: 0.81rem !important;
+    }
+    .party-ledger-scroll-container table tfoot td {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 9 !important;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 1px 0 #cbd5e1;
+        padding: 5px 8px !important;
+        font-weight: 700 !important;
+        font-size: 0.82rem !important;
+    }
+
     @media (max-width: 575.98px) {
         .card-custom {
-            border-radius: 10px;
+            border-radius: 8px;
+        }
+        .party-ledger-scroll-container {
+            max-height: calc(100vh - 280px);
         }
     }
+
     /* =========================================================
        BANK STATEMENT PRINT & PDF STYLES
        ========================================================= */
@@ -80,7 +142,7 @@
         html, body {
             background: #ffffff !important;
             color: #0f172a !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
             font-size: 8.8pt !important;
             line-height: 1.3 !important;
             width: 100% !important;
@@ -133,6 +195,17 @@
             overflow: visible !important;
             display: block !important;
         }
+        .party-ledger-scroll-container {
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .party-ledger-scroll-container table thead th,
+        .party-ledger-scroll-container table tfoot td {
+            position: static !important;
+            box-shadow: none !important;
+        }
 
         /* Statement Grid & Tables */
         table {
@@ -177,6 +250,7 @@
 
         /* Signatures block */
         .statement-signatures {
+            display: block !important;
             page-break-inside: avoid;
             margin-top: 25px !important;
             padding-top: 15px !important;
@@ -194,46 +268,56 @@
 @endpush
 
 @section('content')
-<!-- Scope Switcher Pills (Single Party vs Combined Credit vs Combined Cash) -->
-<div class="d-flex align-items-center gap-2 mb-3 flex-wrap no-print">
-    <span class="text-secondary small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.3px;">Ledger Mode:</span>
-    <a href="{{ route('ledgers.party', array_filter(['from_date' => $fromDate, 'to_date' => $toDate])) }}" 
-       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'single' ? 'btn-dark text-white fw-bold shadow-xs' : 'btn-outline-secondary' }}" 
-       style="font-size: 0.78rem;">
-        <i class="bi bi-person me-1"></i> Individual Party
-    </a>
-    <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_credit', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
-       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'btn-primary text-white fw-bold shadow-xs' : 'btn-outline-primary' }}" 
-       style="font-size: 0.78rem;">
-        <i class="bi bi-credit-card me-1"></i> All Credit Parties (Grouped) <span class="badge bg-primary-subtle text-primary ms-1">{{ $creditPartiesCount ?? 0 }}</span>
-    </a>
-    <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_cash', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
-       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'btn-success text-white fw-bold shadow-xs' : 'btn-outline-success' }}" 
-       style="font-size: 0.78rem;">
-        <i class="bi bi-cash-stack me-1"></i> All Cash Parties (Grouped) <span class="badge bg-success-subtle text-success ms-1">{{ $cashPartiesCount ?? 0 }}</span>
-    </a>
-    <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_staff', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
-       class="btn btn-sm py-1.5 px-3 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'btn-info text-white fw-bold shadow-xs' : 'btn-outline-info' }}" 
-       style="font-size: 0.78rem;">
-        <i class="bi bi-people me-1"></i> All Staff (Grouped) <span class="badge bg-info-subtle text-info ms-1">{{ $staffPartiesCount ?? 0 }}</span>
-    </a>
-</div>
+<!-- Scope Switcher & Filter Bar Combined (No-Print) -->
+<div class="card-custom p-2 px-3 mb-2 no-print bg-white border shadow-xs">
+    <!-- Top Row: Mode Switcher & Actions -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1.5 pb-1.5 mb-2 border-bottom">
+        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+            <span class="text-secondary fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.3px;">Ledger Mode:</span>
+            <a href="{{ route('ledgers.party', array_filter(['from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+               class="btn btn-xs py-1 px-2.5 rounded-pill {{ ($ledgerScope ?? 'single') === 'single' ? 'btn-dark text-white fw-bold shadow-xs' : 'btn-outline-secondary' }}" 
+               style="font-size: 0.74rem;">
+                <i class="bi bi-person me-1"></i> Individual Party
+            </a>
+            <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_credit', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+               class="btn btn-xs py-1 px-2.5 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'btn-primary text-white fw-bold shadow-xs' : 'btn-outline-primary' }}" 
+               style="font-size: 0.74rem;">
+                <i class="bi bi-credit-card me-1"></i> All Credit <span class="badge {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border' }} ms-0.5">{{ $creditPartiesCount ?? 0 }}</span>
+            </a>
+            <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_cash', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+               class="btn btn-xs py-1 px-2.5 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'btn-success text-white fw-bold shadow-xs' : 'btn-outline-success' }}" 
+               style="font-size: 0.74rem;">
+                <i class="bi bi-cash-stack me-1"></i> All Cash <span class="badge {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'bg-white text-success' : 'bg-success-subtle text-success border' }} ms-0.5">{{ $cashPartiesCount ?? 0 }}</span>
+            </a>
+            <a href="{{ route('ledgers.party', array_filter(['party_id' => 'all_staff', 'from_date' => $fromDate, 'to_date' => $toDate])) }}" 
+               class="btn btn-xs py-1 px-2.5 rounded-pill {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'btn-info text-white fw-bold shadow-xs' : 'btn-outline-info' }}" 
+               style="font-size: 0.74rem;">
+                <i class="bi bi-people me-1"></i> All Staff <span class="badge {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'bg-white text-info' : 'bg-info-subtle text-info border' }} ms-0.5">{{ $staffPartiesCount ?? 0 }}</span>
+            </a>
+        </div>
+        <div class="d-flex align-items-center gap-1.5 ms-auto">
+            @if($party || ($ledgerScope ?? 'single') !== 'single')
+                <button type="button" class="btn btn-outline-secondary btn-xs py-1 px-2.5 rounded-pill fw-semibold" onclick="window.print()" style="font-size: 0.74rem;">
+                    <i class="bi bi-printer me-1"></i> Print
+                </button>
+            @endif
+        </div>
+    </div>
 
-<!-- Filter & Selection Bar (No-Print) -->
-<div class="card-custom p-3 mb-3 mb-md-4 no-print">
+    <!-- Filter Form Inputs in One Compact Row -->
     <form method="GET" action="{{ route('ledgers.party') }}" id="partyLedgerFilterForm" class="row g-2 align-items-end">
         <input type="hidden" name="party_id" id="partyId" value="{{ in_array($ledgerScope ?? 'single', ['all_credit', 'all_cash', 'all_staff', 'all']) ? $ledgerScope : (($ledgerScope ?? 'single') === 'single' ? ($party->id ?? '') : '') }}">
 
         <!-- 1. Single Party Search Bar -->
         <div class="col-12 col-md-3">
-            <label for="singlePartySearch" class="form-label text-muted small fw-semibold mb-1">Select Single Party</label>
+            <label for="singlePartySearch" class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">Select Single Party</label>
             <div id="singlePartyCombobox" class="position-relative">
-                <input type="search" id="singlePartySearch" class="form-control form-control-sm py-2" placeholder="Search single party..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="singlePartyOptions">
+                <input type="search" id="singlePartySearch" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" placeholder="Search single party..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="singlePartyOptions">
                 
-                <div id="singlePartyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 380px; overflow-y: auto;">
+                <div id="singlePartyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 340px; overflow-y: auto;">
                     <div class="px-2 py-1 text-muted fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.4px;">Individual Parties</div>
                     @foreach($allParties as $p)
-                        <button type="button" class="dropdown-item rounded-1 small text-start py-2 single-party-option {{ ($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-party-phone="{{ $p->phone ?? '' }}" data-party-type="{{ $p->type }}">
+                        <button type="button" class="dropdown-item rounded-1 small text-start py-1.5 single-party-option {{ ($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-party-phone="{{ $p->phone ?? '' }}" data-party-type="{{ $p->type }}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span>[{{ ucfirst($p->type) }}] <strong>{{ $p->name }}</strong> <small class="{{ ($ledgerScope ?? 'single') === 'single' && ($party->id ?? null) == $p->id ? 'text-white-50' : 'text-muted' }}">({{ $p->phone ?? 'No Phone' }})</small></span>
                                 <span class="ms-1">{!! $p->dealing_badges !!}</span>
@@ -247,23 +331,23 @@
 
         <!-- 2. Multi-Party Ledger Search Bar -->
         <div class="col-12 col-md-3">
-            <label for="partySearch" class="form-label text-muted small fw-semibold mb-1">Select Counterparty / Multi-Party Ledger</label>
+            <label for="partySearch" class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">Select Counterparty / Multi-Party</label>
             <div id="partyCombobox" class="position-relative">
-                <input type="search" id="partySearch" class="form-control form-control-sm py-2" placeholder="Search or select parties..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
+                <input type="search" id="partySearch" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" placeholder="Search or select parties..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partyOptions">
                 
-                <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 440px; overflow-y: auto;">
+                <div id="partyOptions" class="party-combobox-menu dropdown-menu w-100 p-1 shadow" role="listbox" style="max-height: 380px; overflow-y: auto;">
                     <!-- Quick Combined Ledger Options -->
                     <div class="px-2 py-1 text-muted fw-bold text-uppercase combined-header" style="font-size: 0.65rem; letter-spacing: 0.4px;">Combined Statements</div>
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="all_credit" data-display-title="All Credit Parties (Grouped Statement)">
-                        <span><i class="bi bi-credit-card me-1 text-primary"></i> <strong>All Credit Parties</strong> (Grouped Statement)</span>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-1.5 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'active bg-primary text-white' : '' }}" role="option" data-party-id="all_credit" data-display-title="All Credit Parties (Grouped Statement)">
+                        <span><i class="bi bi-credit-card me-1 text-primary"></i> <strong>All Credit Parties</strong></span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_credit' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border' }}">{{ $creditPartiesCount ?? 0 }}</span>
                     </button>
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'active bg-success text-white' : '' }}" role="option" data-party-id="all_cash" data-display-title="All Cash Parties (Grouped Statement)">
-                        <span><i class="bi bi-cash-stack me-1 text-success"></i> <strong>All Cash Parties</strong> (Grouped Statement)</span>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-1.5 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'active bg-success text-white' : '' }}" role="option" data-party-id="all_cash" data-display-title="All Cash Parties (Grouped Statement)">
+                        <span><i class="bi bi-cash-stack me-1 text-success"></i> <strong>All Cash Parties</strong></span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_cash' ? 'bg-white text-success' : 'bg-success-subtle text-success border' }}">{{ $cashPartiesCount ?? 0 }}</span>
                     </button>
-                    <button type="button" class="dropdown-item rounded-1 small text-start py-2 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'active bg-info text-white' : '' }}" role="option" data-party-id="all_staff" data-display-title="All Staff Members (Grouped Statement)">
-                        <span><i class="bi bi-people me-1 text-info"></i> <strong>All Staff Members</strong> (Grouped Statement)</span>
+                    <button type="button" class="dropdown-item rounded-1 small text-start py-1.5 d-flex justify-content-between align-items-center combined-scope-btn {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'active bg-info text-white' : '' }}" role="option" data-party-id="all_staff" data-display-title="All Staff Members (Grouped Statement)">
+                        <span><i class="bi bi-people me-1 text-info"></i> <strong>All Staff Members</strong></span>
                         <span class="badge {{ ($ledgerScope ?? 'single') === 'all_staff' ? 'bg-white text-info' : 'bg-info-subtle text-info border' }}">{{ $staffPartiesCount ?? 0 }}</span>
                     </button>
                     
@@ -287,7 +371,7 @@
                         </div>
                     </div>
 
-                    <div id="partiesCheckboxList" style="max-height: 220px; overflow-y: auto;">
+                    <div id="partiesCheckboxList" style="max-height: 200px; overflow-y: auto;">
                         @php
                             $requestedPartyIds = array_map('strval', (array) request('party_ids', []));
                         @endphp
@@ -295,7 +379,7 @@
                             @php
                                 $isChecked = in_array((string)$p->id, $requestedPartyIds);
                             @endphp
-                            <div class="dropdown-item rounded-1 small py-1.5 px-2 party-item d-flex align-items-center gap-2 cursor-pointer" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-party-type="{{ $p->type }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
+                            <div class="dropdown-item rounded-1 small py-1 px-2 party-item d-flex align-items-center gap-2 cursor-pointer" data-party-id="{{ $p->id }}" data-party-name="{{ $p->name }}" data-party-type="{{ $p->type }}" data-is-credit="{{ $p->is_credit ? '1' : '0' }}" data-is-cash="{{ $p->is_cash ? '1' : '0' }}">
                                 <input type="checkbox" name="party_ids[]" value="{{ $p->id }}" class="form-check-input mt-0 party-check" id="partyCheck_{{ $p->id }}" {{ $isChecked ? 'checked' : '' }}>
                                 <label for="partyCheck_{{ $p->id }}" class="flex-grow-1 d-flex justify-content-between align-items-center mb-0 cursor-pointer user-select-none">
                                     <span>[{{ ucfirst($p->type) }}] <strong>{{ $p->name }}</strong> <small class="text-muted">({{ $p->phone ?? 'No Phone' }})</small></span>
@@ -307,9 +391,9 @@
 
                     <div id="partySearchEmpty" class="dropdown-item small text-muted" aria-live="polite" hidden>No matching party found.</div>
 
-                    <div class="p-2 border-top bg-light d-flex justify-content-between align-items-center mt-1">
+                    <div class="p-1.5 border-top bg-light d-flex justify-content-between align-items-center mt-1">
                         <span class="small text-muted fw-semibold" id="selectedCountBadge" style="font-size: 0.72rem;">0 selected</span>
-                        <button type="button" class="btn btn-primary btn-xs py-1 px-3 fw-bold rounded-pill shadow-xs" id="applyMultiSelectBtn" style="font-size: 0.75rem;">
+                        <button type="button" class="btn btn-primary btn-xs py-1 px-2.5 fw-bold rounded-pill shadow-xs" id="applyMultiSelectBtn" style="font-size: 0.74rem;">
                             <i class="bi bi-check2-circle me-1"></i> View Selected
                         </button>
                     </div>
@@ -317,15 +401,15 @@
             </div>
         </div>
         <div class="col-6 col-md-2">
-            <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
-            <input type="date" name="from_date" class="form-control form-control-sm py-2" value="{{ $fromDate }}">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">From Date</label>
+            <input type="date" name="from_date" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" value="{{ $fromDate }}">
         </div>
         <div class="col-6 col-md-2">
-            <label class="form-label text-muted small fw-semibold mb-1">To Date</label>
-            <input type="date" name="to_date" class="form-control form-control-sm py-2" value="{{ $toDate }}">
+            <label class="form-label text-muted fw-semibold mb-0.5" style="font-size: 0.72rem;">To Date</label>
+            <input type="date" name="to_date" class="form-control form-control-sm py-1" style="height: 32px; font-size: 0.81rem;" value="{{ $toDate }}">
         </div>
         <div class="col-12 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm rounded-3 w-100 fw-semibold py-2">
+            <button type="submit" class="btn btn-primary btn-sm rounded-2 w-100 fw-semibold py-1 d-flex align-items-center justify-content-center" style="height: 32px; font-size: 0.81rem;">
                 <i class="bi bi-filter me-1"></i> Apply Filter
             </button>
         </div>
@@ -334,16 +418,16 @@
 
 @if($party || ($ledgerScope ?? 'single') !== 'single')
     <!-- Printable Statement Card -->
-    <div class="card-custom p-3 p-md-5 bg-white shadow-sm mb-4" id="partyStatementSheet">
+    <div class="card-custom p-2.5 p-md-3 bg-white shadow-xs mb-2 border rounded-3" id="partyStatementSheet">
         <!-- OFFICIAL BANK STATEMENT PRINT HEADER (Visible on Print) -->
         <div class="bank-stmt-header d-none d-print-block">
             <div class="d-flex justify-content-between align-items-start pb-2 border-bottom border-dark">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 52px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
                     <div>
-                        <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">GREEN PHARMACIE</h3>
+                        <h3 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 15pt;">CALTEX - RAO FILLING STATION</h3>
                         <div class="small fw-semibold text-secondary">CENTRAL FINANCIAL TREASURY &amp; COMMERCIAL AUDIT</div>
-                        <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; Verified Accounts &amp; Commercial Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                        <div class="small text-muted" style="font-size: 8pt;">Caltex Petroleum &bull; Verified Accounts &amp; Commercial Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                     </div>
                 </div>
                 <div class="text-end">
@@ -407,119 +491,115 @@
             </tbody>
         </table>
 
-        <!-- Letterhead Header -->
-        <div class="d-flex justify-content-between align-items-start border-bottom pb-3 pb-md-4 mb-3 mb-md-4 flex-wrap gap-2 d-print-none">
-            <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+        <!-- Letterhead Header (Screen View - Compact) -->
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-1.5 mb-2 flex-wrap gap-2 d-print-none">
+            <div class="d-flex align-items-center gap-2.5">
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 32px; max-width: 120px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div>
-                    <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
-                    <h5 class="text-secondary fw-bold m-0" style="font-size: clamp(1rem, 3.5vw, 1.25rem);">Statement of Account & Ledger</h5>
-                    <small class="text-muted">Your Health Companion &bull; Financial Accounting Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                        <span class="fw-bold text-dark" style="font-size: 1rem;">Caltex Rao Filling Station</span>
+                        <span class="text-secondary fw-semibold" style="font-size: 0.85rem;">&bull; Statement of Account &amp; Ledger</span>
+                    </div>
+                    <div class="text-muted" style="font-size: 0.68rem; line-height: 1.2;">Caltex Petroleum &bull; Financial Accounting Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                 </div>
             </div>
             <div class="text-start text-md-end">
-                <span class="badge bg-light text-dark border px-2 py-1 mb-1 font-monospace d-inline-block">
+                <span class="badge bg-light text-dark border px-2 py-0.5 mb-0.5 font-monospace d-inline-block" style="font-size: 0.72rem;">
                     Period: {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('d M, Y') }}
                 </span>
-                <div class="small text-muted" style="font-size: 0.72rem;">Generated: {{ now()->format('d M, Y - h:i A') }}</div>
-                <div class="small text-muted" style="font-size: 0.72rem;">Auditor: <strong>{{ auth()->user()->name }}</strong></div>
+                <div class="text-muted" style="font-size: 0.67rem;">Generated: {{ now()->format('d M, Y - h:i A') }} &bull; Auditor: <strong>{{ auth()->user()->name }}</strong></div>
             </div>
         </div>
 
-        <!-- Party / Group Profile Box -->
-        <div class="row g-2 g-md-3 mb-3 mb-md-4 p-3 bg-light rounded-3 border d-print-none">
-            <div class="col-12 col-md-7">
-                <div class="text-muted small fw-semibold" style="font-size: 0.75rem;">Account / Statement Target:</div>
-                <h5 class="fw-bold text-dark m-0">{{ $statementTitle }}</h5>
-                <div class="small text-muted mt-1" style="font-size: 0.74rem;">
-                    @if($party)
-                        <i class="bi bi-geo-alt me-1"></i>{{ $party->address ?? 'No physical address registered' }}
-                    @else
-                        <i class="bi bi-people me-1"></i>Combined statement of <strong>{{ $selectedParties->count() }}</strong> active parties
-                    @endif
-                </div>
-            </div>
-            <div class="col-12 col-md-5 text-start text-md-end">
-                <div class="text-muted small fw-semibold" style="font-size: 0.75rem;">Category & Dealing Mode:</div>
+        <!-- Party / Group Profile Strip (Compact) -->
+        <div class="d-flex justify-content-between align-items-center bg-light border rounded-2 px-2.5 py-1.5 mb-2 d-print-none flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-secondary fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.4px;">Target:</span>
+                <strong class="text-dark" style="font-size: 0.95rem;">{{ $statementTitle }}</strong>
                 @if($party)
-                    <div class="mt-1">{!! $party->type_badge !!} {!! $party->dealing_badges !!}</div>
-                    <div class="small font-monospace text-dark mt-1" style="font-size: 0.74rem;">
-                        <i class="bi bi-telephone me-1 text-primary"></i>{{ $party->phone ?? 'N/A' }}
-                    </div>
+                    {!! $party->type_badge !!} {!! $party->dealing_badges !!}
+                    @if($party->phone)
+                        <span class="text-muted small font-monospace"><i class="bi bi-telephone me-1 text-primary"></i>{{ $party->phone }}</span>
+                    @endif
+                    @if($party->address)
+                        <span class="text-muted small" style="font-size: 0.73rem;"><i class="bi bi-geo-alt me-1 text-danger"></i>{{ $party->address }}</span>
+                    @endif
                 @else
-                    <div class="mt-1">
-                        @if(($ledgerScope ?? 'single') === 'all_credit')
-                            <span class="badge bg-primary text-white px-2 py-1"><i class="bi bi-credit-card me-1"></i>Credit Parties Only</span>
-                        @elseif(($ledgerScope ?? 'single') === 'all_cash')
-                            <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-cash-stack me-1"></i>Cash Parties Only</span>
-                        @elseif(($ledgerScope ?? 'single') === 'all_staff')
-                            <span class="badge bg-info text-white px-2 py-1"><i class="bi bi-people me-1"></i>Staff Members Only</span>
-                        @else
-                            <span class="badge bg-dark text-white px-2 py-1"><i class="bi bi-people-fill me-1"></i>All Parties Consolidated</span>
-                        @endif
-                    </div>
-                    <div class="small text-muted mt-1" style="font-size: 0.74rem;">
-                        Total Accounts Included: <strong>{{ $selectedParties->count() }}</strong>
-                    </div>
+                    <span class="badge bg-dark text-white px-2 py-0.5" style="font-size: 0.72rem;">{{ $selectedParties->count() }} Parties Included</span>
+                @endif
+            </div>
+            <div class="text-end">
+                @if($party)
+                    <span class="badge bg-white text-secondary border px-2 py-0.5 font-monospace" style="font-size: 0.7rem;">ID #PRT-{{ str_pad($party->id, 4, '0', STR_PAD_LEFT) }}</span>
+                @else
+                    @if(($ledgerScope ?? 'single') === 'all_credit')
+                        <span class="badge bg-primary text-white px-2 py-0.5" style="font-size: 0.7rem;"><i class="bi bi-credit-card me-1"></i>Credit Parties</span>
+                    @elseif(($ledgerScope ?? 'single') === 'all_cash')
+                        <span class="badge bg-success text-white px-2 py-0.5" style="font-size: 0.7rem;"><i class="bi bi-cash-stack me-1"></i>Cash Parties</span>
+                    @elseif(($ledgerScope ?? 'single') === 'all_staff')
+                        <span class="badge bg-info text-white px-2 py-0.5" style="font-size: 0.7rem;"><i class="bi bi-people me-1"></i>Staff Members</span>
+                    @else
+                        <span class="badge bg-dark text-white px-2 py-0.5" style="font-size: 0.7rem;"><i class="bi bi-people-fill me-1"></i>All Parties</span>
+                    @endif
                 @endif
             </div>
         </div>
 
-        <!-- Metric KPI Cards -->
-        <div class="row g-2 g-md-3 mb-3 mb-md-4 d-print-none">
+        <!-- Metric KPI Summary Cards (High-Density) -->
+        <div class="row g-2 mb-2 d-print-none">
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-light rounded-3 border h-100">
-                    <span class="text-muted small d-block mb-1 kpi-title">Opening Balance</span>
-                    <h5 class="fw-bold font-monospace text-dark m-0 kpi-amount">Rs. {{ number_format($openingBalance, 2) }}</h5>
-                    <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</small>
+                <div class="p-2 px-2.5 bg-light rounded-2 border h-100">
+                    <span class="text-muted text-uppercase fw-bold d-block kpi-title">Opening Balance</span>
+                    <div class="fw-bold font-monospace text-dark kpi-amount my-0.5">Rs. {{ number_format($openingBalance, 2) }}</div>
+                    <div class="text-muted text-truncate" style="font-size: 0.65rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M, Y') }}</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
-                    <span class="text-danger small fw-semibold d-block mb-1 kpi-title">Total Debits</span>
-                    <h5 class="fw-bold font-monospace text-danger m-0 kpi-amount">Rs. {{ number_format($totalDebit, 2) }}</h5>
-                    <small class="text-danger-emphasis" style="font-size: 0.7rem;">Invoiced / Paid Out</small>
+                <div class="p-2 px-2.5 bg-danger-subtle rounded-2 border border-danger-subtle h-100">
+                    <span class="text-danger text-uppercase fw-bold d-block kpi-title">Total Debits (Dr)</span>
+                    <div class="fw-bold font-monospace text-danger kpi-amount my-0.5">Rs. {{ number_format($totalDebit, 2) }}</div>
+                    <div class="text-danger-emphasis text-truncate" style="font-size: 0.65rem;">Invoiced / Paid Out</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
-                    <span class="text-success small fw-semibold d-block mb-1 kpi-title">Total Credits</span>
-                    <h5 class="fw-bold font-monospace text-success m-0 kpi-amount">Rs. {{ number_format($totalCredit, 2) }}</h5>
-                    <small class="text-success-emphasis" style="font-size: 0.7rem;">Received / Recovered</small>
+                <div class="p-2 px-2.5 bg-success-subtle rounded-2 border border-success-subtle h-100">
+                    <span class="text-success text-uppercase fw-bold d-block kpi-title">Total Credits (Cr)</span>
+                    <div class="fw-bold font-monospace text-success kpi-amount my-0.5">Rs. {{ number_format($totalCredit, 2) }}</div>
+                    <div class="text-success-emphasis text-truncate" style="font-size: 0.65rem;">Received / Recovered</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="p-3 bg-primary text-white rounded-3 shadow-sm h-100">
-                    <span class="text-white-50 small fw-semibold d-block mb-1 kpi-title">Net Ending Balance</span>
-                    <h5 class="fw-bold font-monospace text-white m-0 kpi-amount">Rs. {{ number_format(abs($closingBalance), 2) }}</h5>
-                    <small class="text-white-50" style="font-size: 0.7rem;">
+                <div class="p-2 px-2.5 bg-primary text-white rounded-2 shadow-xs h-100">
+                    <span class="text-white-50 text-uppercase fw-bold d-block kpi-title">Net Ending Balance</span>
+                    <div class="fw-bold font-monospace text-white kpi-amount my-0.5">Rs. {{ number_format(abs($closingBalance), 2) }}</div>
+                    <div class="text-white-50 text-truncate" style="font-size: 0.65rem;">
                         @if($party)
                             @if($party->type === 'customer' || $party->type === 'staff')
-                                {{ $closingBalance > 0 ? 'Receivable (Dr)' : ($closingBalance < 0 ? 'Advance / Credit (Cr)' : 'Settled / Zero') }}
+                                {{ $closingBalance > 0 ? 'Receivable (Dr)' : ($closingBalance < 0 ? 'Advance / Cr' : 'Settled') }}
                             @else
-                                {{ $closingBalance > 0 ? 'Payable to Supplier' : ($closingBalance < 0 ? 'Debit Balance (Overpaid)' : 'Settled / Zero') }}
+                                {{ $closingBalance > 0 ? 'Payable to Supplier' : ($closingBalance < 0 ? 'Overpaid (Dr)' : 'Settled') }}
                             @endif
                         @else
-                            {{ $closingBalance > 0 ? 'Net Payable Balance' : ($closingBalance < 0 ? 'Net Receivable Balance' : 'Settled / Zero') }}
+                            {{ $closingBalance > 0 ? 'Net Payable' : ($closingBalance < 0 ? 'Net Receivable' : 'Settled') }}
                         @endif
-                    </small>
+                    </div>
                 </div>
             </div>
         </div>
 
         @if(($ledgerScope ?? 'single') === 'single')
             <!-- Desktop View: Single Party Ledger Table -->
-            <div class="d-none d-md-block statement-desktop-table table-responsive mb-4">
+            <div class="d-none d-md-block statement-desktop-table table-responsive party-ledger-scroll-container mb-2">
                 <table class="table table-sm table-bordered table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 105px;">Date</th>
-                            <th style="width: 110px;">Ref / Voucher</th>
-                            <th>Account / Mode</th>
+                            <th style="width: 100px;">Date</th>
+                            <th style="width: 105px;">Ref / Voucher</th>
+                            <th style="width: 135px;">Account / Mode</th>
                             <th>Description / Details</th>
-                            <th class="text-end" style="width: 130px;">Debit (Rs.)</th>
-                            <th class="text-end" style="width: 130px;">Credit (Rs.)</th>
-                            <th class="text-end" style="width: 150px;">Balance (Rs.)</th>
+                            <th class="text-end" style="width: 125px;">Debit (Rs.)</th>
+                            <th class="text-end" style="width: 125px;">Credit (Rs.)</th>
+                            <th class="text-end" style="width: 135px;">Balance (Rs.)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -548,17 +628,17 @@
                                         {{ $entry->bill_no }}
                                     @endif
                                     @if($entry->bill_no)
-                                        <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
+                                        <span class="d-block text-muted small" style="font-size: 0.68rem;">Bill: {{ $entry->bill_no }}</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border px-2 py-1">
+                                    <span class="badge bg-light text-dark border px-2 py-0.5" style="font-size: 0.72rem;">
                                         {{ $entry->account_name }}
                                     </span>
                                 </td>
                                 <td>
-                                    <div>{{ $entry->description ?? 'Financial Transaction' }}</div>
-                                    <small class="text-muted" style="font-size: 0.72rem;">User: {{ $entry->creator }}</small>
+                                    <div style="line-height: 1.25;">{{ $entry->description ?? 'Financial Transaction' }}</div>
+                                    <small class="text-muted" style="font-size: 0.68rem;">User: {{ $entry->creator }}</small>
                                 </td>
                                 <td class="text-end font-monospace {{ $entry->debit > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
                                     {{ $entry->debit > 0 ? number_format($entry->debit, 2) : '-' }}
@@ -572,8 +652,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                                <td colspan="7" class="text-center text-muted py-3">
+                                    <i class="bi bi-inbox fs-4 d-block mb-1"></i>
                                     No ledger transactions found for this party within the selected date range.
                                 </td>
                             </tr>
@@ -581,23 +661,23 @@
                     </tbody>
                     <tfoot class="table-light">
                         <tr class="fw-bold">
-                            <td colspan="4" class="text-end">Period Totals & Ending Balance:</td>
+                            <td colspan="4" class="text-end">Period Totals &amp; Ending Balance:</td>
                             <td class="text-end font-monospace text-danger">Rs. {{ number_format($totalDebit, 2) }}</td>
                             <td class="text-end font-monospace text-success">Rs. {{ number_format($totalCredit, 2) }}</td>
-                            <td class="text-end font-monospace text-primary fs-6">Rs. {{ number_format($closingBalance, 2) }}</td>
+                            <td class="text-end font-monospace text-primary">Rs. {{ number_format($closingBalance, 2) }}</td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
 
             <!-- Mobile View: Single Party -->
-            <div class="d-block d-md-none mb-3 d-print-none">
+            <div class="d-block d-md-none mb-2 d-print-none">
                 <!-- Opening Balance Card -->
-                <div class="p-2.5 rounded-3 border bg-light mb-2">
+                <div class="p-2 rounded-2 border bg-light mb-1.5">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="fw-semibold text-secondary small">Opening Balance</div>
-                            <small class="text-muted" style="font-size: 0.7rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</small>
+                            <small class="text-muted" style="font-size: 0.68rem;">Prior to {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }}</small>
                         </div>
                         <div class="font-monospace fw-bold text-dark">
                             Rs. {{ number_format($openingBalance, 2) }}
@@ -606,10 +686,10 @@
                 </div>
 
                 <!-- Transaction Entries -->
-                <div class="d-flex flex-column gap-2">
+                <div class="d-flex flex-column gap-1.5">
                     @forelse($transactions as $entry)
-                        <div class="p-3 rounded-3 border bg-white shadow-xs">
-                            <div class="d-flex align-items-center justify-content-between gap-1 mb-1.5">
+                        <div class="p-2 rounded-2 border bg-white shadow-xs">
+                            <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
                                 <div class="d-flex align-items-center gap-1.5 min-w-0">
                                     <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
                                     @if($entry->transaction_id)
@@ -622,12 +702,12 @@
                             </div>
 
                             @if($entry->description)
-                                <div class="text-muted small text-truncate mb-2" style="font-size: 0.74rem;">
+                                <div class="text-muted small text-truncate mb-1" style="font-size: 0.72rem;">
                                     {{ $entry->description }}
                                 </div>
                             @endif
 
-                            <div class="p-2 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
+                            <div class="p-1.5 rounded-2 bg-light border d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
                                 <div>
                                     @if($entry->debit > 0)
                                         <span class="text-danger fw-bold font-monospace">Dr: -Rs. {{ number_format($entry->debit, 2) }}</span>
@@ -638,31 +718,31 @@
                                     @endif
                                 </div>
                                 <div class="text-end">
-                                    <span class="text-muted d-block" style="font-size: 0.65rem;">Balance</span>
+                                    <span class="text-muted d-block" style="font-size: 0.63rem;">Balance</span>
                                     <span class="font-monospace fw-bold text-dark">Rs. {{ number_format($entry->running_balance, 2) }}</span>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <div class="text-center text-muted py-4 small">
+                        <div class="text-center text-muted py-3 small">
                             No ledger transactions found for this party within the selected date range.
                         </div>
                     @endforelse
                 </div>
 
                 <!-- Mobile Totals Card -->
-                <div class="p-3 rounded-3 border bg-primary bg-opacity-10 mt-2">
-                    <div class="d-flex justify-content-between align-items-center small py-1">
+                <div class="p-2.5 rounded-2 border bg-primary bg-opacity-10 mt-2">
+                    <div class="d-flex justify-content-between align-items-center small py-0.5">
                         <span class="text-danger fw-semibold">Total Debits:</span>
                         <span class="font-monospace fw-bold text-danger">Rs. {{ number_format($totalDebit, 2) }}</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center small py-1">
+                    <div class="d-flex justify-content-between align-items-center small py-0.5">
                         <span class="text-success fw-semibold">Total Credits:</span>
                         <span class="font-monospace fw-bold text-success">Rs. {{ number_format($totalCredit, 2) }}</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1">
+                    <div class="d-flex justify-content-between align-items-center border-top pt-1.5 mt-1">
                         <span class="fw-bold text-dark">Net Ending Balance:</span>
-                        <span class="font-monospace fw-bold fs-6 text-primary">Rs. {{ number_format($closingBalance, 2) }}</span>
+                        <span class="font-monospace fw-bold text-primary">Rs. {{ number_format($closingBalance, 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -677,34 +757,34 @@
                 </div>
 
                 @forelse($partyGroups as $index => $group)
-                    <div class="card-custom p-3 p-md-4 mb-4 bg-white border shadow-xs party-statement-block" style="page-break-inside: avoid;">
+                    <div class="card-custom p-2.5 mb-2.5 bg-white border shadow-xs party-statement-block" style="page-break-inside: avoid;">
                         <!-- Party Group Header -->
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-2 mb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-1.5 mb-2 border-bottom">
                             <div>
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="badge bg-dark text-white rounded-circle px-2 py-1" style="font-size: 0.72rem;">#{{ $index + 1 }}</span>
-                                    <a href="{{ route('ledgers.party', ['party_id' => $group->party->id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fs-5 fw-bold text-dark text-decoration-none" title="Click to view dedicated single statement">
+                                    <span class="badge bg-dark text-white rounded-circle px-2 py-0.5" style="font-size: 0.7rem;">#{{ $index + 1 }}</span>
+                                    <a href="{{ route('ledgers.party', ['party_id' => $group->party->id, 'from_date' => $fromDate, 'to_date' => $toDate]) }}" class="fs-6 fw-bold text-dark text-decoration-none" title="Click to view dedicated single statement">
                                         {{ $group->party->name }}
                                     </a>
                                     <span class="badge bg-secondary-subtle text-secondary border px-2 py-0.5" style="font-size: 0.7rem;">{{ ucfirst($group->party->type) }}</span>
                                     {!! $group->party->dealing_badges !!}
                                     @if($group->party->phone)
-                                        <span class="text-muted small ms-1"><i class="bi bi-telephone me-1"></i>{{ $group->party->phone }}</span>
+                                        <span class="text-muted small ms-1 font-monospace" style="font-size: 0.75rem;"><i class="bi bi-telephone me-1"></i>{{ $group->party->phone }}</span>
                                     @endif
                                 </div>
                                 @if($group->party->address)
-                                    <small class="text-muted d-block mt-0.5" style="font-size: 0.75rem;"><i class="bi bi-geo-alt me-1"></i>{{ $group->party->address }}</small>
+                                    <small class="text-muted d-block mt-0.5" style="font-size: 0.73rem;"><i class="bi bi-geo-alt me-1 text-danger"></i>{{ $group->party->address }}</small>
                                 @endif
                             </div>
-                            <div class="d-flex gap-3 align-items-center bg-light px-3 py-1.5 rounded-3 border">
+                            <div class="d-flex gap-2.5 align-items-center bg-light px-2.5 py-1 rounded-2 border">
                                 <div class="text-end">
-                                    <span class="text-muted small d-block" style="font-size: 0.68rem;">Starting Balance:</span>
-                                    <span class="font-monospace fw-bold text-dark" style="font-size: 0.85rem;">Rs. {{ number_format($group->opening_balance, 2) }}</span>
+                                    <span class="text-muted small d-block" style="font-size: 0.65rem;">Starting:</span>
+                                    <span class="font-monospace fw-bold text-dark" style="font-size: 0.82rem;">Rs. {{ number_format($group->opening_balance, 2) }}</span>
                                 </div>
                                 <div class="vr my-1"></div>
                                 <div class="text-end">
-                                    <span class="text-muted small d-block" style="font-size: 0.68rem;">Closing Balance:</span>
-                                    <span class="font-monospace fw-bold {{ $group->closing_balance > 0 ? 'text-primary' : ($group->closing_balance < 0 ? 'text-danger' : 'text-success') }}" style="font-size: 0.85rem;">
+                                    <span class="text-muted small d-block" style="font-size: 0.65rem;">Closing:</span>
+                                    <span class="font-monospace fw-bold {{ $group->closing_balance > 0 ? 'text-primary' : ($group->closing_balance < 0 ? 'text-danger' : 'text-success') }}" style="font-size: 0.82rem;">
                                         Rs. {{ number_format(abs($group->closing_balance), 2) }}
                                         <small style="font-size: 0.65rem;">
                                             @if($group->party->type === 'customer' || $group->party->type === 'staff')
@@ -719,17 +799,17 @@
                         </div>
 
                         <!-- Table for this party -->
-                        <div class="table-responsive statement-desktop-table mb-2">
+                        <div class="table-responsive statement-desktop-table party-ledger-scroll-container mb-2">
                             <table class="table table-sm table-bordered table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 105px;">Date</th>
-                                        <th style="width: 110px;">Ref / Voucher</th>
-                                        <th>Account / Mode</th>
+                                        <th style="width: 100px;">Date</th>
+                                        <th style="width: 105px;">Ref / Voucher</th>
+                                        <th style="width: 135px;">Account / Mode</th>
                                         <th>Description / Details</th>
-                                        <th class="text-end" style="width: 130px;">Debit (Rs.)</th>
-                                        <th class="text-end" style="width: 130px;">Credit (Rs.)</th>
-                                        <th class="text-end" style="width: 150px;">Balance (Rs.)</th>
+                                        <th class="text-end" style="width: 125px;">Debit (Rs.)</th>
+                                        <th class="text-end" style="width: 125px;">Credit (Rs.)</th>
+                                        <th class="text-end" style="width: 135px;">Balance (Rs.)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -756,17 +836,17 @@
                                                     {{ $entry->bill_no }}
                                                 @endif
                                                 @if($entry->bill_no)
-                                                    <span class="d-block text-muted small" style="font-size: 0.72rem;">Bill: {{ $entry->bill_no }}</span>
+                                                    <span class="d-block text-muted small" style="font-size: 0.68rem;">Bill: {{ $entry->bill_no }}</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                <span class="badge bg-light text-dark border px-2 py-1">
+                                                <span class="badge bg-light text-dark border px-2 py-0.5" style="font-size: 0.72rem;">
                                                     {{ $entry->account_name }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <div>{{ $entry->description ?? 'Financial Transaction' }}</div>
-                                                <small class="text-muted" style="font-size: 0.72rem;">User: {{ $entry->creator }}</small>
+                                                <div style="line-height: 1.25;">{{ $entry->description ?? 'Financial Transaction' }}</div>
+                                                <small class="text-muted" style="font-size: 0.68rem;">User: {{ $entry->creator }}</small>
                                             </td>
                                             <td class="text-end font-monospace {{ $entry->debit > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
                                                 {{ $entry->debit > 0 ? number_format($entry->debit, 2) : '-' }}
@@ -780,7 +860,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-3 small">
+                                            <td colspan="7" class="text-center text-muted py-2 small">
                                                 <i class="bi bi-info-circle me-1"></i> No transactions recorded during this period. (Carrying forward Opening Balance of Rs. {{ number_format($group->opening_balance, 2) }})
                                             </td>
                                         </tr>
@@ -801,7 +881,7 @@
                         <div class="d-block d-md-none d-print-none mb-2">
                             <div class="d-flex flex-column gap-2">
                                 @forelse($group->transactions as $entry)
-                                    <div class="p-2.5 rounded-3 border bg-white shadow-xs">
+                                    <div class="p-2 rounded-2 border bg-white shadow-xs">
                                         <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
                                             <span class="fw-bold text-dark small">{{ \Carbon\Carbon::parse($entry->date)->format('d M Y') }}</span>
                                             <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">
@@ -809,7 +889,7 @@
                                             </span>
                                         </div>
                                         @if($entry->description)
-                                            <div class="text-muted small text-truncate mb-1.5" style="font-size: 0.72rem;">
+                                            <div class="text-muted small text-truncate mb-1" style="font-size: 0.72rem;">
                                                 {{ $entry->description }}
                                             </div>
                                         @endif
@@ -837,7 +917,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="card-custom p-4 text-center text-muted">
+                    <div class="card-custom p-3 text-center text-muted small">
                         No parties matched your selection.
                     </div>
                 @endforelse
@@ -845,7 +925,7 @@
         @endif
 
         <!-- Official Bank Statement Signatures (Visible on Print) -->
-        <div class="statement-signatures pt-4 mt-4">
+        <div class="statement-signatures pt-4 mt-3 d-none d-print-block">
             <div class="row text-center w-100 m-0">
                 <div class="col-4">
                     <div class="statement-sig-line">
@@ -868,17 +948,17 @@
             </div>
         </div>
 
-        <!-- Statement Footer Notice -->
-        <div class="text-center pt-3 mt-2 border-top text-muted small" style="font-size: 8pt;">
+        <!-- Statement Footer Notice (Visible on Print) -->
+        <div id="statementFooterNotice" class="text-center pt-2 mt-2 border-top text-muted small d-none d-print-block" style="font-size: 8pt;">
             <span>Official Statement of Account &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Support Helpline: <a href="tel:+923173836223" class="text-decoration-none text-dark fw-bold">+92 317 3836223</a></span>
         </div>
 
     </div>
 @else
-    <div class="card-custom p-4 p-md-5 text-center">
-        <i class="bi bi-person-bounding-box text-muted display-4 mb-3"></i>
-        <h5 class="fw-bold text-dark">No Party Selected</h5>
-        <p class="text-secondary small">Please select a customer, supplier, trader, or staff member from the dropdown above to display their statement of account.</p>
+    <div class="card-custom p-3 p-md-4 text-center">
+        <i class="bi bi-person-bounding-box text-muted display-6 mb-2"></i>
+        <h6 class="fw-bold text-dark">No Party Selected</h6>
+        <p class="text-secondary small mb-0">Please select a customer, supplier, trader, or staff member from the dropdown above to display their statement of account.</p>
     </div>
 @endif
 

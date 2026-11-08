@@ -112,7 +112,7 @@
         html, body {
             background: #ffffff !important;
             color: #000000 !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
             font-size: 8.2pt !important;
             line-height: 1.25 !important;
             width: 100% !important;
@@ -223,11 +223,11 @@
         <!-- 1. STATEMENT HEADER BLOCK -->
         <div class="d-flex justify-content-between align-items-start pb-2 mb-2 border-bottom border-2 border-dark">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Green Pharmacie" style="height: 50px; max-width: 175px; object-fit: contain;">
+                <img src="{{ asset('images/logo.png') }}" onerror="this.onerror=null; this.src='/images/logo.png';" alt="Caltex Rao Filling Station" style="height: 50px; max-width: 175px; object-fit: contain;">
                 <div>
-                    <h4 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 14pt;">GREEN PHARMACIE</h4>
+                    <h4 class="fw-bold m-0 text-uppercase tracking-tight" style="color: #0f172a; font-size: 14pt;">CALTEX - RAO FILLING STATION</h4>
                     <div class="fw-semibold text-secondary" style="font-size: 8.5pt;">CENTRAL COMMERCIAL TREASURY &bull; OFFICIAL STATEMENT OF ACCOUNT</div>
-                    <div class="small text-muted" style="font-size: 8pt;">Your Health Companion &bull; 24/7 &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Ph: +92 317 3836223</div>
+                    <div class="small text-muted" style="font-size: 8pt;">Caltex Petroleum &bull; 24/7 &bull; Software Developed by <strong>Prowave Technologies</strong> &bull; Ph: +92 317 3836223</div>
                 </div>
             </div>
             <div class="text-end">

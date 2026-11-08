@@ -251,11 +251,11 @@
     <div class="print-only-header border-bottom pb-2 mb-3">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 44px; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 44px; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div>
-                    <h4 class="fw-bold text-uppercase m-0" style="font-size: 13pt; color: #000;">GREEN PHARMACIE</h4>
+                    <h4 class="fw-bold text-uppercase m-0" style="font-size: 13pt; color: #000;">CALTEX - RAO FILLING STATION</h4>
                     <div class="fw-bold text-dark" style="font-size: 9.5pt;">DAILY ACCOUNT &amp; SALES REGISTER</div>
-                    <div class="text-secondary small" style="font-size: 7.5pt;">Your Health Companion &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                    <div class="text-secondary small" style="font-size: 7.5pt;">Caltex Petroleum &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                 </div>
             </div>
             <div class="text-end small text-muted" style="font-size: 8pt;">

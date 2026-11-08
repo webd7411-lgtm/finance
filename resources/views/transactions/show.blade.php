@@ -36,7 +36,7 @@
         max-width: 380px;
         background: #ffffff;
         color: #111827;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
         font-size: 12px;
         line-height: 1.4;
         padding: 24px 20px;
@@ -100,7 +100,7 @@
         html, body {
             background: #ffffff !important;
             color: #000000 !important;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace, sans-serif !important;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace, sans-serif !important;
             font-size: 11px !important;
             line-height: 1.3 !important;
             width: 80mm !important;
@@ -192,9 +192,9 @@
 
         <!-- Business Header -->
         <div class="text-center mb-2">
-            <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 175px; object-fit: contain;" class="mb-1" onerror="this.onerror=null; this.src='/images/logo.png';">
-            <h6 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 13px;">Green Pharmacie</h6>
-            <div class="text-dark small" style="font-size: 10px;">Your Health Companion &bull; 24 Hrs 7 Days</div>
+            <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 48px; max-width: 175px; object-fit: contain;" class="mb-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+            <h6 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 13px;">CALTEX - RAO FILLING STATION</h6>
+            <div class="text-dark small" style="font-size: 10px;">Caltex Petroleum &bull; 24 Hrs 7 Days</div>
         </div>
 
         <div class="thermal-divider-dashed"></div>

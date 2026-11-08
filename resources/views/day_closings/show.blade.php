@@ -30,11 +30,11 @@
             <div class="d-none d-print-block statement-print-header mb-3 pb-2 border-bottom border-dark border-2">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="d-flex align-items-center gap-3">
-                        <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 50px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
+                        <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 50px; max-width: 175px; object-fit: contain;" onerror="this.onerror=null; this.src='/images/logo.png';">
                         <div>
-                            <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 14pt; color: #000;">GREEN PHARMACIE</h4>
+                            <h4 class="fw-bold text-uppercase m-0" style="letter-spacing: 0.5px; font-size: 14pt; color: #000;">CALTEX - RAO FILLING STATION</h4>
                             <div class="fw-bold text-dark" style="font-size: 10.5pt; margin-top: 2px;">DAILY CASH POSITION & DAY CLOSING STATEMENT</div>
-                            <div class="text-secondary small" style="font-size: 8.5pt;">Your Health Companion &bull; Statement Ref #DC-{{ str_pad($dayClosing->id, 5, '0', STR_PAD_LEFT) }} &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
+                            <div class="text-secondary small" style="font-size: 8.5pt;">Caltex Petroleum &bull; Statement Ref #DC-{{ str_pad($dayClosing->id, 5, '0', STR_PAD_LEFT) }} &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></div>
                         </div>
                     </div>
                     <div class="text-end" style="font-size: 9pt; line-height: 1.45; color: #000;">
@@ -49,11 +49,11 @@
             <!-- Header Section (Screen Only: Modern Web UI with Branding & Badges) -->
             <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4 flex-wrap gap-3 d-print-none">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                    <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 48px; max-width: 170px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
                     <div>
-                        <h4 class="fw-bold text-dark m-0">Green Pharmacie</h4>
+                        <h4 class="fw-bold text-dark m-0">Caltex Rao Filling Station</h4>
                         <h5 class="text-secondary fw-bold m-0" style="font-size: 1.05rem;">Daily Cash Position & Day Closing Statement</h5>
-                        <small class="text-muted">Your Health Companion &bull; Financial Audit & Closing Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
+                        <small class="text-muted">Caltex Petroleum &bull; Financial Audit & Closing Ledger &bull; Software by <strong>Prowave Technologies (+92 317 3836223)</strong></small>
                     </div>
                 </div>
                 <div class="text-md-end">
@@ -600,7 +600,7 @@
     html, body {
         background: #ffffff !important;
         color: #0f172a !important;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
         font-size: 8.5pt !important;
         line-height: 1.25 !important;
         width: 100% !important;

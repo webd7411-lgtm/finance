@@ -5,31 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Dashboard') - FinanceDesk</title>
+    <title>@yield('title', 'Dashboard') - Caltex Rao Filling Station</title>
 
-    <!-- Standard Clean Font: Inter -->
+    <!-- Standard Clean Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Bootstrap 5.3 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Font Awesome 6 CDN & V4 Shims -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/v4-shims.min.css">
     
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
         :root {
             --nav-bg: #090e17;
             --nav-border: #1e293b;
             --primary-accent: #2563eb;
             --page-bg: #f8fafc;
-            --bs-font-sans-serif: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            --bs-font-monospace: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            --bs-font-sans-serif: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --bs-font-monospace: 'Plus Jakarta Sans', system-ui, sans-serif !important;
             --bs-body-font-family: var(--bs-font-sans-serif);
         }
-        *, *::before, *::after, body, input, button, select, textarea, .font-monospace, code, kbd, samp, pre {
-            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        body, body *, input, button, select, textarea, .font-monospace, code, kbd, samp, pre {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
             letter-spacing: normal !important;
+        }
+        /* Preserve Icon Fonts (Font Awesome 4, 5, 6 & Bootstrap Icons) */
+        .fa, .fas, .fa-solid, [class^="fa-"], [class*=" fa-"] {
+            font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+            font-weight: 900 !important;
+        }
+        .far, .fa-regular {
+            font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+            font-weight: 400 !important;
+        }
+        .fab, .fa-brands {
+            font-family: "Font Awesome 6 Brands", "FontAwesome" !important;
+            font-weight: 400 !important;
+        }
+        .bi, [class^="bi-"], [class*=" bi-"] {
+            font-family: "bootstrap-icons" !important;
         }
         html, body {
             overflow-x: hidden !important;
@@ -230,12 +251,52 @@
             max-height: calc(82vh - 120px);
             overflow-y: auto !important;
         }
-        /* Subbar with Breadcrumb & Context */
+        /* Subbar with Breadcrumb & Context - Styled Heading Strip */
         .sub-header {
+            background: #e2e8f0;
+            background: linear-gradient(90deg, #dbe4ee 0%, #edf2f7 50%, #dbe4ee 100%);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            border-bottom: 2px solid #cbd5e1;
+            padding: 0.55rem 0;
+            margin-bottom: 0.85rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        }
+        .sub-header h5 {
+            color: #0f172a !important;
+            font-size: 1.05rem;
+            font-weight: 700 !important;
+            letter-spacing: -0.2px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .sub-header h5::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 1.15rem;
+            background: #2563eb;
+            border-radius: 2px;
+            margin-right: 0.55rem;
+            vertical-align: middle;
+        }
+        .sub-header .btn:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-info):not(.btn-dark) {
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.85rem 0;
-            margin-bottom: 1.5rem;
+            border-color: #cbd5e1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        .sub-header .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+        .sub-header .btn-primary:hover {
+            background: #1d4ed8;
+            border-color: #1d4ed8;
+            color: #ffffff;
+        }
+        .sub-header .btn:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
         }
         .card-custom {
             background: #ffffff;
@@ -338,9 +399,9 @@
                 <!-- Brand & Navigation -->
                 <div class="d-flex align-items-center gap-2 gap-xl-3" style="min-width: 0;">
                     <a href="{{ route('dashboard') }}" class="vip-brand">
-                        <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 38px; max-width: 135px; object-fit: contain;" class="rounded-1 me-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                        <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 38px; max-width: 135px; object-fit: contain;" class="rounded-1 bg-white me-1" onerror="this.onerror=null; this.src='/images/logo.png';">
                         <div class="vip-brand-content d-none d-sm-flex">
-                            <span class="vip-company-name">Prowave Technologies</span>
+                            <span class="vip-company-name">Caltex Rao Filling Station</span>
                             <span class="text-success fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.2px; white-space: nowrap;">
                                 <i class="bi bi-telephone-fill me-1" style="font-size: 0.65rem;"></i>+92 317 3836223
                             </span>
@@ -350,136 +411,30 @@
                         </div>
                     </a>
 
-                    <!-- Desktop Nav Links (High Resolution Screens >= 1400px) -->
-                    <div class="d-none d-xxl-flex align-items-center gap-1">
+                    <!-- Desktop & Laptop Navigation (Screens >= 1200px) -->
+                    <div class="d-none d-xl-flex align-items-center gap-1">
                         <a href="{{ route('dashboard') }}" class="vip-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
 
-                        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                            <a href="{{ route('users.index') }}" class="vip-nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                                <i class="bi bi-people"></i> Users & Roles
-                            </a>
-                        @endif
-
-                        <!-- Master Setup Dropdown -->
-                        <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-sliders"></i> Master Setup
-                            </button>
-                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('parties.index') }}">
-                                        <i class="bi bi-person-lines-fill text-primary"></i> Parties & Ledgers
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('accounts.index') }}">
-                                        <i class="bi bi-bank text-success"></i> Payment Accounts
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
-                                        <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('cashiers.index') }}">
-                                        <i class="bi bi-person-badge text-info"></i> Shift Cashiers
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <!-- Operations Links -->
-                        <a href="{{ route('shift-closings.index') }}" class="vip-nav-link {{ request()->routeIs('shift-closings.*') ? 'active' : '' }}">
-                            <i class="bi bi-clock-history"></i> Shift Closing
-                        </a>
-                        <a href="{{ route('transactions.index') }}" class="vip-nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
-                            <i class="bi bi-arrow-left-right"></i> Payments In / Out
-                        </a>
-                        <a href="{{ route('day-closings.index') }}" class="vip-nav-link {{ request()->routeIs('day-closings.*') ? 'active' : '' }}">
-                            <i class="bi bi-calendar2-check"></i> Day Closing
-                        </a>
-
-                        <!-- Ledgers & Reports Dropdown -->
-                        <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('ledgers.*') || request()->routeIs('reports.*') || request()->routeIs('audit-logs.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-journal-text"></i> Ledgers & Reports
-                            </button>
-                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 240px;">
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.party') }}">
-                                        <i class="bi bi-person-lines-fill text-primary"></i> Party Ledger
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.cash-book') }}">
-                                        <i class="bi bi-cash-stack text-success"></i> Cash Book Register
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.bank-book') }}">
-                                        <i class="bi bi-bank text-info"></i> Bank & Wallet Register
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}" href="{{ route('reports.total-sale-summary') }}">
-                                        <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-register') ? 'active' : '' }}" href="{{ route('reports.daily-register') }}">
-                                        <i class="bi bi-table text-primary"></i> Daily Register (Sheet)
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-closing') ? 'active' : '' }}" href="{{ route('reports.daily-closing') }}">
-                                        <i class="bi bi-calendar2-range text-warning"></i> Daily Closing Summary
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.expenses') ? 'active' : '' }}" href="{{ route('reports.expenses') }}">
-                                        <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
-                                    </a>
-                                </li>
-                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
-                                            <i class="bi bi-shield-check text-info"></i> Audit Trail & Logs
-                                        </a>
-                                    </li>
-                                @endif
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Medium & Laptop Screen Navigation (1200px - 1399px) -->
-                    <div class="d-none d-xl-flex d-xxl-none align-items-center gap-1">
-                        <a href="{{ route('dashboard') }}" class="vip-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-
-                        <!-- Operations Dropdown for Laptops -->
+                        <!-- Operations Dropdown -->
                         <div class="dropdown">
                             <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('shift-closings.*') || request()->routeIs('transactions.*') || request()->routeIs('day-closings.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-clock-history"></i> Operations
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('shift-closings.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('shift-closings.*') ? 'active' : '' }}" href="{{ route('shift-closings.index') }}">
                                         <i class="bi bi-clock-history text-info"></i> Shift Closing
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('transactions.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('transactions.*') ? 'active' : '' }}" href="{{ route('transactions.index') }}">
                                         <i class="bi bi-arrow-left-right text-success"></i> Payments In / Out
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('day-closings.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('day-closings.*') ? 'active' : '' }}" href="{{ route('day-closings.index') }}">
                                         <i class="bi bi-calendar2-check text-primary"></i> Day Closing
                                     </a>
                                 </li>
@@ -488,55 +443,163 @@
 
                         <!-- Master Setup Dropdown -->
                         <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('products.*') || request()->routeIs('pumps.*') || request()->routeIs('purchases.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-sliders"></i> Master Setup
                             </button>
-                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 220px;">
+                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 230px;">
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('parties.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('parties.*') ? 'active' : '' }}" href="{{ route('parties.index') }}">
                                         <i class="bi bi-person-lines-fill text-primary"></i> Parties & Ledgers
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('accounts.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('accounts.*') ? 'active' : '' }}" href="{{ route('accounts.index') }}">
                                         <i class="bi bi-bank text-success"></i> Payment Accounts
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('expense-categories.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('pumps.*') ? 'active' : '' }}" href="{{ route('pumps.index') }}">
+                                        <i class="bi bi-speedometer2 text-primary"></i> Pump Machines & Dispensers
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}">
+                                        <i class="bi bi-fuel-pump text-danger"></i> Products & Fuel Rates
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('purchases.*') ? 'active' : '' }}" href="{{ route('purchases.index') }}">
+                                        <i class="bi bi-truck text-warning"></i> Stock & Fuel Purchases
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('expense-categories.*') ? 'active' : '' }}" href="{{ route('expense-categories.index') }}">
                                         <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('cashiers.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('cashiers.*') ? 'active' : '' }}" href="{{ route('cashiers.index') }}">
                                         <i class="bi bi-person-badge text-info"></i> Shift Cashiers
                                     </a>
                                 </li>
                             </ul>
                         </div>
 
+                        <!-- HR Management Dropdown -->
+                        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                        <div class="dropdown">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('hr.*') || request()->routeIs('my-attendance') || request()->routeIs('employee.portal.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-people-fill"></i> HR Management
+                            </button>
+                            <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 250px;">
+                                <li class="px-2 pt-1 pb-1">
+                                    <a class="dropdown-item py-1.5 px-2 d-flex align-items-center gap-2 rounded-2 text-success fw-bold {{ request()->routeIs('my-attendance') ? 'active' : '' }}" href="{{ route('my-attendance') }}" style="background: rgba(16, 185, 129, 0.12);">
+                                        <i class="fa fa-fingerprint text-success"></i> My Attendance
+                                    </a>
+                                </li>
+                                <li class="px-2 pb-1">
+                                    <a class="dropdown-item py-1.5 px-2 d-flex align-items-center gap-2 rounded-2 text-info fw-semibold {{ request()->routeIs('employee.portal.*') ? 'active' : '' }}" href="{{ route('employee.portal.index') }}" style="background: rgba(14, 165, 233, 0.12);">
+                                        <i class="fa fa-user-circle text-info"></i> Employee Portal
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.employees.*') ? 'active' : '' }}" href="{{ route('hr.employees.index') }}">
+                                        <i class="fa fa-users text-primary"></i> Employees & Users Directory
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('roles.*') ? 'active' : '' }}" href="{{ route('roles.index') }}">
+                                        <i class="fa fa-shield-alt" style="color: #8b5cf6;"></i> Roles & Permissions
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.attendance.index') ? 'active' : '' }}" href="{{ route('hr.attendance.index') }}">
+                                        <i class="fa fa-clipboard-check text-success"></i> Attendance Register
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('hr.attendance.kiosk') }}" target="_blank">
+                                        <i class="fa fa-camera text-info"></i> Face Kiosk
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.departments.*') ? 'active' : '' }}" href="{{ route('hr.departments.index') }}">
+                                        <i class="fa fa-building text-warning"></i> Departments
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.designations.*') ? 'active' : '' }}" href="{{ route('hr.designations.index') }}">
+                                        <i class="fa fa-id-badge text-secondary"></i> Designations
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.shifts.*') ? 'active' : '' }}" href="{{ route('hr.shifts.index') }}">
+                                        <i class="fa fa-clock text-danger"></i> Shifts Schedule
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.holidays.*') ? 'active' : '' }}" href="{{ route('hr.holidays.index') }}">
+                                        <i class="fa fa-calendar-alt text-info"></i> Holidays Calendar
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.salary-structure.*') ? 'active' : '' }}" href="{{ route('hr.salary-structure.index') }}">
+                                        <i class="fa fa-coins text-warning"></i> Salary Structure
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.payroll.*') ? 'active' : '' }}" href="{{ route('hr.payroll.index') }}">
+                                        <i class="fa fa-money-check-alt text-success"></i> Payroll Generation
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.leaves.*') ? 'active' : '' }}" href="{{ route('hr.leaves.index') }}">
+                                        <i class="fa fa-calendar-minus text-danger"></i> Leave Requests
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.loans.*') ? 'active' : '' }}" href="{{ route('hr.loans.index') }}">
+                                        <i class="fa fa-hand-holding-dollar text-primary"></i> Employee Loans
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('hr.biometric-devices.*') ? 'active' : '' }}" href="{{ route('hr.biometric-devices.index') }}">
+                                        <i class="fa fa-fingerprint text-info"></i> Biometric Devices
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        @else
+                        <!-- Direct My Attendance for Cashiers/Non-Admins -->
+                        <a href="{{ route('my-attendance') }}" class="vip-nav-link text-success fw-bold {{ request()->routeIs('my-attendance') ? 'active' : '' }}">
+                            <i class="fa fa-fingerprint"></i> My Attendance
+                        </a>
+                        @endif
+
                         <!-- Ledgers & Reports Dropdown -->
                         <div class="dropdown">
                             <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('ledgers.*') || request()->routeIs('reports.*') || request()->routeIs('audit-logs.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-journal-text"></i> Reports
+                                <i class="bi bi-journal-text"></i> Ledgers & Reports
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 240px;">
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.party') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('ledgers.party') ? 'active' : '' }}" href="{{ route('ledgers.party') }}">
                                         <i class="bi bi-person-lines-fill text-primary"></i> Party Ledger
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.cash-book') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('ledgers.cash-book') ? 'active' : '' }}" href="{{ route('ledgers.cash-book') }}">
                                         <i class="bi bi-cash-stack text-success"></i> Cash Book Register
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('ledgers.bank-book') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('ledgers.bank-book') ? 'active' : '' }}" href="{{ route('ledgers.bank-book') }}">
                                         <i class="bi bi-bank text-info"></i> Bank & Wallet Register
                                     </a>
                                 </li>
-                                <li><hr class="dropdown-divider"></li>
+                                <li><hr class="dropdown-divider my-1"></li>
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}" href="{{ route('reports.total-sale-summary') }}">
                                         <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
@@ -558,7 +621,7 @@
                                     </a>
                                 </li>
                                 @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                                    <li><hr class="dropdown-divider"></li>
+                                    <li><hr class="dropdown-divider my-1"></li>
                                     <li>
                                         <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
                                             <i class="bi bi-shield-check text-info"></i> Audit Trail & Logs
@@ -567,17 +630,12 @@
                                 @endif
                             </ul>
                         </div>
-
-                        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                            <a href="{{ route('users.index') }}" class="vip-nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                                <i class="bi bi-people"></i> Users
-                            </a>
-                        @endif
                     </div>
                 </div>
 
                 <!-- Right Side Actions & User Profile -->
-                <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0 ms-2">
+                <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0 ms-auto">
+
                     <!-- User Profile Dropdown -->
                     <div class="dropdown flex-shrink-0">
                         <button class="btn btn-sm btn-dark d-flex align-items-center gap-1.5 border border-secondary border-opacity-25 rounded-3 px-2 py-1 flex-shrink-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #1e293b; max-width: 220px;">
@@ -612,8 +670,8 @@
                             </li>
                             @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('users.index') }}">
-                                        <i class="bi bi-people text-primary"></i> Manage Users
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('hr.employees.index') }}">
+                                        <i class="bi bi-people text-primary"></i> Manage Employees & Users
                                     </a>
                                 </li>
                                 <li>
@@ -622,6 +680,17 @@
                                     </a>
                                 </li>
                             @endif
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('my-attendance') }}">
+                                    <i class="fa fa-fingerprint text-success"></i> My Attendance
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{{ route('employee.portal.index') }}">
+                                    <i class="fa fa-user-circle text-info"></i> Employee Portal
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}" class="m-0">
@@ -647,9 +716,9 @@
     <div class="offcanvas offcanvas-start bg-dark text-white border-0 shadow-lg" tabindex="-1" id="mobileNavDrawer" aria-labelledby="mobileNavDrawerLabel" style="width: 295px; background-color: #0b1120 !important; z-index: 1060;">
         <div class="offcanvas-header border-bottom border-secondary border-opacity-25 pb-3">
             <div class="d-flex align-items-center gap-2">
-                <img src="{{ asset('images/logo.png') }}" alt="Green Pharmacie" style="height: 36px; max-width: 130px; object-fit: contain;" class="rounded-1" onerror="this.onerror=null; this.src='/images/logo.png';">
+                <img src="{{ asset('images/logo.png') }}" alt="Caltex Rao Filling Station" style="height: 36px; max-width: 130px; object-fit: contain;" class="rounded-1 bg-white" onerror="this.onerror=null; this.src='/images/logo.png';">
                 <div class="d-flex flex-column lh-1">
-                    <span class="fw-bold text-white text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.4px;">Prowave Technologies</span>
+                    <span class="fw-bold text-white text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.4px;">Caltex Rao Filling Station</span>
                     <span class="text-success fw-semibold mt-1" style="font-size: 0.75rem;"><i class="bi bi-telephone-fill me-1"></i>+92 317 3836223</span>
                     <span class="text-info mt-1" style="font-size: 0.68rem;"><i class="bi bi-calendar3 me-1"></i>{{ date('D, d M Y') }} &bull; FinanceDesk</span>
                 </div>
@@ -689,8 +758,8 @@
                 </a>
 
                 @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
-                    <a href="{{ route('users.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                        <i class="bi bi-people text-info"></i> Users & Roles
+                    <a href="{{ route('hr.employees.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.employees.*') ? 'active' : '' }}">
+                        <i class="bi bi-people text-info"></i> Employees & Users
                     </a>
                 @endif
 
@@ -700,6 +769,15 @@
                 </a>
                 <a href="{{ route('accounts.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                     <i class="bi bi-bank text-success"></i> Payment Accounts
+                </a>
+                <a href="{{ route('pumps.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('pumps.*') ? 'active' : '' }}">
+                    <i class="bi bi-speedometer2 text-primary"></i> Pump Machines & Dispensers
+                </a>
+                <a href="{{ route('products.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                    <i class="bi bi-fuel-pump text-danger"></i> Products & Fuel Rates
+                </a>
+                <a href="{{ route('purchases.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
+                    <i class="bi bi-truck text-warning"></i> Stock & Fuel Purchases
                 </a>
                 <a href="{{ route('expense-categories.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('expense-categories.*') ? 'active' : '' }}">
                     <i class="bi bi-tags text-warning"></i> Expense & Purchase Categories
@@ -744,6 +822,55 @@
                 @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
                     <a href="{{ route('audit-logs.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}">
                         <i class="bi bi-shield-check text-info"></i> Audit Trail & Logs
+                    </a>
+                @endif
+
+                <div class="text-secondary small fw-bold text-uppercase px-2 pt-2" style="font-size: 0.68rem; letter-spacing: 0.5px;">HR & Attendance</div>
+                <a href="{{ route('my-attendance') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 text-success {{ request()->routeIs('my-attendance') ? 'active' : '' }}">
+                    <i class="fa fa-fingerprint text-success"></i> My Attendance
+                </a>
+                <a href="{{ route('employee.portal.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('employee.portal.*') ? 'active' : '' }}">
+                    <i class="fa fa-user-circle text-info"></i> Employee Portal
+                </a>
+                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                    <a href="{{ route('hr.employees.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.employees.*') ? 'active' : '' }}">
+                        <i class="fa fa-user-tie text-primary"></i> Employees Directory
+                    </a>
+                    <a href="{{ route('roles.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('roles.*') ? 'active' : '' }}">
+                        <i class="fa fa-shield-alt" style="color: #8b5cf6;"></i> Roles & Permissions
+                    </a>
+                    <a href="{{ route('hr.attendance.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.attendance.index') ? 'active' : '' }}">
+                        <i class="fa fa-clipboard-check text-success"></i> Attendance Register
+                    </a>
+                    <a href="{{ route('hr.attendance.kiosk') }}" target="_blank" class="vip-nav-link w-100 py-2 px-3 rounded-3">
+                        <i class="fa fa-camera text-info"></i> Face Kiosk
+                    </a>
+                    <a href="{{ route('hr.departments.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.departments.*') ? 'active' : '' }}">
+                        <i class="fa fa-building text-warning"></i> Departments
+                    </a>
+                    <a href="{{ route('hr.designations.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.designations.*') ? 'active' : '' }}">
+                        <i class="fa fa-id-badge text-secondary"></i> Designations
+                    </a>
+                    <a href="{{ route('hr.shifts.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.shifts.*') ? 'active' : '' }}">
+                        <i class="fa fa-clock text-danger"></i> Shifts Schedule
+                    </a>
+                    <a href="{{ route('hr.holidays.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.holidays.*') ? 'active' : '' }}">
+                        <i class="fa fa-calendar-alt text-info"></i> Holidays Calendar
+                    </a>
+                    <a href="{{ route('hr.salary-structure.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.salary-structure.*') ? 'active' : '' }}">
+                        <i class="fa fa-coins text-warning"></i> Salary Structure
+                    </a>
+                    <a href="{{ route('hr.payroll.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.payroll.*') ? 'active' : '' }}">
+                        <i class="fa fa-money-check-alt text-success"></i> Payroll Generation
+                    </a>
+                    <a href="{{ route('hr.leaves.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.leaves.*') ? 'active' : '' }}">
+                        <i class="fa fa-calendar-minus text-danger"></i> Leave Requests
+                    </a>
+                    <a href="{{ route('hr.loans.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.loans.*') ? 'active' : '' }}">
+                        <i class="fa fa-hand-holding-dollar text-primary"></i> Employee Loans
+                    </a>
+                    <a href="{{ route('hr.biometric-devices.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('hr.biometric-devices.*') ? 'active' : '' }}">
+                        <i class="fa fa-fingerprint text-info"></i> Biometric Devices
                     </a>
                 @endif
             </div>
@@ -819,6 +946,9 @@
         </div>
     </footer>
 
+    <!-- jQuery & SweetAlert2 CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Bootstrap 5.3 JS Bundle CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -1135,6 +1265,9 @@
             }
         });
     </script>
+    @yield('js')
+    @yield('scripts')
     @stack('scripts')
+    @stack('js')
 </body>
 </html>

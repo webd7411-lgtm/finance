@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ShiftClosing;
 use App\Models\User;
 use App\Models\Cashier;
+use App\Models\Pump;
+use App\Models\PumpMeterReading;
+use App\Models\Product;
 use App\Models\Party;
 use App\Models\Account;
 use App\Models\ExpenseCategory;
@@ -24,9 +27,9 @@ class ShiftClosingController extends Controller
         $trashCount = ShiftClosing::onlyTrashed()->count();
 
         if ($isTrashView) {
-            $query = ShiftClosing::onlyTrashed()->with(['cashier', 'verifier', 'deletedBy'])->latest('deleted_at');
+            $query = ShiftClosing::onlyTrashed()->with(['cashier', 'verifier', 'deletedBy', 'pump', 'product'])->latest('deleted_at');
         } else {
-            $query = ShiftClosing::with(['cashier', 'verifier'])->latest('date')->latest('id');
+            $query = ShiftClosing::with(['cashier', 'verifier', 'pump', 'product'])->latest('date')->latest('id');
         }
 
         if ($request->filled('date')) {
@@ -37,68 +40,69 @@ class ShiftClosingController extends Controller
             $query->where('shift_type', $request->shift_type);
         }
 
+        if ($request->filled('pump_id')) {
+            $query->where('pump_id', $request->pump_id);
+        }
+
         $closings = $query->paginate(15)->withQueryString();
 
         // Summary calculations
         $totalSalesToday = ShiftClosing::whereDate('date', now()->toDateString())->sum('total_sale');
+        $totalLitersToday = ShiftClosing::whereDate('date', now()->toDateString())->sum('total_liters');
         $totalReceivedToday = ShiftClosing::whereDate('date', now()->toDateString())->sum('total_actual_received');
         $totalDifferenceToday = ShiftClosing::whereDate('date', now()->toDateString())->sum('difference');
-        $parties = Party::orderBy('name')->get();
+        $pumps = Pump::orderBy('name')->get();
 
         return view('shift_closings.index', compact(
             'closings',
             'totalSalesToday',
+            'totalLitersToday',
             'totalReceivedToday',
             'totalDifferenceToday',
-            'parties',
+            'pumps',
             'isTrashView',
             'activeCount',
             'trashCount'
         ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $parties = Party::orderBy('name')->get();
         $accounts = Account::where('type', '!=', 'cash')->where('status', 'active')->orderBy('type')->orderBy('name')->get();
         $cashiers = Cashier::where('status', 'active')->orderBy('name')->get();
         if ($cashiers->isEmpty()) {
-            $cashiers = Cashier::orderBy('name')->get();
+            $cashierUsers = User::where('role', 'cashier')->where('status', 'active')->get();
+            foreach ($cashierUsers as $cu) {
+                Cashier::updateOrCreate(
+                    ['id' => $cu->id],
+                    [
+                        'name' => $cu->name,
+                        'code' => 'CSH-' . str_pad($cu->id, 3, '0', STR_PAD_LEFT),
+                        'status' => 'active',
+                    ]
+                );
+            }
+            $cashiers = Cashier::where('status', 'active')->orderBy('name')->get();
         }
         $expenseCategories = ExpenseCategory::expense()->orderBy('name')->get();
 
-        $lastShift = ShiftClosing::whereNotNull('invoice_end')
-            ->where('invoice_end', '>', 0)
-            ->orderByDesc('id')
-            ->first();
-
-        $suggestedInvoiceStart = $lastShift ? ((int) $lastShift->invoice_end + 1) : null;
-
-        $lastReturnShift = ShiftClosing::where(function ($q) {
-                $q->whereNotNull('return_invoice_end')->where('return_invoice_end', '>', 0);
-            })
-            ->orWhere(function ($q) {
-                $q->whereNotNull('return_invoice_start')->where('return_invoice_start', '>', 0);
-            })
-            ->orderByDesc('id')
-            ->first();
-
-        $suggestedReturnInvoiceStart = null;
-        if ($lastReturnShift) {
-            $lastEnd = $lastReturnShift->return_invoice_end ?: $lastReturnShift->return_invoice_start;
-            if ($lastEnd > 0) {
-                $suggestedReturnInvoiceStart = (int) $lastEnd + 1;
-            }
+        // Petrol Pump Machines / Dispensers
+        $pumps = Pump::with('product')->where('status', 'active')->orderBy('name')->get();
+        if ($pumps->isEmpty()) {
+            $pumps = Pump::with('product')->orderBy('name')->get();
         }
+        $fuelProducts = Product::active()->fuel()->orderBy('name')->get();
 
-        $existingClosings = ShiftClosing::select('date', 'shift_type')
-            ->whereIn('date', [now()->subDay()->toDateString(), now()->toDateString()])
-            ->get()
-            ->map(fn($item) => $item->date->format('Y-m-d') . '_' . $item->shift_type)
-            ->values()
-            ->toArray();
+        $selectedPumpId = $request->input('pump_id');
 
-        return view('shift_closings.create', compact('parties', 'accounts', 'suggestedInvoiceStart', 'suggestedReturnInvoiceStart', 'cashiers', 'expenseCategories', 'existingClosings'));
+        return view('shift_closings.create', compact(
+            'cashiers',
+            'pumps',
+            'fuelProducts',
+            'accounts',
+            'expenseCategories',
+            'selectedPumpId'
+        ));
     }
 
     public function store(Request $request)
@@ -109,36 +113,16 @@ class ShiftClosingController extends Controller
         };
 
         $request->merge([
+            'start_reading' => $stripCommas($request->input('start_reading')),
+            'end_reading' => $stripCommas($request->input('end_reading')),
+            'total_liters' => $stripCommas($request->input('total_liters')),
+            'fuel_rate' => $stripCommas($request->input('fuel_rate')),
             'total_sale' => $stripCommas($request->input('total_sale')),
-            'returns_amount' => $stripCommas($request->input('returns_amount')),
             'expenses_amount' => $stripCommas($request->input('expenses_amount')),
             'coins' => $stripCommas($request->input('coins')),
         ]);
 
-        // 1. Clean and filter party payments: only keep rows with valid party_id and amount > 0
-        $paymentRows = collect($request->input('party_payments', []))
-            ->map(function ($payment) use ($stripCommas) {
-                if (isset($payment['amount'])) {
-                    $payment['amount'] = $stripCommas($payment['amount']);
-                }
-                return $payment;
-            })
-            ->filter(function ($payment) {
-                return !empty($payment['party_id']) && !empty($payment['amount']) && (float)$payment['amount'] > 0;
-            })
-            ->map(function ($payment) {
-                return [
-                    'party_id' => (int) $payment['party_id'],
-                    'expense_category_id' => !empty($payment['expense_category_id']) ? (int) $payment['expense_category_id'] : null,
-                    'amount' => (float) $payment['amount'],
-                    'details' => filled($payment['details'] ?? null) ? $payment['details'] : 'Shift cash payout',
-                ];
-            })
-            ->values()
-            ->all();
-        $request->merge(['party_payments' => $paymentRows]);
-
-        // 2. Clean and filter digital account payments
+        // Clean and filter digital account payments
         $accountRows = collect($request->input('account_payments', []))
             ->map(function ($acc) use ($stripCommas) {
                 if (isset($acc['amount'])) {
@@ -158,70 +142,33 @@ class ShiftClosingController extends Controller
             ->all();
         $request->merge(['account_payments' => $accountRows]);
 
-        // 3. Invoice range handling: If invoice_end was left empty, clear invoice_start so it doesn't fail required_with
-        if (!$request->filled('invoice_end')) {
-            $request->merge(['invoice_start' => null, 'invoice_end' => null]);
-        } else {
-            // Lock invoice_start to previous shift's end + 1 if previous shift exists
-            $lastShift = ShiftClosing::whereNotNull('invoice_end')
-                ->where('invoice_end', '>', 0)
-                ->orderByDesc('id')
-                ->first();
-            if ($lastShift) {
-                $request->merge(['invoice_start' => (int) $lastShift->invoice_end + 1]);
-            }
-        }
-
-        // Return invoice start enforcement
-        if ($request->filled('return_invoice_end') || $request->filled('return_invoice_start')) {
-            $lastReturnShift = ShiftClosing::where(function ($q) {
-                    $q->whereNotNull('return_invoice_end')->where('return_invoice_end', '>', 0);
-                })
-                ->orWhere(function ($q) {
-                    $q->whereNotNull('return_invoice_start')->where('return_invoice_start', '>', 0);
-                })
-                ->orderByDesc('id')
-                ->first();
-
-            if ($lastReturnShift) {
-                $lastRetEnd = $lastReturnShift->return_invoice_end ?: $lastReturnShift->return_invoice_start;
-                if ($lastRetEnd > 0) {
-                    $request->merge(['return_invoice_start' => (int) $lastRetEnd + 1]);
-                }
-            }
-        }
-
         $yesterday = now()->subDay()->toDateString();
         $today = now()->toDateString();
 
         $validated = $request->validate([
             'date' => ['required', 'date', "after_or_equal:{$yesterday}", "before_or_equal:{$today}"],
-            'shift_type' => [
-                'required',
-                Rule::in(['morning', 'evening']),
-                Rule::unique('shift_closings', 'shift_type')->where(function ($query) use ($request) {
-                    return $query->whereDate('date', $request->date)->whereNull('deleted_at');
-                }),
-            ],
+            // Single-shift restriction REMOVED: Multiple shifts allowed per day
+            'shift_type' => ['required', Rule::in(['morning', 'evening'])],
             'cashier_id' => ['required', 'integer', 'exists:cashiers,id'],
-            'invoice_start' => ['nullable', 'integer', 'min:1'],
-            'invoice_end' => ['nullable', 'integer', 'gte:invoice_start'],
+            'pump_id' => ['nullable', 'integer', 'exists:pumps,id'],
+            'pump_machine' => ['nullable', 'string', 'max:255'],
+            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            
+            // Meter Reading System
+            'start_reading' => ['required', 'numeric', 'min:0'],
+            'end_reading' => ['required', 'numeric', 'gte:start_reading'],
+            'total_liters' => ['required', 'numeric', 'min:0'],
+            'fuel_rate' => ['required', 'numeric', 'min:0'],
             'total_sale' => ['required', 'numeric', 'min:0'],
-            'returns_amount' => ['nullable', 'numeric', 'min:0'],
-            'return_invoice_start' => ['nullable', 'integer', 'min:1'],
-            'return_invoice_end' => ['nullable', 'integer', 'min:1'],
-            'return_invoice_number' => ['nullable', 'string', 'max:255'],
+            
             'expenses_amount' => ['nullable', 'numeric', 'min:0'],
             'expenses_details' => ['nullable', 'string', 'max:2000'],
-            'party_payments' => ['nullable', 'array', 'max:20'],
-            'party_payments.*.party_id' => ['required', 'integer', 'exists:parties,id'],
-            'party_payments.*.expense_category_id' => ['nullable', 'integer', 'exists:expense_categories,id'],
-            'party_payments.*.amount' => ['required', 'numeric', 'gt:0'],
-            'party_payments.*.details' => ['nullable', 'string', 'max:1000'],
+            
             'account_payments' => ['nullable', 'array', 'max:20'],
             'account_payments.*.account_id' => ['required', 'integer', 'exists:accounts,id'],
             'account_payments.*.amount' => ['required', 'numeric', 'gt:0'],
             'account_payments.*.description' => ['nullable', 'string', 'max:500'],
+            
             'note_5000' => ['nullable', 'integer', 'min:0'],
             'note_1000' => ['nullable', 'integer', 'min:0'],
             'note_500' => ['nullable', 'integer', 'min:0'],
@@ -236,15 +183,16 @@ class ShiftClosingController extends Controller
         ], [
             'date.after_or_equal' => 'Shift closing can only be recorded for today or yesterday.',
             'date.before_or_equal' => 'Shift closing cannot be recorded for future dates.',
-            'shift_type.unique' => 'The ' . ucfirst($request->shift_type) . ' shift for this date is already closed. A shift cannot be closed more than once.',
             'cashier_id.required' => 'Please select a shift cashier from Master Setup.',
-            'cashier_id.exists' => 'The selected cashier is invalid. Please configure cashiers in Master Setup.',
-            'invoice_end.gte' => 'Invoice End number must be greater than or equal to Invoice Start number.',
+            'start_reading.required' => 'Start meter reading is required.',
+            'end_reading.required' => 'End meter reading is required.',
+            'end_reading.gte' => 'End meter reading must be greater than or equal to Start reading.',
+            'fuel_rate.required' => 'Fuel rate per liter is required.',
         ]);
 
         $cashierId = (int) ($validated['cashier_id'] ?? auth()->id());
 
-        // Default zero values
+        // Default zero values for cash note denominations
         $n5000 = $validated['note_5000'] ?? 0;
         $n1000 = $validated['note_1000'] ?? 0;
         $n500  = $validated['note_500'] ?? 0;
@@ -253,38 +201,19 @@ class ShiftClosingController extends Controller
         $n20   = $validated['note_20'] ?? 0;
         $n10   = $validated['note_10'] ?? 0;
         $coins = $validated['coins'] ?? 0;
-        $invoiceCount = isset($validated['invoice_start'], $validated['invoice_end'])
-            ? $validated['invoice_end'] - $validated['invoice_start'] + 1
-            : 0;
 
-        // Return Invoice Calculation
-        $returns = (float) ($validated['returns_amount'] ?? 0);
-        $retStart = $request->filled('return_invoice_start') ? (int) $request->input('return_invoice_start') : null;
-        $retEnd = $request->filled('return_invoice_end') ? (int) $request->input('return_invoice_end') : null;
+        // Auto-calculate readings & volume
+        $startReading = (float) $validated['start_reading'];
+        $endReading = (float) $validated['end_reading'];
+        $totalLiters = (float) max(0, $endReading - $startReading);
+        $fuelRate = (float) $validated['fuel_rate'];
+        $totalSale = (float) $validated['total_sale'];
 
-        if ($returns <= 0 && $retEnd === null) {
-            $retStart = null;
-        } elseif ($retStart !== null && $retEnd === null) {
-            $retEnd = $retStart;
-        } elseif ($retStart === null && $retEnd !== null) {
-            $retStart = $retEnd;
+        if ($totalSale <= 0 && $totalLiters > 0 && $fuelRate > 0) {
+            $totalSale = round($totalLiters * $fuelRate, 2);
         }
 
-        $totalReturnInvoices = 0;
-        $returnInvoiceNumber = null;
-        if ($retStart !== null && $retEnd !== null) {
-            if ($retEnd >= $retStart) {
-                $totalReturnInvoices = $retEnd - $retStart + 1;
-                $returnInvoiceNumber = $retStart === $retEnd ? "#{$retStart}" : "#{$retStart} - #{$retEnd}";
-            } else {
-                $totalReturnInvoices = 1;
-                $returnInvoiceNumber = "#{$retStart}";
-            }
-        } elseif ($returnInvoiceNumber === null && !empty($validated['return_invoice_number'])) {
-            $returnInvoiceNumber = $validated['return_invoice_number'];
-        }
-
-        // Note Calculation
+        // Physical Cash Counted
         $countedCash = ($n5000 * 5000) + ($n1000 * 1000) + ($n500 * 500) +
                        ($n100 * 100) + ($n50 * 50) + ($n20 * 20) + ($n10 * 10) + $coins;
 
@@ -301,13 +230,9 @@ class ShiftClosingController extends Controller
         // Actual Received: Counted Cash + Digital Collections
         $actualReceived = $countedCash + $totalDigital;
 
-        // Expected Cash: Total Sale - Returns - Expenses - Party Payments
-        $totalSale = $validated['total_sale'] ?? 0;
-        $returns = $validated['returns_amount'] ?? 0;
-        $expenses = $validated['expenses_amount'] ?? 0;
-        $partyPayments = $validated['party_payments'] ?? [];
-        $totalPartyPayments = collect($partyPayments)->sum('amount');
-        $expectedCash = $totalSale - $returns - $expenses - $totalPartyPayments;
+        // Clean Petrol Pump Calculations: Expected Cash = Total Sale - Shift Expenses
+        $expenses = (float) ($validated['expenses_amount'] ?? 0);
+        $expectedCash = $totalSale - $expenses;
 
         // Difference: Actual - Expected
         $difference = $actualReceived - $expectedCash;
@@ -318,16 +243,24 @@ class ShiftClosingController extends Controller
             ]);
         }
 
+        // Pump Machine Label
+        $pumpId = !empty($validated['pump_id']) ? (int) $validated['pump_id'] : null;
+        $pumpMachineName = $validated['pump_machine'] ?? null;
+        if ($pumpId && empty($pumpMachineName)) {
+            $pumpObj = Pump::find($pumpId);
+            $pumpMachineName = $pumpObj?->name;
+        }
+
         $closing = DB::transaction(function () use (
             $validated,
             $cashierId,
-            $invoiceCount,
-            $retStart,
-            $retEnd,
-            $totalReturnInvoices,
-            $returnInvoiceNumber,
+            $pumpId,
+            $pumpMachineName,
+            $startReading,
+            $endReading,
+            $totalLiters,
+            $fuelRate,
             $totalSale,
-            $returns,
             $expenses,
             $n5000,
             $n1000,
@@ -343,7 +276,6 @@ class ShiftClosingController extends Controller
             $actualReceived,
             $expectedCash,
             $difference,
-            $partyPayments,
             $accountPayments,
             $totalAccountCollections
         ) {
@@ -352,15 +284,15 @@ class ShiftClosingController extends Controller
                 'shift_type' => $validated['shift_type'],
                 'cashier_id' => $cashierId,
                 'closed_by' => auth()->id() ?? $cashierId,
-                'total_invoices' => $invoiceCount,
-                'invoice_start' => $validated['invoice_start'] ?? null,
-                'invoice_end' => $validated['invoice_end'] ?? null,
+                'pump_id' => $pumpId,
+                'pump_machine' => $pumpMachineName,
+                'product_id' => $validated['product_id'] ?? null,
+                'start_reading' => $startReading,
+                'end_reading' => $endReading,
+                'total_liters' => $totalLiters,
+                'fuel_rate' => $fuelRate,
                 'total_sale' => $totalSale,
-                'returns_amount' => $returns,
-                'return_invoice_number' => $returnInvoiceNumber,
-                'return_invoice_start' => $retStart,
-                'return_invoice_end' => $retEnd,
-                'total_return_invoices' => $totalReturnInvoices,
+                'returns_amount' => 0,
                 'expenses_amount' => $expenses,
                 'expenses_details' => $validated['expenses_details'] ?? null,
                 'note_5000' => $n5000,
@@ -381,30 +313,50 @@ class ShiftClosingController extends Controller
                 'remarks' => $validated['remarks'] ?? null,
             ]);
 
-            foreach ($partyPayments as $payment) {
-                $closing->partyPayments()->create($payment);
+            // 1. Update Pump's live reading to end_reading for the next shift and record meter reading log
+            if ($pumpId) {
+                $pump = Pump::find($pumpId);
+                if ($pump) {
+                    $pump->last_reading = $endReading;
+                    $pump->save();
 
-                $party = Party::whereKey($payment['party_id'])->lockForUpdate()->firstOrFail();
-                if ($party->type === 'staff') {
-                    $party->current_balance += $payment['amount'];
-                } else {
-                    $party->current_balance -= $payment['amount'];
+                    // Permanent Meter Reading Audit History Log
+                    PumpMeterReading::create([
+                        'pump_id'          => $pump->id,
+                        'shift_closing_id' => $closing->id,
+                        'reading_date'     => $validated['date'],
+                        'reading_type'     => 'shift_sale',
+                        'start_reading'    => $startReading,
+                        'end_reading'      => $endReading,
+                        'volume_dispensed' => $totalLiters,
+                        'fuel_rate'        => $fuelRate,
+                        'sales_amount'     => $totalSale,
+                        'cashier_id'       => $cashierId,
+                        'recorded_by'      => auth()->id(),
+                        'remarks'          => "Shift Closing #{$closing->id} (" . ucfirst($validated['shift_type']) . " Shift)",
+                    ]);
                 }
-                $party->save();
             }
 
-            // Record dynamic account payments and update account balances
+            // 2. Decrement Product Live Stock (fuel volume sold through nozzles)
+            if (!empty($validated['product_id']) && $totalLiters > 0) {
+                $product = Product::find($validated['product_id']);
+                if ($product) {
+                    $product->current_stock = max(0, $product->current_stock - $totalLiters);
+                    $product->save();
+                }
+            }
+
+            // 3. Process dynamic account collections
             $jazzcashSum = 0;
             $bankSum = 0;
             foreach ($accountPayments as $accPayment) {
                 $account = Account::whereKey($accPayment['account_id'])->lockForUpdate()->firstOrFail();
                 $amt = (float) $accPayment['amount'];
 
-                // 1. Maintain account balance
                 $account->current_balance += $amt;
                 $account->save();
 
-                // 2. Create Transaction record (payment_in) linking to shift closing
                 Transaction::create([
                     'date' => $validated['date'],
                     'type' => 'payment_in',
@@ -439,7 +391,7 @@ class ShiftClosingController extends Controller
         ActivityLog::log(
             'Created',
             'Shift Closing',
-            "Recorded {$closing->shift_type} shift closing sheet #{$closing->id} (Counted: Rs. " . number_format($closing->total_counted_cash, 2) . ", Diff: Rs. " . number_format($closing->difference, 2) . ")"
+            "Recorded {$closing->shift_type} shift closing sheet #{$closing->id} (Pump: " . ($closing->pump_machine ?? 'General') . ", Liters: " . number_format($closing->total_liters, 2) . ", Sale: Rs. " . number_format($closing->total_sale, 2) . ", Counted: Rs. " . number_format($closing->total_counted_cash, 2) . ")"
         );
 
         return redirect()->route('shift-closings.show', $closing->id)
@@ -449,7 +401,7 @@ class ShiftClosingController extends Controller
     public function show($id)
     {
         $shiftClosing = ShiftClosing::withTrashed()
-            ->with(['cashier', 'closedBy', 'verifier', 'deletedBy', 'partyPayments.party', 'partyPayments.expenseCategory', 'transactions.account'])
+            ->with(['cashier', 'closedBy', 'verifier', 'deletedBy', 'pump', 'product', 'transactions.account'])
             ->findOrFail($id);
 
         return view('shift_closings.show', compact('shiftClosing'));
@@ -512,6 +464,25 @@ class ShiftClosingController extends Controller
                     $account->save();
                 }
                 $tx->delete();
+            }
+
+            // Restore Product stock if fuel was dispensed
+            if ($shiftClosing->product_id && (float)$shiftClosing->total_liters > 0) {
+                $product = Product::lockForUpdate()->find($shiftClosing->product_id);
+                if ($product) {
+                    $product->current_stock += (float) $shiftClosing->total_liters;
+                    $product->save();
+                }
+            }
+
+            // Reverse Pump reading and remove meter reading entry
+            if ($shiftClosing->pump_id) {
+                $pump = Pump::lockForUpdate()->find($shiftClosing->pump_id);
+                if ($pump && (float)$pump->last_reading == (float)$shiftClosing->end_reading) {
+                    $pump->last_reading = (float)$shiftClosing->start_reading;
+                    $pump->save();
+                }
+                PumpMeterReading::where('shift_closing_id', $shiftClosing->id)->delete();
             }
 
             $shiftClosing->deleted_by = auth()->id();
