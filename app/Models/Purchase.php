@@ -14,7 +14,9 @@ class Purchase extends Model
         'purchase_date',
         'invoice_no',
         'supplier_id',
+        'location_id',
         'product_id',
+        'tank_id',
         'pump_id',
         'tank_no',
         'vehicle_no',
@@ -34,6 +36,16 @@ class Purchase extends Model
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
     ];
+
+    public function location()
+    {
+        return $this->belongsTo(StationLocation::class, 'location_id');
+    }
+
+    public function tank()
+    {
+        return $this->belongsTo(Tank::class, 'tank_id');
+    }
 
     public function supplier()
     {

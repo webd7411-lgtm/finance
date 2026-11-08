@@ -313,8 +313,18 @@
                 <!-- Specs List -->
                 <div class="bg-light rounded-3 p-2.5 small">
                     <div class="d-flex justify-content-between py-1 border-bottom">
+                        <span class="text-secondary"><i class="bi bi-geo-alt me-1 text-danger"></i>Station Site:</span>
+                        <strong class="text-dark">{{ $pump->location?->name ?? 'Main Site' }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom">
                         <span class="text-secondary"><i class="bi bi-database me-1 text-primary"></i>Connected Tank:</span>
-                        <strong class="text-dark">{{ $stockSync['tank_or_shelf'] }}</strong>
+                        @if($pump->tank)
+                            <a href="{{ route('tanks.show', $pump->tank->id) }}" class="text-primary fw-bold text-decoration-none">
+                                <i class="bi bi-box-arrow-up-right me-0.5" style="font-size: 0.65rem;"></i> {{ $pump->tank->name }}
+                            </a>
+                        @else
+                            <strong class="text-dark">{{ $stockSync['tank_or_shelf'] }}</strong>
+                        @endif
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom">
                         <span class="text-secondary"><i class="bi bi-pipette me-1 text-info"></i>Nozzle Identifier:</span>

@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\ShiftClosing;
 use App\Models\ActivityLog;
+use App\Models\Tank;
+use App\Models\StationLocation;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +21,7 @@ class PumpController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Pump::with(['product'])->withCount(['shiftClosings', 'meterReadings']);
+        $query = Pump::with(['product', 'tank', 'location'])->withCount(['shiftClosings', 'meterReadings']);
 
         // Filter by Status
         if ($request->filled('status') && $request->status !== 'all') {
@@ -31,6 +33,11 @@ class PumpController extends Controller
             $query->where('product_id', $request->product_id);
         }
 
+        // Filter by Storage Tank
+        if ($request->filled('tank_id') && $request->tank_id !== 'all') {
+            $query->where('tank_id', $request->tank_id);
+        }
+
         // Search by Name, Code, Tank, or Nozzle
         if ($request->filled('search')) {
             $search = trim($request->search);
@@ -38,7 +45,8 @@ class PumpController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('code', 'like', "%{$search}%")
                   ->orWhere('tank_no', 'like', "%{$search}%")
-                  ->orWhere('nozzle_number', 'like', "%{$search}%");
+                  ->orWhere('nozzle_number', 'like', "%{$search}%")
+                  ->orWhereHas('tank', fn($tq) => $tq->where('name', 'like', "%{$search}%")->orWhere('tank_number', 'like', "%{$search}%"));
             });
         }
 
@@ -53,6 +61,7 @@ class PumpController extends Controller
         $totalRevenueGenerated = (float) ShiftClosing::sum('total_sale');
 
         $fuelProducts = Product::active()->fuel()->orderBy('name')->get(['id', 'name', 'sale_price', 'current_stock', 'unit']);
+        $tanks = Tank::active()->with('product')->orderBy('tank_number')->get();
 
         return view('pumps.index', compact(
             'pumps',
@@ -62,7 +71,8 @@ class PumpController extends Controller
             'totalDispensedLiters',
             'todayDispensedLiters',
             'totalRevenueGenerated',
-            'fuelProducts'
+            'fuelProducts',
+            'tanks'
         ));
     }
 
@@ -72,10 +82,11 @@ class PumpController extends Controller
     public function create()
     {
         $fuelProducts = Product::active()->fuel()->orderBy('name')->get();
-        // Common underground tank suggestions
+        $tanks = Tank::with(['product', 'location'])->active()->orderBy('tank_number')->get();
+        $locations = StationLocation::active()->orderBy('name')->get();
         $existingTanks = Pump::whereNotNull('tank_no')->distinct()->pluck('tank_no')->filter()->values();
 
-        return view('pumps.create', compact('fuelProducts', 'existingTanks'));
+        return view('pumps.create', compact('fuelProducts', 'tanks', 'locations', 'existingTanks'));
     }
 
     /**
@@ -94,6 +105,8 @@ class PumpController extends Controller
         $validated = $request->validate([
             'name'            => ['required', 'string', 'max:255'],
             'code'            => ['nullable', 'string', 'max:50', 'unique:pumps,code'],
+            'location_id'     => ['nullable', 'integer', 'exists:station_locations,id'],
+            'tank_id'         => ['nullable', 'integer', 'exists:tanks,id'],
             'product_id'      => ['required', 'integer', 'exists:products,id'],
             'tank_no'         => ['nullable', 'string', 'max:255'],
             'nozzle_number'   => ['nullable', 'string', 'max:100'],
@@ -108,17 +121,34 @@ class PumpController extends Controller
             'initial_reading.required' => 'Initial / Starting meter reading is required.',
         ]);
 
+        // Auto sync tank details
+        $tankId = !empty($validated['tank_id']) ? (int) $validated['tank_id'] : null;
+        $locationId = !empty($validated['location_id']) ? (int) $validated['location_id'] : null;
+        $tankNo = $validated['tank_no'] ?? null;
+
+        if ($tankId) {
+            $tankObj = Tank::find($tankId);
+            if ($tankObj) {
+                $tankNo = $tankObj->name;
+                if (!$locationId && $tankObj->location_id) {
+                    $locationId = $tankObj->location_id;
+                }
+            }
+        }
+
         $initialReading = (float) $validated['initial_reading'];
         $lastReading = isset($validated['last_reading']) && (float)$validated['last_reading'] > 0
             ? (float) $validated['last_reading']
             : $initialReading;
 
-        $pump = DB::transaction(function () use ($validated, $initialReading, $lastReading) {
+        $pump = DB::transaction(function () use ($validated, $initialReading, $lastReading, $tankId, $locationId, $tankNo) {
             $pump = Pump::create([
+                'location_id'     => $locationId,
+                'tank_id'         => $tankId,
                 'name'            => $validated['name'],
                 'code'            => !empty($validated['code']) ? strtoupper(trim($validated['code'])) : null,
                 'product_id'      => $validated['product_id'],
-                'tank_no'         => $validated['tank_no'] ?? null,
+                'tank_no'         => $tankNo,
                 'nozzle_number'   => $validated['nozzle_number'] ?? null,
                 'meter_type'      => $validated['meter_type'],
                 'initial_reading' => $initialReading,
@@ -232,9 +262,11 @@ class PumpController extends Controller
     public function edit(Pump $pump)
     {
         $fuelProducts = Product::active()->fuel()->orderBy('name')->get();
+        $tanks = Tank::with(['product', 'location'])->active()->orderBy('tank_number')->get();
+        $locations = StationLocation::active()->orderBy('name')->get();
         $existingTanks = Pump::whereNotNull('tank_no')->distinct()->pluck('tank_no')->filter()->values();
 
-        return view('pumps.edit', compact('pump', 'fuelProducts', 'existingTanks'));
+        return view('pumps.edit', compact('pump', 'fuelProducts', 'tanks', 'locations', 'existingTanks'));
     }
 
     /**
@@ -245,6 +277,8 @@ class PumpController extends Controller
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'code'          => ['nullable', 'string', 'max:50', Rule::unique('pumps', 'code')->ignore($pump->id)],
+            'location_id'   => ['nullable', 'integer', 'exists:station_locations,id'],
+            'tank_id'       => ['nullable', 'integer', 'exists:tanks,id'],
             'product_id'    => ['required', 'integer', 'exists:products,id'],
             'tank_no'       => ['nullable', 'string', 'max:255'],
             'nozzle_number' => ['nullable', 'string', 'max:100'],
@@ -253,11 +287,27 @@ class PumpController extends Controller
             'description'   => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $tankId = !empty($validated['tank_id']) ? (int) $validated['tank_id'] : null;
+        $locationId = !empty($validated['location_id']) ? (int) $validated['location_id'] : null;
+        $tankNo = $validated['tank_no'] ?? null;
+
+        if ($tankId) {
+            $tankObj = Tank::find($tankId);
+            if ($tankObj) {
+                $tankNo = $tankObj->name;
+                if (!$locationId && $tankObj->location_id) {
+                    $locationId = $tankObj->location_id;
+                }
+            }
+        }
+
         $pump->update([
+            'location_id'   => $locationId,
+            'tank_id'       => $tankId,
             'name'          => $validated['name'],
             'code'          => !empty($validated['code']) ? strtoupper(trim($validated['code'])) : null,
             'product_id'    => $validated['product_id'],
-            'tank_no'       => $validated['tank_no'] ?? null,
+            'tank_no'       => $tankNo,
             'nozzle_number' => $validated['nozzle_number'] ?? null,
             'meter_type'    => $validated['meter_type'],
             'status'        => $validated['status'],

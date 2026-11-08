@@ -153,7 +153,7 @@
 
                     <div class="row g-2.5">
                         <!-- Machine Name -->
-                        <div class="col-12 col-md-5">
+                        <div class="col-12 col-md-4">
                             <label class="field-label">
                                 <span>Pump Machine / Dispenser Name <span class="text-danger">*</span></span>
                                 <span class="field-helper-right">Required</span>
@@ -165,10 +165,27 @@
                             @enderror
                         </div>
 
-                        <!-- Machine Code -->
+                        <!-- Station Site / Location -->
                         <div class="col-12 col-md-3">
                             <label class="field-label">
-                                <span>Machine Code / ID</span>
+                                <span>Station Site / Location <span class="text-danger">*</span></span>
+                            </label>
+                            <select name="location_id" id="location_id" class="form-select compact-input @error('location_id') is-invalid @enderror">
+                                @foreach($locations as $loc)
+                                    <option value="{{ $loc->id }}" {{ old('location_id', $pump->location_id) == $loc->id ? 'selected' : '' }}>
+                                        {{ $loc->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('location_id')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Machine Code -->
+                        <div class="col-12 col-md-2">
+                            <label class="field-label">
+                                <span>Machine Code</span>
                                 <span class="field-helper-right">Optional</span>
                             </label>
                             <input type="text" name="code" class="form-control compact-input text-uppercase @error('code') is-invalid @enderror"
@@ -179,7 +196,7 @@
                         </div>
 
                         <!-- Operational Status -->
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label class="field-label">
                                 <span>Operational Status <span class="text-danger">*</span></span>
                                 <span class="field-helper-right">Shift Availability</span>
@@ -204,12 +221,36 @@
                     </div>
 
                     <div class="row g-2.5">
+                        <!-- Connected Storage Tank -->
+                        <div class="col-12 col-md-5">
+                            <label class="field-label">
+                                <span>Connected Storage Tank</span>
+                                <span class="field-helper-right"><a href="{{ route('tanks.create') }}" target="_blank" class="text-decoration-none">+ New Tank</a></span>
+                            </label>
+                            <select name="tank_id" id="tank_id" class="form-select compact-input @error('tank_id') is-invalid @enderror" onchange="handleTankSelect(this)">
+                                <option value="">-- Select Dedicated Storage Tank --</option>
+                                @foreach($tanks as $t)
+                                    <option value="{{ $t->id }}"
+                                            data-product-id="{{ $t->product_id }}"
+                                            data-location-id="{{ $t->location_id }}"
+                                            data-name="{{ $t->name }}"
+                                            {{ old('tank_id', $pump->tank_id) == $t->id ? 'selected' : '' }}>
+                                        [{{ $t->tank_number }}] {{ $t->name }} (Cap: {{ number_format($t->capacity) }}L • Live: {{ number_format($t->current_stock, 1) }}L)
+                                    </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="tank_no" id="tank_no" value="{{ old('tank_no', $pump->tank_no) }}">
+                            @error('tank_id')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Dispensed Fuel Product -->
                         <div class="col-12 col-md-4">
                             <label class="field-label">
                                 <span>Dispensed Fuel Product <span class="text-danger">*</span></span>
                             </label>
-                            <select name="product_id" class="form-select compact-input @error('product_id') is-invalid @enderror" required>
+                            <select name="product_id" id="product_id" class="form-select compact-input @error('product_id') is-invalid @enderror" required>
                                 <option value="">-- Select Fuel Product --</option>
                                 @foreach($fuelProducts as $fp)
                                     <option value="{{ $fp->id }}" {{ old('product_id', $pump->product_id) == $fp->id ? 'selected' : '' }}>
@@ -222,26 +263,8 @@
                             @enderror
                         </div>
 
-                        <!-- Connected Underground Storage Tank -->
-                        <div class="col-12 col-md-4">
-                            <label class="field-label">
-                                <span>Connected Underground Storage Tank</span>
-                                <span class="field-helper-right">Tank identifier</span>
-                            </label>
-                            <input type="text" name="tank_no" class="form-control compact-input @error('tank_no') is-invalid @enderror"
-                                   list="tankList" value="{{ old('tank_no', $pump->tank_no) }}">
-                            <datalist id="tankList">
-                                @foreach($existingTanks as $tank)
-                                    <option value="{{ $tank }}">
-                                @endforeach
-                            </datalist>
-                            @error('tank_no')
-                                <div class="invalid-feedback small">{{ $message }}</div>
-                            @enderror
-                        </div>
-
                         <!-- Nozzle Configuration / Identifier -->
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label class="field-label">
                                 <span>Nozzle Configuration / Identifier</span>
                                 <span class="field-helper-right">Optional</span>
@@ -388,3 +411,34 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function handleTankSelect(select) {
+        const opt = select.options[select.selectedIndex];
+        if (!opt || !opt.value) return;
+
+        const prodId = opt.getAttribute('data-product-id');
+        const locId = opt.getAttribute('data-location-id');
+        const tankName = opt.getAttribute('data-name');
+
+        if (prodId) {
+            const prodSelect = document.getElementById('product_id');
+            if (prodSelect) {
+                prodSelect.value = prodId;
+            }
+        }
+
+        if (locId) {
+            const locSelect = document.getElementById('location_id');
+            if (locSelect) {
+                locSelect.value = locId;
+            }
+        }
+
+        if (tankName) {
+            document.getElementById('tank_no').value = tankName;
+        }
+    }
+</script>
+@endpush

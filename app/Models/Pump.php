@@ -11,6 +11,8 @@ class Pump extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'location_id',
+        'tank_id',
         'name',
         'code',
         'nozzle_number',
@@ -27,6 +29,22 @@ class Pump extends Model
         'initial_reading' => 'decimal:2',
         'last_reading'    => 'decimal:2',
     ];
+
+    /**
+     * Relationship to the station location
+     */
+    public function location()
+    {
+        return $this->belongsTo(StationLocation::class, 'location_id');
+    }
+
+    /**
+     * Relationship to the assigned underground/aboveground storage tank
+     */
+    public function tank()
+    {
+        return $this->belongsTo(Tank::class, 'tank_id');
+    }
 
     /**
      * Relationship to the dispensed fuel product

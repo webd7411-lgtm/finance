@@ -8,6 +8,7 @@ use App\Models\Cashier;
 use App\Models\Pump;
 use App\Models\PumpMeterReading;
 use App\Models\Product;
+use App\Models\Tank;
 use App\Models\Party;
 use App\Models\Account;
 use App\Models\ExpenseCategory;
@@ -279,11 +280,18 @@ class ShiftClosingController extends Controller
             $accountPayments,
             $totalAccountCollections
         ) {
+            $closingTankId = null;
+            if ($pumpId) {
+                $pObj = Pump::find($pumpId);
+                $closingTankId = $pObj?->tank_id;
+            }
+
             $closing = ShiftClosing::create([
                 'date' => $validated['date'],
                 'shift_type' => $validated['shift_type'],
                 'cashier_id' => $cashierId,
                 'closed_by' => auth()->id() ?? $cashierId,
+                'tank_id' => $closingTankId,
                 'pump_id' => $pumpId,
                 'pump_machine' => $pumpMachineName,
                 'product_id' => $validated['product_id'] ?? null,
@@ -338,12 +346,20 @@ class ShiftClosingController extends Controller
                 }
             }
 
-            // 2. Decrement Product Live Stock (fuel volume sold through nozzles)
+            // 2. Decrement Product Live Stock and Storage Tank Live Stock (fuel volume sold through nozzles)
             if (!empty($validated['product_id']) && $totalLiters > 0) {
                 $product = Product::find($validated['product_id']);
                 if ($product) {
                     $product->current_stock = max(0, $product->current_stock - $totalLiters);
                     $product->save();
+                }
+            }
+
+            if ($closingTankId && $totalLiters > 0) {
+                $tank = Tank::lockForUpdate()->find($closingTankId);
+                if ($tank) {
+                    $tank->current_stock = max(0, $tank->current_stock - $totalLiters);
+                    $tank->save();
                 }
             }
 
@@ -472,6 +488,15 @@ class ShiftClosingController extends Controller
                 if ($product) {
                     $product->current_stock += (float) $shiftClosing->total_liters;
                     $product->save();
+                }
+            }
+
+            // Restore Tank stock if closing had an assigned tank
+            if ($shiftClosing->tank_id && (float)$shiftClosing->total_liters > 0) {
+                $tank = Tank::lockForUpdate()->find($shiftClosing->tank_id);
+                if ($tank) {
+                    $tank->current_stock += (float) $shiftClosing->total_liters;
+                    $tank->save();
                 }
             }
 

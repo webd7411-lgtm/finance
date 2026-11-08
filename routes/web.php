@@ -10,6 +10,8 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PumpController;
+use App\Http\Controllers\TankController;
+use App\Http\Controllers\StationLocationController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ShiftClosingController;
 use App\Http\Controllers\TransactionController;
@@ -64,6 +66,13 @@ Route::middleware('auth')->group(function () {
     Route::post('products/categories/quick-store', [ProductController::class, 'storeCategory'])->name('products.categories.quick-store');
     Route::post('products/units/quick-store', [ProductController::class, 'storeUnit'])->name('products.units.quick-store');
     Route::resource('products', ProductController::class);
+
+    // Station Locations & Sites
+    Route::resource('locations', StationLocationController::class)->except(['create', 'show', 'edit']);
+
+    // Storage Tanks & Dip Readings
+    Route::post('tanks/{tank}/record-dip', [TankController::class, 'recordDip'])->name('tanks.record-dip');
+    Route::resource('tanks', TankController::class);
 
     // Stock & Fuel Purchases
     Route::resource('purchases', PurchaseController::class)->except(['edit', 'update']);

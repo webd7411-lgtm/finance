@@ -15,6 +15,7 @@ class ShiftClosing extends Model
         'shift_type',
         'cashier_id',
         'closed_by',
+        'tank_id',
         'pump_id',
         'pump_machine',
         'product_id',
@@ -112,6 +113,11 @@ class ShiftClosing extends Model
     public function partyPayments()
     {
         return $this->hasMany(ShiftClosingPartyPayment::class);
+    }
+
+    public function tank()
+    {
+        return $this->belongsTo(Tank::class, 'tank_id');
     }
 
     public function transactions()

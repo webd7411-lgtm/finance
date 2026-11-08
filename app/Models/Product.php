@@ -104,6 +104,14 @@ class Product extends Model
     }
 
     /**
+     * Relationship to underground and aboveground storage tanks holding this product
+     */
+    public function tanks()
+    {
+        return $this->hasMany(Tank::class, 'product_id');
+    }
+
+    /**
      * Relationship to pump machines dispensing this product
      */
     public function pumps()

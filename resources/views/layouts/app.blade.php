@@ -443,18 +443,18 @@
 
                         <!-- Master Setup Dropdown -->
                         <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('products.*') || request()->routeIs('pumps.*') || request()->routeIs('purchases.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('tanks.*') || request()->routeIs('locations.*') || request()->routeIs('products.*') || request()->routeIs('pumps.*') || request()->routeIs('purchases.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-sliders"></i> Master Setup
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 230px;">
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('parties.*') ? 'active' : '' }}" href="{{ route('parties.index') }}">
-                                        <i class="bi bi-person-lines-fill text-primary"></i> Parties & Ledgers
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('tanks.*') ? 'active' : '' }}" href="{{ route('tanks.index') }}">
+                                        <i class="bi bi-database-fill-gear text-info"></i> Fuel Storage Tanks
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('accounts.*') ? 'active' : '' }}" href="{{ route('accounts.index') }}">
-                                        <i class="bi bi-bank text-success"></i> Payment Accounts
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('locations.*') ? 'active' : '' }}" href="{{ route('locations.index') }}">
+                                        <i class="bi bi-geo-alt text-danger"></i> Station Locations
                                     </a>
                                 </li>
                                 <li>
@@ -769,6 +769,12 @@
                 </a>
                 <a href="{{ route('accounts.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                     <i class="bi bi-bank text-success"></i> Payment Accounts
+                </a>
+                <a href="{{ route('tanks.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('tanks.*') ? 'active' : '' }}">
+                    <i class="bi bi-database-fill-gear text-info"></i> Fuel Storage Tanks
+                </a>
+                <a href="{{ route('locations.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('locations.*') ? 'active' : '' }}">
+                    <i class="bi bi-geo-alt text-danger"></i> Station Locations
                 </a>
                 <a href="{{ route('pumps.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('pumps.*') ? 'active' : '' }}">
                     <i class="bi bi-speedometer2 text-primary"></i> Pump Machines & Dispensers

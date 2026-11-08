@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block access to sensitive system and environment files
+    <FilesMatch "^\.(env|git|editorconfig)">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # Block direct access to sensitive framework files
+    RewriteRule ^(composer\.(json|lock)|package\.(json|lock)|artisan|phpunit\.xml) - [F,L]
+
+    # Send all requests to the public directory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

@@ -177,27 +177,45 @@
 
                     <div class="row g-2.5">
                         <!-- Machine Name -->
-                        <div class="col-12 col-md-5">
+                        <!-- Machine Name -->
+                        <div class="col-12 col-md-4">
                             <label class="field-label">
                                 <span>Pump Machine / Dispenser Name <span class="text-danger">*</span></span>
-                                <span class="field-helper-right">e.g. Pump 01</span>
+                                <span class="field-helper-right">e.g. Dispenser 01</span>
                             </label>
                             <input type="text" name="name" class="form-control compact-input @error('name') is-invalid @enderror"
-                                   placeholder="e.g. Pump Machine 1 (Super Petrol) or Dispenser 02"
+                                   placeholder="e.g. Pump Machine 1 (Super Petrol)"
                                    value="{{ old('name') }}" required autofocus>
                             @error('name')
                                 <div class="invalid-feedback small">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- Machine Code -->
+                        <!-- Station Site / Location -->
                         <div class="col-12 col-md-3">
                             <label class="field-label">
-                                <span>Machine Code / ID</span>
+                                <span>Station Site / Location <span class="text-danger">*</span></span>
+                            </label>
+                            <select name="location_id" id="location_id" class="form-select compact-input @error('location_id') is-invalid @enderror">
+                                @foreach($locations as $loc)
+                                    <option value="{{ $loc->id }}" {{ (old('location_id') == $loc->id || ($loc->is_default && !old('location_id'))) ? 'selected' : '' }}>
+                                        {{ $loc->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('location_id')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Machine Code -->
+                        <div class="col-12 col-md-2">
+                            <label class="field-label">
+                                <span>Machine Code</span>
                                 <span class="field-helper-right">Optional</span>
                             </label>
                             <input type="text" name="code" class="form-control compact-input text-uppercase @error('code') is-invalid @enderror"
-                                   placeholder="e.g. PUMP-01, NZL-01"
+                                   placeholder="e.g. PUMP-01"
                                    value="{{ old('code') }}">
                             @error('code')
                                 <div class="invalid-feedback small">{{ $message }}</div>
@@ -205,7 +223,7 @@
                         </div>
 
                         <!-- Initial Status -->
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label class="field-label">
                                 <span>Initial Status <span class="text-danger">*</span></span>
                                 <span class="field-helper-right">Shift Availability</span>
@@ -230,6 +248,32 @@
                     </div>
 
                     <div class="row g-2.5">
+                        <!-- Connected Storage Tank -->
+                        <div class="col-12 col-md-5">
+                            <label class="field-label">
+                                <span>Connected Storage Tank</span>
+                                <span class="field-helper-right"><a href="{{ route('tanks.create') }}" target="_blank" class="text-decoration-none">+ New Tank</a></span>
+                            </label>
+                            <select name="tank_id" id="tank_id" class="form-select compact-input @error('tank_id') is-invalid @enderror" onchange="handleTankSelect(this)">
+                                <option value="">-- Select Dedicated Storage Tank --</option>
+                                @foreach($tanks as $t)
+                                    <option value="{{ $t->id }}"
+                                            data-product-id="{{ $t->product_id }}"
+                                            data-location-id="{{ $t->location_id }}"
+                                            data-name="{{ $t->name }}"
+                                            data-cap="{{ $t->capacity }}"
+                                            data-stock="{{ $t->current_stock }}"
+                                            {{ old('tank_id') == $t->id ? 'selected' : '' }}>
+                                        [{{ $t->tank_number }}] {{ $t->name }} (Cap: {{ number_format($t->capacity) }}L • Live: {{ number_format($t->current_stock, 1) }}L)
+                                    </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="tank_no" id="tank_no" value="{{ old('tank_no') }}">
+                            @error('tank_id')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Dispensed Fuel Product -->
                         <div class="col-12 col-md-4">
                             <label class="field-label">
@@ -253,27 +297,8 @@
                             @enderror
                         </div>
 
-                        <!-- Connected Underground Storage Tank -->
-                        <div class="col-12 col-md-4">
-                            <label class="field-label">
-                                <span>Connected Underground Storage Tank</span>
-                                <span class="field-helper-right">Auto-syncs or type new</span>
-                            </label>
-                            <input type="text" name="tank_no" id="tank_no" class="form-control compact-input @error('tank_no') is-invalid @enderror"
-                                   list="tankList" placeholder="e.g. Underground Tank #1"
-                                   value="{{ old('tank_no') }}">
-                            <datalist id="tankList">
-                                @foreach($existingTanks as $tank)
-                                    <option value="{{ $tank }}">
-                                @endforeach
-                            </datalist>
-                            @error('tank_no')
-                                <div class="invalid-feedback small">{{ $message }}</div>
-                            @enderror
-                        </div>
-
                         <!-- Nozzle Configuration / Identifier -->
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label class="field-label">
                                 <span>Nozzle Configuration / Identifier</span>
                                 <span class="field-helper-right">Optional</span>
@@ -387,6 +412,33 @@
 
 @push('scripts')
 <script>
+    function handleTankSelect(select) {
+        const opt = select.options[select.selectedIndex];
+        if (!opt || !opt.value) return;
+
+        const prodId = opt.getAttribute('data-product-id');
+        const locId = opt.getAttribute('data-location-id');
+        const tankName = opt.getAttribute('data-name');
+
+        if (prodId) {
+            const prodSelect = document.getElementById('product_id');
+            if (prodSelect) {
+                prodSelect.value = prodId;
+            }
+        }
+
+        if (locId) {
+            const locSelect = document.getElementById('location_id');
+            if (locSelect) {
+                locSelect.value = locId;
+            }
+        }
+
+        if (tankName) {
+            document.getElementById('tank_no').value = tankName;
+        }
+    }
+
     function handleProductChange(select) {
         const selected = select.options[select.selectedIndex];
         if (selected && selected.dataset.tank && !document.getElementById('tank_no').value) {

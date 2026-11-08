@@ -43,9 +43,9 @@
                 <form action="{{ route('purchases.store') }}" method="POST" id="purchaseForm">
                     @csrf
 
-                    <!-- Supplier & Date Row -->
+                    <!-- Supplier, Date & Location Row -->
                     <div class="row g-3 mb-4">
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label for="purchase_date" class="form-label small fw-semibold text-secondary">
                                 Delivery / Purchase Date <span class="text-danger">*</span>
                             </label>
@@ -74,7 +74,20 @@
                             @enderror
                         </div>
 
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-2">
+                            <label for="location_id" class="form-label small fw-semibold text-secondary">
+                                Station Location
+                            </label>
+                            <select class="form-select form-select-sm py-2" id="location_id" name="location_id">
+                                @foreach($locations as $loc)
+                                    <option value="{{ $loc->id }}" {{ (old('location_id') == $loc->id || ($loc->is_default && !old('location_id'))) ? 'selected' : '' }}>
+                                        {{ $loc->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-3">
                             <label for="invoice_no" class="form-label small fw-semibold text-secondary">
                                 Supplier Bill / Invoice No. <span class="text-muted">(Optional)</span>
                             </label>
@@ -86,9 +99,41 @@
                         </div>
                     </div>
 
-                    <!-- Product, Destination Tanker & Rate Row -->
+                    <!-- Storage Tank, Product & Bowser Row -->
                     <div class="row g-3 mb-4 p-3 bg-light rounded-3 border">
+                        <!-- Destination Storage Tank (Primary Petroleum ERP link) -->
                         <div class="col-12 col-md-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="tank_id" class="form-label small fw-semibold text-secondary mb-0">
+                                    Destination Storage Tank <span class="text-muted">(Fuel Reservoir)</span>
+                                </label>
+                                <a href="{{ route('tanks.create') }}" target="_blank" class="small text-decoration-none" style="font-size: 0.72rem;">
+                                    <i class="bi bi-plus-circle"></i> New Tank
+                                </a>
+                            </div>
+                            <select class="form-select form-select-sm py-2 @error('tank_id') is-invalid @enderror" id="tank_id" name="tank_id" onchange="handleTankChange()">
+                                <option value="">-- Select Destination Storage Tank --</option>
+                                @foreach($tanks as $t)
+                                    <option value="{{ $t->id }}"
+                                            data-product-id="{{ $t->product_id }}"
+                                            data-location-id="{{ $t->location_id }}"
+                                            data-tank-name="{{ $t->name }}"
+                                            data-capacity="{{ $t->capacity }}"
+                                            data-stock="{{ $t->current_stock }}"
+                                            data-available="{{ $t->available_capacity }}"
+                                            {{ (old('tank_id', $selectedTankId ?? null) == $t->id) ? 'selected' : '' }}>
+                                        [{{ $t->tank_number }}] {{ $t->name }} (Cap: {{ number_format($t->capacity) }}L • Live: {{ number_format($t->current_stock, 1) }}L)
+                                    </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="tank_no" id="tank_no" value="{{ old('tank_no') }}">
+                            <div id="tankCapacityIndicator" class="small mt-1 text-muted" style="font-size: 0.72rem;">
+                                Select a storage tank to view capacity &amp; available space
+                            </div>
+                        </div>
+
+                        <!-- Product / Fuel Item -->
+                        <div class="col-12 col-md-3">
                             <label for="product_id" class="form-label small fw-semibold text-secondary">
                                 Product / Fuel Item <span class="text-danger">*</span>
                             </label>
@@ -114,27 +159,27 @@
                         </div>
 
                         <!-- Linked Pump Machine / Dispenser (Optional) -->
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
                             <label for="pump_id" class="form-label small fw-semibold text-secondary">
-                                Destination Dispenser / Tank <span class="text-muted">(Optional)</span>
+                                Connected Dispenser <span class="text-muted">(Optional)</span>
                             </label>
                             <select class="form-select form-select-sm py-2" id="pump_id" name="pump_id" onchange="handlePumpChange()">
-                                <option value="">-- General Storage Tank --</option>
+                                <option value="">-- Select Dispenser (Optional) --</option>
                                 @foreach($pumps as $p)
                                     <option value="{{ $p->id }}"
                                             data-product-id="{{ $p->product_id }}"
+                                            data-tank-id="{{ $p->tank_id }}"
                                             data-tank="{{ $p->tank_no }}"
                                             {{ (old('pump_id', $selectedPumpId ?? null) == $p->id) ? 'selected' : '' }}>
-                                        #{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }} • {{ $p->name }} ({{ $p->tank_no ?: 'Tank' }})
+                                        #{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }} • {{ $p->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            <input type="hidden" name="tank_no" id="tank_no" value="{{ old('tank_no') }}">
                         </div>
 
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-2">
                             <label for="vehicle_no" class="form-label small fw-semibold text-secondary">
-                                Tanker / Vehicle No. <span class="text-muted">(Bowser)</span>
+                                Bowser / Tanker No.
                             </label>
                             <input type="text" class="form-control form-control-sm py-2 font-monospace"
                                    id="vehicle_no" name="vehicle_no" value="{{ old('vehicle_no') }}" placeholder="e.g. TL-8492">
@@ -255,6 +300,53 @@
 
 @push('scripts')
 <script>
+    function handleTankChange() {
+        const tankSelect = document.getElementById('tank_id');
+        const opt = tankSelect.options[tankSelect.selectedIndex];
+        const indicator = document.getElementById('tankCapacityIndicator');
+
+        if (opt && opt.value) {
+            const prodId = opt.getAttribute('data-product-id');
+            const locId = opt.getAttribute('data-location-id');
+            const tankName = opt.getAttribute('data-tank-name');
+            const capacity = parseFloat(opt.getAttribute('data-capacity')) || 0;
+            const stock = parseFloat(opt.getAttribute('data-stock')) || 0;
+            const available = parseFloat(opt.getAttribute('data-available')) || 0;
+            const pct = capacity > 0 ? ((stock / capacity) * 100).toFixed(1) : 0;
+
+            if (prodId) {
+                const prodSelect = document.getElementById('product_id');
+                if (prodSelect && prodSelect.value != prodId) {
+                    prodSelect.value = prodId;
+                    handleProductChange();
+                }
+            }
+
+            if (locId) {
+                const locSelect = document.getElementById('location_id');
+                if (locSelect) {
+                    locSelect.value = locId;
+                }
+            }
+
+            if (tankName) {
+                document.getElementById('tank_no').value = tankName;
+            }
+
+            indicator.innerHTML = `
+                <div class="p-1.5 bg-white rounded border mt-1">
+                    <div class="d-flex justify-content-between text-secondary" style="font-size: 0.68rem;">
+                        <span>Level: <strong>${pct}%</strong></span>
+                        <span>Stock: <strong>${stock.toLocaleString()} L</strong></span>
+                        <span class="text-primary">Space (Ullage): <strong>${available.toLocaleString()} L</strong></span>
+                    </div>
+                </div>
+            `;
+        } else {
+            indicator.textContent = 'Select a storage tank to view capacity & available space';
+        }
+    }
+
     function handleProductChange() {
         const select = document.getElementById('product_id');
         const selected = select.options[select.selectedIndex];
@@ -285,9 +377,18 @@
 
         if (selected && selected.value) {
             const prodId = selected.getAttribute('data-product-id');
+            const tankId = selected.getAttribute('data-tank-id');
             const tank = selected.getAttribute('data-tank');
 
-            if (tank) {
+            if (tankId) {
+                const tankSelect = document.getElementById('tank_id');
+                if (tankSelect && tankSelect.value != tankId) {
+                    tankSelect.value = tankId;
+                    handleTankChange();
+                }
+            }
+
+            if (tank && !document.getElementById('tank_no').value) {
                 document.getElementById('tank_no').value = tank;
             }
 
@@ -314,7 +415,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.getElementById('pump_id').value) {
+        if (document.getElementById('tank_id').value) {
+            handleTankChange();
+        } else if (document.getElementById('pump_id').value) {
             handlePumpChange();
         }
         handleProductChange();

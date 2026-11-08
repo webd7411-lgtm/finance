@@ -468,29 +468,40 @@
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
 
-                <div class="col-12 col-md-5">
+                <div class="col-12 col-md-4">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search by machine name, code, tank, or nozzle..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search machine, tank, or nozzle..." value="{{ request('search') }}">
                     </div>
                 </div>
 
-                <div class="col-7 col-md-4">
+                <div class="col-6 col-md-3">
                     <select name="product_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="all">-- All Fuel Products --</option>
                         @foreach($fuelProducts as $fp)
                             <option value="{{ $fp->id }}" {{ request('product_id') == $fp->id ? 'selected' : '' }}>
-                                {{ $fp->name }} (Rs. {{ number_format($fp->sale_price, 2) }}/{{ $fp->unit_label }})
+                                {{ $fp->name }}
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                <div class="col-5 col-md-3 d-flex gap-1 justify-content-end">
+                <div class="col-6 col-md-3">
+                    <select name="tank_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="all">-- All Storage Tanks --</option>
+                        @foreach($tanks as $t)
+                            <option value="{{ $t->id }}" {{ request('tank_id') == $t->id ? 'selected' : '' }}>
+                                {{ $t->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex gap-1 justify-content-end">
                     <button type="submit" class="btn btn-dark btn-sm px-3 fw-semibold">
                         <i class="bi bi-funnel me-1"></i>Filter
                     </button>
-                    @if(request()->hasAny(['search', 'product_id', 'status']))
+                    @if(request()->hasAny(['search', 'product_id', 'tank_id', 'status']))
                         <a href="{{ route('pumps.index') }}" class="btn btn-outline-secondary btn-sm px-2.5" title="Reset Filters">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
@@ -646,9 +657,15 @@
                                 <div class="bg-light bg-opacity-75 rounded-3 p-2.5">
                                     <div class="spec-item">
                                         <span class="spec-label"><i class="bi bi-database text-primary"></i> Storage Tank:</span>
-                                        <span class="spec-val text-truncate" style="max-width: 140px;" title="{{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}">
-                                            {{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}
-                                        </span>
+                                        @if($pump->tank)
+                                            <a href="{{ route('tanks.show', $pump->tank->id) }}" class="spec-val text-decoration-none text-primary fw-bold text-truncate" style="max-width: 140px;" title="{{ $pump->tank->name }}">
+                                                <i class="bi bi-box-arrow-up-right me-0.5" style="font-size: 0.65rem;"></i> {{ $pump->tank->name }}
+                                            </a>
+                                        @else
+                                            <span class="spec-val text-truncate" style="max-width: 140px;" title="{{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}">
+                                                {{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="spec-item">
                                         <span class="spec-label"><i class="bi bi-pipette text-info"></i> Nozzle Config:</span>
@@ -807,7 +824,13 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="text-dark fw-semibold small">{{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}</div>
+                                    @if($pump->tank)
+                                        <a href="{{ route('tanks.show', $pump->tank->id) }}" class="text-primary fw-bold text-decoration-none small d-block">
+                                            <i class="bi bi-box-arrow-up-right me-0.5" style="font-size: 0.65rem;"></i> {{ $pump->tank->name }}
+                                        </a>
+                                    @else
+                                        <div class="text-dark fw-semibold small">{{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}</div>
+                                    @endif
                                     <div class="small {{ ($pump->product?->current_stock ?? 0) <= ($pump->product?->min_stock_alert ?? 0) ? 'text-danger' : 'text-success' }}">
                                         {{ number_format($pump->product?->current_stock ?? 0, 2) }} {{ $pump->product?->unit_label ?? 'Ltr' }} avail
                                     </div>
