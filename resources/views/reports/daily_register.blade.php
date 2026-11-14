@@ -33,11 +33,70 @@
         border-radius: 8px;
     }
 
+    /* Scrollable Frame Container for Register Table */
+    .register-table-frame {
+        max-height: 68vh;
+        overflow-y: auto;
+        overflow-x: auto;
+        position: relative;
+        background: #ffffff;
+    }
+
+    /* Custom sleek scrollbar for the frame */
+    .register-table-frame::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .register-table-frame::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    .register-table-frame::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .register-table-frame::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
     .table-register {
         font-size: 0.82rem;
         margin-bottom: 0;
         border-collapse: separate;
         border-spacing: 0;
+    }
+
+    /* Sticky Freeze for Two-Tier Table Headers */
+    .table-register thead tr:first-child th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        height: 31px;
+        line-height: 1.2;
+        padding: 6px 6px;
+        box-sizing: border-box;
+        background-clip: padding-box;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .table-register thead tr:nth-child(2) th {
+        position: sticky;
+        top: 31px;
+        z-index: 9;
+        height: 31px;
+        line-height: 1.2;
+        padding: 5px 6px;
+        box-sizing: border-box;
+        background-clip: padding-box;
+        box-shadow: 0 2px 3px -1px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Sticky Footer Totals Row */
+    .table-register tfoot td {
+        position: sticky;
+        bottom: 0;
+        z-index: 8;
+        background-clip: padding-box;
+        box-shadow: 0 -2px 3px -1px rgba(0, 0, 0, 0.15);
     }
 
     .table-register th {
@@ -159,12 +218,21 @@
             width: 100% !important;
             max-width: 100% !important;
         }
-        .table-responsive {
+        .table-responsive,
+        .register-table-frame {
+            max-height: none !important;
             overflow: visible !important;
             overflow-x: visible !important;
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
+        }
+        .table-register thead tr:first-child th,
+        .table-register thead tr:nth-child(2) th,
+        .table-register tfoot td {
+            position: static !important;
+            box-shadow: none !important;
+            height: auto !important;
         }
         .table-register {
             width: 100% !important;
@@ -365,7 +433,7 @@
 
     <!-- Main Spreadsheet Register Table -->
     <div class="register-card overflow-hidden">
-        <div class="table-responsive">
+        <div class="table-responsive register-table-frame">
             <table class="table table-register align-middle">
                 <thead>
                     <!-- Tier 1 Group Header -->

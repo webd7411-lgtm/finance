@@ -63,35 +63,13 @@ class DayClosing extends Model
     {
         $dateStr = $date instanceof \Carbon\Carbon ? $date->toDateString() : substr((string)$date, 0, 10);
 
+        $balances = \App\Models\Account::getBalancesPriorToDate($dateStr);
+        $cashOpening = $balances['cash'];
+        $bankOpening = $balances['bank'];
+        $jazzcashOpening = $balances['jazzcash'];
+        $totalOpeningAllAccounts = $balances['total'];
+
         $cashAccount = \App\Models\Account::where('type', 'cash')->first() ?? \App\Models\Account::getCashAccount();
-        $baseCashOpening = (float) $cashAccount->opening_balance;
-        $priorShiftCash = (float) \App\Models\ShiftClosing::whereDate('date', '<', $dateStr)->sum('total_counted_cash');
-        $priorCashIn = (float) \App\Models\Transaction::whereDate('date', '<', $dateStr)
-            ->whereNull('shift_closing_id')
-            ->where('type', 'payment_in')
-            ->where(function($q) use ($cashAccount) {
-                $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
-            })
-            ->sum('amount');
-        $priorCashOut = (float) \App\Models\Transaction::whereDate('date', '<', $dateStr)
-            ->whereNull('shift_closing_id')
-            ->where('type', 'payment_out')
-            ->where(function($q) use ($cashAccount) {
-                $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
-            })
-            ->sum('amount');
-
-        $cashOpening = $baseCashOpening + $priorShiftCash + $priorCashIn - $priorCashOut;
-
-        $bankOpening = (float) \App\Models\Account::where('type', 'bank')->sum('opening_balance')
-            + (float) \App\Models\Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $dateStr)->where('type', 'payment_in')->sum('amount')
-            - (float) \App\Models\Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $dateStr)->where('type', 'payment_out')->sum('amount');
-
-        $jazzcashOpening = (float) \App\Models\Account::where('type', 'jazzcash')->sum('opening_balance')
-            + (float) \App\Models\Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $dateStr)->where('type', 'payment_in')->sum('amount')
-            - (float) \App\Models\Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $dateStr)->where('type', 'payment_out')->sum('amount');
-
-        $totalOpeningAllAccounts = $cashOpening + $bankOpening + $jazzcashOpening;
 
         // Shifts for the date
         $shifts = \App\Models\ShiftClosing::whereDate('date', $dateStr)->get();
@@ -184,7 +162,7 @@ class DayClosing extends Model
                 'total_closing_all_accounts' => $totalClosingAllAccounts,
                 'total_difference' => $totalDifference,
                 'status' => 'closed',
-                'closed_by' => auth()->id() ?? 1,
+                'closed_by' => auth()->id() ?? \App\Models\User::value('id'),
             ]
         );
     }

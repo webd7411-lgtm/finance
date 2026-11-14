@@ -336,6 +336,9 @@
                                 <span>(+) Period Opening Balance:</span>
                                 <span class="font-monospace">Rs. {{ number_format($periodOpeningLiquid, 2) }}</span>
                             </div>
+                            <div class="d-flex justify-content-between text-secondary pb-1" style="font-size: 7.2pt;">
+                                <span>(Drawer: Rs. {{ number_format($periodOpeningCash ?? 0, 2) }} &bull; Bank: Rs. {{ number_format($periodOpeningBank ?? 0, 2) }} &bull; Wallets: Rs. {{ number_format($periodOpeningJazz ?? 0, 2) }})</span>
+                            </div>
                             <div class="d-flex justify-content-between py-0.5 text-muted">
                                 <span>(+) Net Period Cash Surplus:</span>
                                 <span class="font-monospace">{{ $periodNetSurplus >= 0 ? '+' : '' }} Rs. {{ number_format($periodNetSurplus, 2) }}</span>

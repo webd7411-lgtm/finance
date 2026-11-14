@@ -187,33 +187,11 @@ class ReportController extends Controller
         // ----------------------------------------------------
         // 1. ALL-ACCOUNTS OPENING BALANCES (Dynamic & Continuous)
         // ----------------------------------------------------
-        $cashAccount = Account::where('type', 'cash')->first() ?? Account::getCashAccount();
-        $cashOpening = (float) $cashAccount->opening_balance
-            + (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash')
-            + (float) Transaction::whereDate('date', '<', $fromDate)
-                ->whereNull('shift_closing_id')
-                ->where('type', 'payment_in')
-                ->where(function($q) use ($cashAccount) {
-                    $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
-                })
-                ->sum('amount')
-            - (float) Transaction::whereDate('date', '<', $fromDate)
-                ->whereNull('shift_closing_id')
-                ->where('type', 'payment_out')
-                ->where(function($q) use ($cashAccount) {
-                    $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
-                })
-                ->sum('amount');
-
-        $bankOpening = (float) Account::where('type', 'bank')->sum('opening_balance')
-            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $fromDate)->where('type', 'payment_in')->sum('amount')
-            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $fromDate)->where('type', 'payment_out')->sum('amount');
-
-        $jazzcashOpening = (float) Account::where('type', 'jazzcash')->sum('opening_balance')
-            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $fromDate)->where('type', 'payment_in')->sum('amount')
-            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $fromDate)->where('type', 'payment_out')->sum('amount');
-
-        $totalOpeningAllAccounts = $cashOpening + $bankOpening + $jazzcashOpening;
+        $balances = Account::getBalancesPriorToDate($fromDate);
+        $cashOpening = $balances['cash'];
+        $bankOpening = $balances['bank'];
+        $jazzcashOpening = $balances['jazzcash'];
+        $totalOpeningAllAccounts = $balances['total'];
         $periodOpeningCash = $cashOpening;
 
         // ----------------------------------------------------
@@ -769,8 +747,8 @@ class ReportController extends Controller
             $partyDisbursements[$key]['tx_count'] += 1;
         }
 
-        // Sort parties by total paid descending
-        uasort($partyDisbursements, fn($a, $b) => $b['total_paid'] <=> $a['total_paid']);
+        // Sort parties alphabetically (A to Z) by party name
+        uasort($partyDisbursements, fn($a, $b) => strcasecmp($a['name'], $b['name']));
 
         $totalPaidToParties = array_sum(array_column($partyDisbursements, 'total_paid'));
         $totalCashPaidToParties = array_sum(array_column($partyDisbursements, 'cash_paid'));
@@ -906,24 +884,11 @@ class ReportController extends Controller
         }
 
         // Calculate Period Opening Liquid Balance prior to $fromDate
-        $allAccountsList = Account::orderBy('type')->orderBy('name')->get();
-        $totalOpeningBalance = (float) $allAccountsList->sum('opening_balance');
-
-        $priorTransactionsIn = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_in')
-            ->where(function($q) {
-                $q->whereNull('bill_no')->orWhere('bill_no', '!=', 'Transfer');
-            })
-            ->sum('amount');
-
-        $priorTransactionsOut = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_out')
-            ->where(function($q) {
-                $q->whereNull('bill_no')->orWhere('bill_no', '!=', 'Transfer');
-            })
-            ->sum('amount');
-
-        $periodOpeningLiquid = $totalOpeningBalance + $priorTransactionsIn - $priorTransactionsOut;
+        $balances = Account::getBalancesPriorToDate($fromDate);
+        $periodOpeningLiquid = $balances['total'];
+        $periodOpeningCash = $balances['cash'];
+        $periodOpeningBank = $balances['bank'];
+        $periodOpeningJazz = $balances['jazzcash'];
         $periodClosingLiquid = $periodOpeningLiquid + $periodNetSurplus;
 
         return view('reports.total_sale_summary', compact(
@@ -960,6 +925,9 @@ class ReportController extends Controller
             'totalLiveLiquidity',
             'statementRows',
             'periodOpeningLiquid',
+            'periodOpeningCash',
+            'periodOpeningBank',
+            'periodOpeningJazz',
             'periodClosingLiquid'
         ));
     }
@@ -984,49 +952,11 @@ class ReportController extends Controller
         $endDate = Carbon::parse($toDate);
 
         // 1. Initial Opening Balances before $fromDate for all accounts (Cash, Bank, JazzCash)
-        $baseCashOpening = (float) Account::where('type', 'cash')->sum('opening_balance');
-        $baseBankOpening = (float) Account::where('type', 'bank')->sum('opening_balance');
-        $baseJazzOpening = (float) Account::where('type', 'jazzcash')->sum('opening_balance');
-
-        $priorCashIn = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_in')
-            ->where(function ($q) {
-                $q->whereNull('account_id')
-                  ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
-            })->sum('amount');
-        $priorCashOut = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_out')
-            ->where(function ($q) {
-                $q->whereNull('account_id')
-                  ->orWhereHas('account', fn($acc) => $acc->where('type', 'cash'));
-            })->sum('amount');
-        $priorShiftCashIn = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('total_counted_cash');
-
-        $priorBankIn = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_in')
-            ->whereHas('account', fn($a) => $a->where('type', 'bank'))
-            ->sum('amount');
-        $priorBankOut = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_out')
-            ->whereHas('account', fn($a) => $a->where('type', 'bank'))
-            ->sum('amount');
-        $priorShiftBankIn = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('bank_amount');
-
-        $priorJazzIn = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_in')
-            ->whereHas('account', fn($a) => $a->where('type', 'jazzcash'))
-            ->sum('amount');
-        $priorJazzOut = (float) Transaction::whereDate('date', '<', $fromDate)
-            ->where('type', 'payment_out')
-            ->whereHas('account', fn($a) => $a->where('type', 'jazzcash'))
-            ->sum('amount');
-        $priorShiftJazzIn = (float) ShiftClosing::whereDate('date', '<', $fromDate)->sum('jazzcash_amount');
-
-        $runningCash = $baseCashOpening + $priorCashIn + $priorShiftCashIn - $priorCashOut;
-        $runningBank = $baseBankOpening + $priorBankIn + $priorShiftBankIn - $priorBankOut;
-        $runningJazz = $baseJazzOpening + $priorJazzIn + $priorShiftJazzIn - $priorJazzOut;
-
-        $initialTotalOpening = $runningCash + $runningBank + $runningJazz;
+        $balances = Account::getBalancesPriorToDate($fromDate);
+        $runningCash = $balances['cash'];
+        $runningBank = $balances['bank'];
+        $runningJazz = $balances['jazzcash'];
+        $initialTotalOpening = $balances['total'];
 
         // Prefetch data in date range
         $shiftsByDate = ShiftClosing::whereDate('date', '>=', $fromDate)

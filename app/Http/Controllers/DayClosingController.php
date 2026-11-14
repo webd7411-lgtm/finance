@@ -31,36 +31,11 @@ class DayClosingController extends Controller
         // ----------------------------------------------------
         // 1. ALL-ACCOUNTS OPENING BALANCES (Fully Automated & Dynamic)
         // ----------------------------------------------------
-        $cashAccount = \App\Models\Account::where('type', 'cash')->first() ?? \App\Models\Account::getCashAccount();
-        $baseCashOpening = (float) $cashAccount->opening_balance;
-        $priorShiftCash = (float) ShiftClosing::whereDate('date', '<', $selectedDate)->sum('total_counted_cash');
-        $priorCashIn = (float) Transaction::whereDate('date', '<', $selectedDate)
-            ->whereNull('shift_closing_id')
-            ->where('type', 'payment_in')
-            ->where(function($q) use ($cashAccount) {
-                $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
-            })
-            ->sum('amount');
-        $priorCashOut = (float) Transaction::whereDate('date', '<', $selectedDate)
-            ->whereNull('shift_closing_id')
-            ->where('type', 'payment_out')
-            ->where(function($q) use ($cashAccount) {
-                $q->whereNull('account_id')->orWhere('account_id', $cashAccount->id);
-            })
-            ->sum('amount');
-
-        $cashOpening = $baseCashOpening + $priorShiftCash + $priorCashIn - $priorCashOut;
-
-        // Bank and JazzCash Opening: Base opening balance + all transactions in prior to selected date - all transactions out prior to selected date
-        $bankOpening = (float) \App\Models\Account::where('type', 'bank')->sum('opening_balance')
-            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
-            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
-
-        $jazzcashOpening = (float) \App\Models\Account::where('type', 'jazzcash')->sum('opening_balance')
-            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
-            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
-
-        $totalOpeningAllAccounts = $cashOpening + $bankOpening + $jazzcashOpening;
+        $balances = \App\Models\Account::getBalancesPriorToDate($selectedDate);
+        $cashOpening = $balances['cash'];
+        $bankOpening = $balances['bank'];
+        $jazzcashOpening = $balances['jazzcash'];
+        $totalOpeningAllAccounts = $balances['total'];
         $autoOpeningCash = $cashOpening; // For backwards-compatibility in form post
 
         // ----------------------------------------------------
@@ -165,7 +140,7 @@ class DayClosingController extends Controller
         // ----------------------------------------------------
         $allAccounts = \App\Models\Account::orderBy('type')->orderBy('name')->get();
 
-        $accountSummaries = $allAccounts->map(function ($account) use ($selectedDate, $cashOpening, $cashClosing) {
+        $accountSummaries = $allAccounts->map(function ($account) use ($selectedDate, $cashOpening, $cashClosing, $balances) {
             $inflow = (float) Transaction::whereDate('date', $selectedDate)
                                          ->where('account_id', $account->id)
                                          ->where('type', 'payment_in')
@@ -180,9 +155,7 @@ class DayClosingController extends Controller
                 $openingAtDate = $cashOpening;
                 $balanceAtDate = $cashClosing;
             } else {
-                $priorIn = (float) Transaction::where('account_id', $account->id)->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount');
-                $priorOut = (float) Transaction::where('account_id', $account->id)->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
-                $openingAtDate = (float) $account->opening_balance + $priorIn - $priorOut;
+                $openingAtDate = $balances['account_balances'][$account->id] ?? ((float) $account->opening_balance);
                 $balanceAtDate = $openingAtDate + $inflow - $outflow;
             }
 
@@ -367,14 +340,9 @@ class DayClosingController extends Controller
         }
 
         // Bank and JazzCash Opening Balances
-        $bankOpening = (float) \App\Models\Account::where('type', 'bank')->sum('opening_balance')
-            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
-            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'bank'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
-
-        $jazzcashOpening = (float) \App\Models\Account::where('type', 'jazzcash')->sum('opening_balance')
-            + (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_in')->sum('amount')
-            - (float) Transaction::whereHas('account', fn($q) => $q->where('type', 'jazzcash'))->whereDate('date', '<', $selectedDate)->where('type', 'payment_out')->sum('amount');
-
+        $balances = \App\Models\Account::getBalancesPriorToDate($selectedDate);
+        $bankOpening = $balances['bank'];
+        $jazzcashOpening = $balances['jazzcash'];
         $totalOpeningAllAccounts = $openingCash + $bankOpening + $jazzcashOpening;
 
         // Shift Counted Cash (Morning + Evening)
