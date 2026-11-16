@@ -93,40 +93,35 @@ class PartyDuplicateTest extends TestCase
         $this->assertEquals(1, Party::where('name', 'UniqueTest Alpha Corp')->count());
     }
 
-    public function test_update_party_rejects_duplicate_name_of_another_party(): void
+    public function test_party_name_is_locked_and_cannot_be_changed_on_update(): void
     {
         $user = $this->getTestUser();
 
-        $party1 = Party::create([
-            'name' => 'UniqueTest Existing 1',
+        $party = Party::create([
+            'name' => 'Original Party Name',
             'type' => 'supplier',
+            'phone' => '03001234567',
+            'address' => 'Old Address',
             'opening_balance' => 0,
             'current_balance' => 0,
         ]);
 
-        $party2 = Party::create([
-            'name' => 'UniqueTest Existing 2',
-            'type' => 'customer',
-            'opening_balance' => 0,
-            'current_balance' => 0,
+        // Attempt to rename party while updating phone and address
+        $response = $this->actingAs($user)->put("/parties/{$party->id}", [
+            'name' => 'Attempted New Name',
+            'type' => 'trader',
+            'phone' => '03119876543',
+            'address' => 'New Address',
         ]);
 
-        // Attempt to rename party2 to party1's name
-        $response = $this->actingAs($user)->put("/parties/{$party2->id}", [
-            'name' => 'UniqueTest Existing 1',
-            'type' => 'customer',
-        ]);
-
-        $response->assertSessionHasErrors(['name']);
-
-        // Renaming party2 without conflict should succeed
-        $responseOk = $this->actingAs($user)->put("/parties/{$party2->id}", [
-            'name' => 'UniqueTest Existing 2 Updated',
-            'type' => 'customer',
-        ]);
-
-        $responseOk->assertSessionHasNoErrors();
-        $this->assertEquals('UniqueTest Existing 2 Updated', $party2->fresh()->name);
+        $response->assertSessionHasNoErrors();
+        $fresh = $party->fresh();
+        // Party name must remain locked and unchanged
+        $this->assertEquals('Original Party Name', $fresh->name);
+        // Other fields should update
+        $this->assertEquals('trader', $fresh->type);
+        $this->assertEquals('03119876543', $fresh->phone);
+        $this->assertEquals('New Address', $fresh->address);
     }
 
     public function test_parties_are_sorted_alphabetically_a_to_z_by_default(): void

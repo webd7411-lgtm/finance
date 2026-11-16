@@ -327,8 +327,17 @@
                     @method('PUT')
                     <div class="modal-body p-3 p-sm-4 text-start">
                         <div class="mb-3">
-                            <label class="form-label small fw-semibold text-secondary">Party Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm py-2" name="name" value="{{ $party->name }}" required>
+                            <label class="form-label small fw-semibold text-secondary d-flex justify-content-between align-items-center">
+                                <span>Party Name</span>
+                                <span class="badge bg-light text-muted border small"><i class="bi bi-lock-fill me-1"></i>Locked</span>
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-building"></i></span>
+                                <input type="text" class="form-control bg-light text-muted fw-semibold" value="{{ $party->name }}" readonly disabled>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.72rem;">
+                                <i class="bi bi-info-circle me-1"></i>Party name cannot be edited once party is created.
+                            </small>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-12 col-sm-6">

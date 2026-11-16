@@ -299,6 +299,7 @@
                         <th class="text-end">Amount</th>
                         <th>Deleted On</th>
                         <th>Deleted By</th>
+                        <th>Remarks / Reason</th>
                         <th class="text-end" style="width: 140px;">Audit Voucher</th>
                     </tr>
                 @else
@@ -360,6 +361,10 @@
                             </td>
                             <td class="small text-dark fw-semibold">
                                 <i class="bi bi-person-badge me-1 text-danger"></i>{{ $trx->deletedBy->name ?? 'Admin' }}
+                            </td>
+                            <td class="small text-dark">
+                                <div class="badge bg-danger-subtle text-danger border border-danger mb-1" style="font-size: 0.68rem;"><i class="bi bi-chat-left-quote me-1"></i>Reason</div>
+                                <div class="fw-semibold text-break" style="max-width: 220px; font-size: 0.78rem;">{{ $trx->delete_reason ?: 'N/A' }}</div>
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('transactions.show', $trx->id) }}" class="btn btn-outline-danger btn-sm py-1 px-2" title="Inspect Deleted Voucher">
@@ -476,13 +481,9 @@
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         @else
-                                            <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to delete this voucher? This will revert account and party balances.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2 rounded-2" title="Delete Voucher" style="line-height: 1;">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2 rounded-2" title="Delete Voucher" style="line-height: 1;" onclick="openDeleteModal('{{ route('transactions.destroy', $trx->id) }}', '{{ match($trx->type) { 'payment_in' => 'Payment In', 'purchase_bill' => 'Purchase Bill', 'purchase_return' => 'Purchase Return', default => 'Payment Out' } }} Voucher #{{ $trx->id }} (Rs. {{ number_format($trx->amount, 2) }})')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         @endif
                                     @endif
                                 </div>
@@ -532,8 +533,14 @@
                     </div>
 
                     @if($isTrashView)
-                        <div class="small text-danger pb-2 border-bottom mb-2 font-monospace" style="font-size: 0.74rem;">
-                            <i class="bi bi-calendar-x me-1"></i>Deleted: {{ $trx->deleted_at ? $trx->deleted_at->format('d M Y, h:i A') : '-' }} &bull; By: {{ $trx->deletedBy->name ?? 'Admin' }}
+                        <div class="small text-danger pb-2 border-bottom mb-2" style="font-size: 0.74rem;">
+                            <div class="font-monospace"><i class="bi bi-calendar-x me-1"></i>Deleted: {{ $trx->deleted_at ? $trx->deleted_at->format('d M Y, h:i A') : '-' }} &bull; By: {{ $trx->deletedBy->name ?? 'Admin' }}</div>
+                            @if($trx->delete_reason)
+                                <div class="mt-1 text-dark">
+                                    <span class="badge bg-danger-subtle text-danger border border-danger fw-semibold" style="font-size: 0.68rem;"><i class="bi bi-chat-left-quote me-1"></i>Remarks / Reason:</span>
+                                    <span class="fw-semibold text-danger">{{ $trx->delete_reason }}</span>
+                                </div>
+                            @endif
                         </div>
                     @endif
 
@@ -654,13 +661,9 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @else
-                                    <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to delete this voucher? This will revert account and party balances.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Voucher">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Voucher" onclick="openDeleteModal('{{ route('transactions.destroy', $trx->id) }}', '{{ match($trx->type) { 'payment_in' => 'Payment In', 'purchase_bill' => 'Purchase Bill', 'purchase_return' => 'Purchase Return', default => 'Payment Out' } }} Voucher #{{ $trx->id }} (Rs. {{ number_format($trx->amount, 2) }})')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 @endif
                             @endif
                         @endif

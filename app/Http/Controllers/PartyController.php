@@ -197,34 +197,25 @@ class PartyController extends Controller
 
     public function update(Request $request, Party $party)
     {
-        if ($request->has('name')) {
-            $request->merge(['name' => trim($request->input('name'))]);
-        }
-
         if ($request->has('dealing_mode_submitted') && !$request->boolean('is_credit') && !$request->boolean('is_cash')) {
             return back()->withErrors(['dealing_mode' => 'Please select at least one dealing mode (Credit or Cash).'])->withInput();
         }
 
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('parties', 'name')->ignore($party->id),
-            ],
             'type' => ['required', Rule::in(['supplier', 'trader', 'staff', 'customer'])],
             'is_credit' => ['nullable', 'boolean'],
             'is_cash' => ['nullable', 'boolean'],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],
-        ], [
-            'name.unique' => 'A party with this name is already registered.',
         ]);
 
         if ($request->has('dealing_mode_submitted') || $request->has('is_credit') || $request->has('is_cash')) {
             $validated['is_credit'] = $request->boolean('is_credit');
             $validated['is_cash'] = $request->boolean('is_cash');
         }
+
+        // Party name and opening balance are locked and cannot be modified once created
+        unset($validated['name'], $validated['opening_balance']);
 
         $party->update($validated);
 

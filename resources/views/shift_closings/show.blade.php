@@ -20,13 +20,9 @@
             <i class="bi bi-printer me-1"></i> Print Statement
         </button>
         @if(!$shiftClosing->trashed() && auth()->user()->isOwner())
-            <form action="{{ route('shift-closings.destroy', $shiftClosing->id) }}" method="POST" class="d-inline no-print" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger btn-sm rounded-3">
-                    <i class="bi bi-trash me-1"></i> Delete Sheet
-                </button>
-            </form>
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-3 no-print" onclick="openDeleteModal('{{ route('shift-closings.destroy', $shiftClosing->id) }}', 'Shift Closing Sheet #{{ $shiftClosing->id }} ({{ $shiftClosing->date->format('d M Y') }} - {{ ucfirst($shiftClosing->shift_type) }})')">
+                <i class="bi bi-trash me-1"></i> Delete Sheet
+            </button>
         @endif
         <a href="{{ route('shift-closings.index', $shiftClosing->trashed() ? ['view' => 'trash'] : []) }}" class="btn btn-light btn-sm rounded-3 no-print">
             <i class="bi bi-arrow-left me-1"></i> Back to Shift History
@@ -47,7 +43,13 @@
                         @if($shiftClosing->deletedBy)
                             by <strong>{{ $shiftClosing->deletedBy->name }}</strong>.
                         @endif
-                        All associated ledger balances and transactions were safely reversed upon deletion. This historical sheet is permanently preserved here for transparency and audit review.
+                        @if($shiftClosing->delete_reason)
+                            <div class="mt-2 p-2 rounded bg-white border border-danger-subtle">
+                                <span class="badge bg-danger text-white me-1"><i class="bi bi-chat-left-quote me-1"></i>Remarks / Reason:</span>
+                                <strong class="text-danger">{{ $shiftClosing->delete_reason }}</strong>
+                            </div>
+                        @endif
+                        <div class="mt-1">All associated ledger balances and transactions were safely reversed upon deletion. This historical sheet is permanently preserved here for transparency and audit review.</div>
                     </div>
                 </div>
             </div>

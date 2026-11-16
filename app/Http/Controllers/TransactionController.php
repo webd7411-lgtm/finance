@@ -425,7 +425,7 @@ class TransactionController extends Controller
         return back()->with('success', 'Transaction locked.');
     }
 
-    public function destroy(Transaction $transaction)
+    public function destroy(Request $request, Transaction $transaction)
     {
         if (!auth()->user()->isOwner()) {
             abort(403, 'Only Owner can delete financial transactions.');
@@ -435,9 +435,16 @@ class TransactionController extends Controller
             return back()->with('error', 'This transaction is locked to prevent unauthorized deletion. Please unlock it before deleting.');
         }
 
+        $request->validate([
+            'delete_reason' => 'required|string|max:1000',
+        ], [
+            'delete_reason.required' => 'Please provide Remarks / Reason for deleting this voucher.',
+        ]);
+
+        $deleteReason = trim($request->input('delete_reason'));
         $txDate = $transaction->date;
 
-        DB::transaction(function () use ($transaction) {
+        DB::transaction(function () use ($transaction, $deleteReason) {
             // Revert Account Balance if it was a cash/bank transaction
             if (!in_array($transaction->type, ['purchase_bill', 'purchase_return']) && $transaction->account) {
                 $account = $transaction->account;
@@ -479,13 +486,14 @@ class TransactionController extends Controller
             };
 
             $transaction->deleted_by = auth()->id();
+            $transaction->delete_reason = $deleteReason;
             $transaction->save();
             $transaction->delete();
 
             ActivityLog::log(
                 'Deleted',
                 $txType,
-                "Deleted {$txType} voucher #{$txId} of Rs. " . number_format($txAmount, 2) . " and reversed balances"
+                "Deleted {$txType} voucher #{$txId} of Rs. " . number_format($txAmount, 2) . " (Reason: {$deleteReason}) and reversed balances"
             );
         });
 

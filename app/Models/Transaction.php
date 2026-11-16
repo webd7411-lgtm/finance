@@ -24,6 +24,7 @@ class Transaction extends Model
         'status',
         'original_transaction_id',
         'deleted_by',
+        'delete_reason',
     ];
 
     protected $casts = [

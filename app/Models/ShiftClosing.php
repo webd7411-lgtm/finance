@@ -44,6 +44,7 @@ class ShiftClosing extends Model
         'remarks',
         'verified_by',
         'deleted_by',
+        'delete_reason',
     ];
 
     protected $casts = [

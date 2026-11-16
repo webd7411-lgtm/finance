@@ -138,7 +138,7 @@
                         <i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span>
                     </label>
                 </div>
-                <input type="date" id="closing_date" name="date" class="form-control form-control-sm fw-semibold @error('date') is-invalid @enderror" value="{{ old('date', date('Y-m-d')) }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
+                <input type="date" id="closing_date" name="date" class="form-control form-control-sm fw-semibold @error('date') is-invalid @enderror" value="{{ old('date', '') }}" min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required style="height: 36px;">
                 @error('date')
                     <div class="invalid-feedback d-block small">{{ $message }}</div>
                 @enderror
@@ -152,8 +152,9 @@
                     </label>
                 </div>
                 <select name="shift_type" id="shift_type_select" class="form-select form-select-sm fw-semibold @error('shift_type') is-invalid @enderror" required style="height: 36px;">
+                    <option value="">-- Choose Shift --</option>
                     <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
-                    <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
+                    <option value="evening" {{ old('shift_type') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
                 </select>
                 @error('shift_type')
                     <div class="invalid-feedback d-block small">{{ $message }}</div>
@@ -1584,8 +1585,9 @@ function validateShiftAvailability() {
 
     // Update options labels
     Array.from(shiftSelect.options).forEach(function(opt) {
-        const optKey = dateInput.value + '_' + opt.value;
-        const optClosed = existingClosings.includes(optKey);
+        if (!opt.value) return;
+        const optKey = (dateInput.value || '') + '_' + opt.value;
+        const optClosed = dateInput.value ? existingClosings.includes(optKey) : false;
         const baseName = opt.value === 'morning' ? '☀️ Morning Shift' : '🌙 Evening Shift';
         if (optClosed) {
             opt.textContent = baseName + ' (Already Closed)';
@@ -1593,6 +1595,15 @@ function validateShiftAvailability() {
             opt.textContent = baseName;
         }
     });
+
+    if (!dateInput.value || !shiftSelect.value) {
+        window.isShiftAlreadyClosed = false;
+        if (warningEl) {
+            warningEl.classList.add('d-none');
+            warningEl.innerHTML = '';
+        }
+        return;
+    }
 
     const currentKey = dateInput.value + '_' + shiftSelect.value;
     const isClosed = existingClosings.includes(currentKey);

@@ -141,30 +141,36 @@ class DayClosing extends Model
 
         $totalDifference = (float) $shifts->sum('difference');
 
-        return static::updateOrCreate(
-            ['date' => $dateStr],
-            [
-                'opening_cash' => $cashOpening,
-                'bank_opening' => $bankOpening,
-                'jazzcash_opening' => $jazzcashOpening,
-                'total_opening_all_accounts' => $totalOpeningAllAccounts,
-                'total_cash_in' => $cashIn,
-                'bank_in' => $bankIn,
-                'jazzcash_in' => $jazzcashIn,
-                'total_in_all_accounts' => $totalInAllAccounts,
-                'total_payments_out' => $cashOut,
-                'bank_out' => $bankOut,
-                'jazzcash_out' => $jazzcashOut,
-                'total_out_all_accounts' => $totalOutAllAccounts,
-                'closing_cash' => $cashClosing,
-                'bank_closing' => $bankClosing,
-                'jazzcash_closing' => $jazzcashClosing,
-                'total_closing_all_accounts' => $totalClosingAllAccounts,
-                'total_difference' => $totalDifference,
-                'status' => 'closed',
-                'closed_by' => auth()->id() ?? \App\Models\User::value('id'),
-            ]
-        );
+        $payload = [
+            'opening_cash' => $cashOpening,
+            'bank_opening' => $bankOpening,
+            'jazzcash_opening' => $jazzcashOpening,
+            'total_opening_all_accounts' => $totalOpeningAllAccounts,
+            'total_cash_in' => $cashIn,
+            'bank_in' => $bankIn,
+            'jazzcash_in' => $jazzcashIn,
+            'total_in_all_accounts' => $totalInAllAccounts,
+            'total_payments_out' => $cashOut,
+            'bank_out' => $bankOut,
+            'jazzcash_out' => $jazzcashOut,
+            'total_out_all_accounts' => $totalOutAllAccounts,
+            'closing_cash' => $cashClosing,
+            'bank_closing' => $bankClosing,
+            'jazzcash_closing' => $jazzcashClosing,
+            'total_closing_all_accounts' => $totalClosingAllAccounts,
+            'total_difference' => $totalDifference,
+            'status' => 'closed',
+            'closed_by' => auth()->id() ?? \App\Models\User::value('id'),
+        ];
+
+        $dayRecord = static::whereDate('date', $dateStr)->first();
+        if ($dayRecord) {
+            $dayRecord->update($payload);
+            return $dayRecord;
+        }
+
+        $payload['date'] = $dateStr;
+        return static::create($payload);
     }
 
     public function getStatusBadgeAttribute(): string

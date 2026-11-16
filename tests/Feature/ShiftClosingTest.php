@@ -23,9 +23,12 @@ class ShiftClosingTest extends TestCase
             'current_balance' => 1000,
         ]);
 
+        $cashier = \App\Models\Cashier::create(['name' => 'Cashier Test', 'is_active' => true]);
+
         $response = $this->actingAs($user)->post(route('shift-closings.store'), [
-            'date' => '2026-10-04',
+            'date' => now()->toDateString(),
             'shift_type' => 'evening',
+            'cashier_id' => $cashier->id,
             'invoice_start' => 1201,
             'invoice_end' => 1250,
             'total_sale' => 1000,
@@ -72,9 +75,12 @@ class ShiftClosingTest extends TestCase
             'current_balance' => 5000,
         ]);
 
+        $cashier = \App\Models\Cashier::create(['name' => 'Cashier Morning', 'is_active' => true]);
+
         $response = $this->actingAs($user)->post(route('shift-closings.store'), [
-            'date' => '2026-10-04',
+            'date' => now()->toDateString(),
             'shift_type' => 'morning',
+            'cashier_id' => $cashier->id,
             'invoice_start' => 100,
             'invoice_end' => 110,
             'total_sale' => 2000,
@@ -110,10 +116,12 @@ class ShiftClosingTest extends TestCase
         ]);
 
         // Test delete shifts closing reverses account balance
-        $deleteResponse = $this->actingAs($user)->delete(route('shift-closings.destroy', $closing));
+        $deleteResponse = $this->actingAs($user)->delete(route('shift-closings.destroy', $closing), [
+            'delete_reason' => 'Audit sheet entry mistake',
+        ]);
         $deleteResponse->assertRedirect(route('shift-closings.index'));
         $this->assertSame('5000.00', $account->fresh()->current_balance);
-        $this->assertDatabaseMissing('transactions', [
+        $this->assertSoftDeleted('transactions', [
             'shift_closing_id' => $closing->id,
         ]);
     }
@@ -134,9 +142,12 @@ class ShiftClosingTest extends TestCase
             'current_balance' => 0,
         ]);
 
+        $cashier = \App\Models\Cashier::create(['name' => 'Cashier Test', 'is_active' => true]);
+
         $response = $this->actingAs($user)->post(route('shift-closings.store'), [
-            'date' => '2026-10-04',
+            'date' => now()->toDateString(),
             'shift_type' => 'evening',
+            'cashier_id' => $cashier->id,
             'invoice_start' => 2001,
             'invoice_end' => 2050,
             'total_sale' => '50,000.00',

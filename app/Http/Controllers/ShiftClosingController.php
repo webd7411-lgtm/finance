@@ -481,15 +481,22 @@ class ShiftClosingController extends Controller
         return back()->with('success', 'Shift closing locked.');
     }
 
-    public function destroy(ShiftClosing $shiftClosing)
+    public function destroy(Request $request, ShiftClosing $shiftClosing)
     {
         if (!auth()->user()->isOwner()) {
             abort(403, 'Only Owner can delete closing sheets.');
         }
 
+        $request->validate([
+            'delete_reason' => 'required|string|max:1000',
+        ], [
+            'delete_reason.required' => 'Please provide Remarks / Reason for deleting this shift closing sheet.',
+        ]);
+
+        $deleteReason = trim($request->input('delete_reason'));
         $closingId = $shiftClosing->id;
 
-        DB::transaction(function () use ($shiftClosing) {
+        DB::transaction(function () use ($shiftClosing, $deleteReason) {
             $shiftClosing->load(['partyPayments', 'transactions.account']);
             foreach ($shiftClosing->partyPayments as $payment) {
                 $party = Party::whereKey($payment->party_id)->lockForUpdate()->first();
@@ -511,10 +518,14 @@ class ShiftClosingController extends Controller
                     $account->current_balance -= $tx->amount;
                     $account->save();
                 }
+                $tx->delete_reason = "Deleted as part of Shift Closing #{$shiftClosing->id} deletion. Reason: {$deleteReason}";
+                $tx->deleted_by = auth()->id();
+                $tx->save();
                 $tx->delete();
             }
 
             $shiftClosing->deleted_by = auth()->id();
+            $shiftClosing->delete_reason = $deleteReason;
             $shiftClosing->save();
             $shiftClosing->delete();
         });
@@ -525,7 +536,7 @@ class ShiftClosingController extends Controller
         ActivityLog::log(
             'Deleted',
             'Shift Closing',
-            "Deleted and archived {$shiftClosing->shift_type} shift closing sheet #{$closingId} (Date: " . $shiftClosing->date->format('d M Y') . ", Sales: Rs. " . number_format($shiftClosing->total_sale, 2) . ", Counted: Rs. " . number_format($shiftClosing->total_counted_cash, 2) . ", Diff: Rs. " . number_format($shiftClosing->difference, 2) . ") by " . auth()->user()->name
+            "Deleted and archived {$shiftClosing->shift_type} shift closing sheet #{$closingId} (Date: " . $shiftClosing->date->format('d M Y') . ", Sales: Rs. " . number_format($shiftClosing->total_sale, 2) . ", Reason: {$deleteReason}) by " . auth()->user()->name
         );
 
         return redirect()->route('shift-closings.index')->with('success', "Shift closing sheet #{$closingId} deleted and safely archived in Deleted Sheets audit.");

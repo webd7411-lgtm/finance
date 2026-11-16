@@ -147,6 +147,7 @@
                         <th class="text-center">Difference</th>
                         <th>Deleted On</th>
                         <th>Deleted By</th>
+                        <th>Remarks / Reason</th>
                         <th class="text-end" style="width: 140px;">Audit Sheet</th>
                     </tr>
                 @else
@@ -195,6 +196,10 @@
                             </td>
                             <td class="small text-dark fw-semibold">
                                 <i class="bi bi-person-badge me-1 text-danger"></i>{{ $c->deletedBy->name ?? 'Admin' }}
+                            </td>
+                            <td class="small text-dark">
+                                <div class="badge bg-danger-subtle text-danger border border-danger mb-1" style="font-size: 0.68rem;"><i class="bi bi-chat-left-quote me-1"></i>Reason</div>
+                                <div class="fw-semibold text-break" style="max-width: 220px; font-size: 0.78rem;">{{ $c->delete_reason ?: 'N/A' }}</div>
                             </td>
                             <td class="text-end">
                                 <a href="{{ route('shift-closings.show', $c->id) }}" class="btn btn-outline-danger btn-sm py-1 px-2" title="Inspect Deleted Shift Sheet">
@@ -250,13 +255,9 @@
                                         @endif
                                     @endif
                                     @if(auth()->user()->isOwner())
-                                        <form action="{{ route('shift-closings.destroy', $c->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Sheet">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Sheet" onclick="openDeleteModal('{{ route('shift-closings.destroy', $c->id) }}', 'Shift Closing Sheet #{{ $c->id }} ({{ $c->date->format('d M Y') }} - {{ ucfirst($c->shift_type) }})')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     @endif
                                 </div>
                             </td>
@@ -318,8 +319,14 @@
                     </div>
 
                     @if($isTrashView)
-                        <div class="small text-danger pb-2 border-bottom mb-2 font-monospace" style="font-size: 0.74rem;">
-                            <i class="bi bi-calendar-x me-1"></i>Deleted: {{ $c->deleted_at ? $c->deleted_at->format('d M Y, h:i A') : '-' }} &bull; By: {{ $c->deletedBy->name ?? 'Admin' }}
+                        <div class="small text-danger pb-2 border-bottom mb-2" style="font-size: 0.74rem;">
+                            <div class="font-monospace"><i class="bi bi-calendar-x me-1"></i>Deleted: {{ $c->deleted_at ? $c->deleted_at->format('d M Y, h:i A') : '-' }} &bull; By: {{ $c->deletedBy->name ?? 'Admin' }}</div>
+                            @if($c->delete_reason)
+                                <div class="mt-1 text-dark">
+                                    <span class="badge bg-danger-subtle text-danger border border-danger fw-semibold" style="font-size: 0.68rem;"><i class="bi bi-chat-left-quote me-1"></i>Remarks / Reason:</span>
+                                    <span class="fw-semibold text-danger">{{ $c->delete_reason }}</span>
+                                </div>
+                            @endif
                         </div>
                     @endif
 
@@ -386,13 +393,9 @@
                             @endif
 
                             @if(auth()->user()->isOwner())
-                                <form action="{{ route('shift-closings.destroy', $c->id) }}" method="POST" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to delete this shift sheet? Party balances will be safely reversed.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Sheet">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-outline-danger btn-sm py-1.5 px-2.5 rounded-2" style="font-size: 0.76rem;" title="Delete Sheet" onclick="openDeleteModal('{{ route('shift-closings.destroy', $c->id) }}', 'Shift Closing Sheet #{{ $c->id }} ({{ $c->date->format('d M Y') }} - {{ ucfirst($c->shift_type) }})')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             @endif
                         @endif
                     </div>

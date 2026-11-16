@@ -186,6 +186,12 @@
     @if($transaction->trashed())
         <div class="alert alert-danger mb-3 p-2.5 small border-danger no-print w-100 shadow-xs" style="max-width: 380px;">
             <i class="bi bi-trash3-fill me-1"></i> <strong>Audit Record:</strong> This voucher was deleted on {{ $transaction->deleted_at ? $transaction->deleted_at->format('d M Y, h:i A') : '-' }} by {{ $transaction->deletedBy->name ?? 'Admin' }}. Account and party balances were safely reversed at the time of deletion.
+            @if($transaction->delete_reason)
+                <div class="mt-2 pt-2 border-top border-danger-subtle">
+                    <span class="badge bg-danger text-white"><i class="bi bi-chat-left-quote me-1"></i>Remarks / Reason:</span>
+                    <div class="fw-bold text-danger mt-1">{{ $transaction->delete_reason }}</div>
+                </div>
+            @endif
         </div>
     @endif
     <div id="printableVoucher" class="thermal-receipt">

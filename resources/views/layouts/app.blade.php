@@ -1135,6 +1135,83 @@
             }
         });
     </script>
+    <!-- Global Mandatory Deletion Reason Modal -->
+    <div class="modal fade" id="deleteWithReasonModal" tabindex="-1" aria-labelledby="deleteWithReasonModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow border border-danger">
+                <div class="modal-header bg-danger text-white py-2 px-3">
+                    <h6 class="modal-title fw-bold m-0" id="deleteWithReasonModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-1.5"></i> Confirm Deletion & Audit Reason
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="deleteWithReasonForm" method="POST" action="">
+                    @csrf
+                    @method('DELETE')
+                    <div class="modal-body p-3">
+                        <div class="alert alert-danger bg-danger bg-opacity-10 border-danger-subtle small mb-3 py-2 px-2.5 text-danger-emphasis">
+                            <i class="bi bi-shield-exclamation me-1"></i>
+                            <span id="deleteWithReasonPrompt">Are you sure you want to delete this record? Reversing of balances will occur.</span>
+                        </div>
+                        <div class="mb-2">
+                            <label for="delete_reason_input" class="form-label small fw-bold text-dark d-flex justify-content-between align-items-center">
+                                <span>Remarks / Reason <span class="text-danger fw-bold">*</span></span>
+                                <span class="text-danger small" style="font-size: 0.72rem;">(Mandatory)</span>
+                            </label>
+                            <textarea class="form-control form-control-sm" id="delete_reason_input" name="delete_reason" rows="3" placeholder="Please enter the exact reason / remarks for deletion (e.g., incorrect entry, wrong amount, duplicate voucher)..." required></textarea>
+                            <div class="text-danger small mt-1" id="delete_reason_feedback" style="display: none; font-size: 0.76rem;">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i>Remarks / Reason is required. Please provide a reason before deleting.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold shadow-xs" id="deleteWithReasonSubmitBtn">
+                            <i class="bi bi-trash3 me-1"></i> Delete Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.openDeleteModal = function(actionUrl, recordDesc) {
+            const form = document.getElementById('deleteWithReasonForm');
+            const prompt = document.getElementById('deleteWithReasonPrompt');
+            const reasonInput = document.getElementById('delete_reason_input');
+            const feedback = document.getElementById('delete_reason_feedback');
+
+            if (!form || !reasonInput) return;
+
+            form.action = actionUrl;
+            prompt.innerHTML = `Are you sure you want to delete <strong>${recordDesc || 'this record'}</strong>? This will safely reverse associated balances and archive the record in Audit Trash.`;
+            reasonInput.value = '';
+            reasonInput.classList.remove('is-invalid');
+            if (feedback) feedback.style.display = 'none';
+
+            const modalEl = document.getElementById('deleteWithReasonModal');
+            if (window.bootstrap && bootstrap.Modal) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+                setTimeout(() => reasonInput.focus(), 350);
+            }
+        };
+
+        document.getElementById('deleteWithReasonForm')?.addEventListener('submit', function(e) {
+            const reasonInput = document.getElementById('delete_reason_input');
+            const feedback = document.getElementById('delete_reason_feedback');
+            if (!reasonInput || !reasonInput.value.trim()) {
+                e.preventDefault();
+                if (reasonInput) {
+                    reasonInput.classList.add('is-invalid');
+                    reasonInput.focus();
+                }
+                if (feedback) feedback.style.display = 'block';
+                return false;
+            }
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>
