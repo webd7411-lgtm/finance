@@ -42,6 +42,8 @@ class ActivityLog extends Model
             'created'   => '<span class="badge bg-success-subtle text-success border border-success"><i class="bi bi-plus-circle me-1"></i>Created</span>',
             'updated'   => '<span class="badge bg-primary-subtle text-primary border border-primary"><i class="bi bi-pencil me-1"></i>Updated</span>',
             'deleted'   => '<span class="badge bg-danger-subtle text-danger border border-danger"><i class="bi bi-trash me-1"></i>Deleted</span>',
+            'transfer', 'transferred' => '<span class="badge bg-info-subtle text-info-emphasis border border-info"><i class="bi bi-arrow-left-right me-1"></i>Transfer</span>',
+            'locked'    => '<span class="badge bg-secondary-subtle text-secondary border border-secondary"><i class="bi bi-lock-fill me-1"></i>Locked</span>',
             'closed', 'finalized' => '<span class="badge bg-indigo-subtle border" style="background:#ede9fe; color:#4338ca;"><i class="bi bi-lock-fill me-1"></i>Finalized</span>',
             'unlocked', 'reopened' => '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning"><i class="bi bi-unlock-fill me-1"></i>Reopened</span>',
             'login'     => '<span class="badge bg-info-subtle text-info-emphasis border border-info"><i class="bi bi-box-arrow-in-right me-1"></i>Login</span>',

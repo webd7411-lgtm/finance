@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Party;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -179,6 +180,12 @@ class PartyController extends Controller
 
         $party = Party::create($validated);
 
+        ActivityLog::log(
+            'Created',
+            'Party',
+            "Added new party '{$party->name}' ({$party->type}) with opening balance Rs. " . number_format($party->opening_balance, 2)
+        );
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -218,6 +225,12 @@ class PartyController extends Controller
         unset($validated['name'], $validated['opening_balance']);
 
         $party->update($validated);
+
+        ActivityLog::log(
+            'Updated',
+            'Party',
+            "Updated party details for '{$party->name}' ({$party->type})"
+        );
 
         return redirect()->route('parties.index')->with('success', 'Party details updated successfully.');
     }

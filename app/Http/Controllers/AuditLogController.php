@@ -50,13 +50,18 @@ class AuditLogController extends Controller
         $totalLogsCount = ActivityLog::count();
         $todayLogsCount = ActivityLog::whereDate('created_at', Carbon::today())->count();
 
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
         return view('audit_logs.index', compact(
             'logs',
             'users',
             'modules',
             'actions',
             'totalLogsCount',
-            'todayLogsCount'
+            'todayLogsCount',
+            'fromDate',
+            'toDate'
         ));
     }
 }

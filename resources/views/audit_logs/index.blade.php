@@ -216,54 +216,85 @@
 
 <!-- Search & Filter Bar (No-Print) -->
 <div class="card-custom p-3 mb-3 mb-md-4 no-print">
-    <form method="GET" action="{{ route('audit-logs.index') }}" class="row g-2 align-items-end">
-        <div class="col-12 col-md-3">
-            <label class="form-label text-muted small fw-semibold mb-1">Search Details</label>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" name="search" class="form-control form-control-sm py-2" placeholder="Search keywords..." value="{{ request('search') }}">
+    <form method="GET" action="{{ route('audit-logs.index') }}" id="filterForm">
+        <div class="row g-2 align-items-end mb-2">
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small fw-semibold mb-1">Search Details</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="search" class="form-control form-control-sm py-2" placeholder="Search keywords..." value="{{ request('search') }}">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label text-muted small fw-semibold mb-1">User</label>
+                <select name="user_id" class="form-select form-select-sm py-2">
+                    <option value="">All Users</option>
+                    @foreach($users as $u)
+                        <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>
+                            {{ $u->name }} ({{ ucfirst($u->role) }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label text-muted small fw-semibold mb-1">Module</label>
+                <select name="module" class="form-select form-select-sm py-2">
+                    <option value="">All Modules</option>
+                    @foreach($modules as $m)
+                        <option value="{{ $m }}" {{ request('module') == $m ? 'selected' : '' }}>
+                            {{ $m }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small fw-semibold mb-1">Action</label>
+                <select name="action" class="form-select form-select-sm py-2">
+                    <option value="">All Actions</option>
+                    @foreach($actions as $a)
+                        <option value="{{ $a }}" {{ request('action') == $a ? 'selected' : '' }}>
+                            {{ ucfirst($a) }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
         </div>
-        <div class="col-6 col-md-2">
-            <label class="form-label text-muted small fw-semibold mb-1">User</label>
-            <select name="user_id" class="form-select form-select-sm py-2">
-                <option value="">All Users</option>
-                @foreach($users as $u)
-                    <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>
-                        {{ $u->name }} ({{ ucfirst($u->role) }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="form-label text-muted small fw-semibold mb-1">Module</label>
-            <select name="module" class="form-select form-select-sm py-2">
-                <option value="">All Modules</option>
-                @foreach($modules as $m)
-                    <option value="{{ $m }}" {{ request('module') == $m ? 'selected' : '' }}>
-                        {{ $m }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="form-label text-muted small fw-semibold mb-1">Action</label>
-            <select name="action" class="form-select form-select-sm py-2">
-                <option value="">All Actions</option>
-                @foreach($actions as $a)
-                    <option value="{{ $a }}" {{ request('action') == $a ? 'selected' : '' }}>
-                        {{ ucfirst($a) }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-6 col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm rounded-3 flex-grow-1 fw-semibold py-2">
-                <i class="bi bi-filter me-1"></i> Filter
-            </button>
-            <a href="{{ route('audit-logs.index') }}" class="btn btn-light btn-sm rounded-3 border px-3 d-flex align-items-center justify-content-center" title="Reset Filters">
-                <i class="bi bi-arrow-counterclockwise"></i>
-            </a>
+
+        <div class="row g-2 align-items-end pt-2 border-top">
+            <div class="col-6 col-md-2">
+                <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-calendar-event text-muted"></i></span>
+                    <input type="date" name="from_date" id="from_date" class="form-control form-control-sm py-2" value="{{ request('from_date') }}">
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label text-muted small fw-semibold mb-1">To Date</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-calendar-check text-muted"></i></span>
+                    <input type="date" name="to_date" id="to_date" class="form-control form-control-sm py-2" value="{{ request('to_date') }}">
+                </div>
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label text-muted small fw-semibold mb-1 d-block">Quick Presets</label>
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 small rounded-2" onclick="setPreset('today')">Today</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 small rounded-2" onclick="setPreset('this_week')">This Week</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 small rounded-2" onclick="setPreset('this_month')">This Month</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-2.5 small rounded-2" onclick="setPreset('last_month')">Last Month</button>
+                    @if(request('from_date') || request('to_date'))
+                        <button type="button" class="btn btn-link text-danger btn-sm p-0 ms-1 text-decoration-none small" onclick="clearDates()">Clear Dates</button>
+                    @endif
+                </div>
+            </div>
+            <div class="col-12 col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm rounded-3 flex-grow-1 fw-semibold py-2">
+                    <i class="bi bi-filter me-1"></i> Filter
+                </button>
+                <a href="{{ route('audit-logs.index') }}" class="btn btn-light btn-sm rounded-3 border px-3 d-flex align-items-center justify-content-center" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
@@ -294,6 +325,20 @@
                     <tr style="border: none !important;"><td style="border: none !important; padding: 1px 0; width: 120px;" class="text-muted fw-semibold">Filtered Module:</td><td style="border: none !important; padding: 1px 0;" class="fw-bold text-dark">{{ request('module') ?: 'All System Modules' }}</td></tr>
                     <tr style="border: none !important;"><td style="border: none !important; padding: 1px 0;" class="text-muted fw-semibold">Operator Scope:</td><td style="border: none !important; padding: 1px 0;" class="fw-semibold">{{ request('user_id') ? ($users->firstWhere('id', request('user_id'))->name ?? 'User') : 'All Active Users' }}</td></tr>
                     <tr style="border: none !important;"><td style="border: none !important; padding: 1px 0;" class="text-muted fw-semibold">Action Filter:</td><td style="border: none !important; padding: 1px 0;" class="fw-semibold">{{ request('action') ? ucfirst(request('action')) : 'All Recorded Actions' }}</td></tr>
+                    <tr style="border: none !important;">
+                        <td style="border: none !important; padding: 1px 0;" class="text-muted fw-semibold">Audit Period:</td>
+                        <td style="border: none !important; padding: 1px 0;" class="fw-semibold">
+                            @if(request('from_date') && request('to_date'))
+                                {{ \Carbon\Carbon::parse(request('from_date'))->format('d M, Y') }} &ndash; {{ \Carbon\Carbon::parse(request('to_date'))->format('d M, Y') }}
+                            @elseif(request('from_date'))
+                                From {{ \Carbon\Carbon::parse(request('from_date'))->format('d M, Y') }}
+                            @elseif(request('to_date'))
+                                Until {{ \Carbon\Carbon::parse(request('to_date'))->format('d M, Y') }}
+                            @else
+                                All History
+                            @endif
+                        </td>
+                    </tr>
                 </table>
             </div>
             <div class="col-5 text-end">
@@ -307,9 +352,23 @@
     </div>
 
     <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2 d-print-none">
-        <h6 class="fw-bold text-dark m-0">
-            <i class="bi bi-list-check text-primary me-2"></i>Audit Trail Records ({{ $logs->total() }})
-        </h6>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h6 class="fw-bold text-dark m-0">
+                <i class="bi bi-list-check text-primary me-2"></i>Audit Trail Records ({{ $logs->total() }})
+            </h6>
+            @if(request('from_date') || request('to_date'))
+                <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1 small">
+                    <i class="bi bi-calendar-range me-1"></i>
+                    @if(request('from_date') && request('to_date'))
+                        {{ \Carbon\Carbon::parse(request('from_date'))->format('d M, Y') }} &ndash; {{ \Carbon\Carbon::parse(request('to_date'))->format('d M, Y') }}
+                    @elseif(request('from_date'))
+                        From {{ \Carbon\Carbon::parse(request('from_date'))->format('d M, Y') }}
+                    @else
+                        Up to {{ \Carbon\Carbon::parse(request('to_date'))->format('d M, Y') }}
+                    @endif
+                </span>
+            @endif
+        </div>
         <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;">Page {{ $logs->currentPage() }} of {{ $logs->lastPage() }}</span>
     </div>
 
@@ -456,3 +515,51 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function setPreset(preset) {
+        const now = new Date();
+        const formatDate = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        let fromDate = '';
+        let toDate = formatDate(now);
+
+        if (preset === 'today') {
+            fromDate = formatDate(now);
+            toDate = formatDate(now);
+        } else if (preset === 'this_week') {
+            const curr = new Date();
+            const day = curr.getDay(); // 0 is Sun
+            const distanceToMon = (day === 0 ? -6 : 1) - day;
+            const monday = new Date(curr.setDate(curr.getDate() + distanceToMon));
+            fromDate = formatDate(monday);
+            toDate = formatDate(new Date());
+        } else if (preset === 'this_month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            fromDate = formatDate(start);
+            toDate = formatDate(now);
+        } else if (preset === 'last_month') {
+            const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const end = new Date(now.getFullYear(), now.getMonth(), 0);
+            fromDate = formatDate(start);
+            toDate = formatDate(end);
+        }
+
+        document.getElementById('from_date').value = fromDate;
+        document.getElementById('to_date').value = toDate;
+        document.getElementById('filterForm').submit();
+    }
+
+    function clearDates() {
+        document.getElementById('from_date').value = '';
+        document.getElementById('to_date').value = '';
+        document.getElementById('filterForm').submit();
+    }
+</script>
+@endpush

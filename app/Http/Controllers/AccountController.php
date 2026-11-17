@@ -51,7 +51,9 @@ class AccountController extends Controller
         $validated['opening_balance'] = $opening;
         $validated['current_balance'] = $opening;
 
-        Account::create($validated);
+        $account = Account::create($validated);
+
+        \App\Models\ActivityLog::log('Created', 'Account', "Created payment account '{$account->name}' ({$account->type}) with opening balance Rs. " . number_format($account->opening_balance, 2));
 
         return redirect()->route('accounts.index')->with('success', 'Payment account created successfully.');
     }
