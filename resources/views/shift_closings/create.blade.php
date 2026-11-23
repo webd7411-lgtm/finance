@@ -248,8 +248,10 @@
                     <span><i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span></span>
                 </label>
                 <select name="shift_type" id="shift_type_select" class="form-select compact-input fw-semibold @error('shift_type') is-invalid @enderror" required>
-                    <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift</option>
-                    <option value="evening" {{ old('shift_type', 'evening') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift</option>
+                    <option value="24_hours" {{ old('shift_type', '24_hours') === '24_hours' ? 'selected' : '' }}>🔄 24-Hours Full Cycle (9:00 AM - 9:00 AM)</option>
+                    <option value="morning" {{ old('shift_type') === 'morning' ? 'selected' : '' }}>☀️ Morning Shift (9:00 AM - 5:00 PM)</option>
+                    <option value="evening" {{ old('shift_type') === 'evening' ? 'selected' : '' }}>🌙 Evening Shift (5:00 PM - 1:00 AM)</option>
+                    <option value="night" {{ old('shift_type') === 'night' ? 'selected' : '' }}>🌌 Night Shift (1:00 AM - 9:00 AM)</option>
                 </select>
                 @error('shift_type')
                     <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
@@ -276,6 +278,26 @@
             </div>
         </div>
     </div>
+
+    @if(isset($recentRateRevisions) && $recentRateRevisions->isNotEmpty())
+        <div class="alert alert-info border-info border-opacity-25 d-flex align-items-center justify-content-between p-2 mb-2 rounded-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-bell-fill text-primary fs-5"></i>
+                <div class="small">
+                    <strong>Official Fuel Rate Revision Active:</strong>
+                    @foreach($recentRateRevisions as $rrr)
+                        <span class="badge bg-white text-dark border ms-1">
+                            {{ $rrr->product?->name }}: Rs. {{ number_format($rrr->old_sale_rate, 2) }} ➔ Rs. {{ number_format($rrr->new_sale_rate, 2) }} ({{ $rrr->formatted_difference }}/Ltr)
+                        </span>
+                    @endforeach
+                    <span class="text-secondary d-block mt-0.5" style="font-size: 0.68rem;">If this 24-hr shift closed across midnight, turn on <strong>"Midnight 12:00 AM Rate Change"</strong> on affected nozzles below.</span>
+                </div>
+            </div>
+            <a href="{{ route('rate-revisions.index') }}" class="btn btn-sm btn-outline-primary py-0 px-2 small" target="_blank">
+                View Circulars
+            </a>
+        </div>
+    @endif
 
     <!-- Step 2: Multi-Dispenser & Multi-Nozzle Meter Readings (Audio 1 & Audio 2) -->
     <div class="closing-card border-primary border-opacity-25" style="border-left: 3.5px solid #2563eb;">
@@ -388,6 +410,82 @@
                                         Sold: <strong class="text-primary" id="liters_display_{{ $nIndex }}">0.00 Ltr</strong>
                                     </div>
                                     <input type="hidden" name="nozzles[{{ $nIndex }}][subtotal]" id="subtotal_val_{{ $nIndex }}" value="0.00">
+                                </div>
+
+                                <!-- Midnight Rate Change Switch -->
+                                <div class="col-12 mt-1 pt-1 border-top d-flex align-items-center justify-content-between">
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="rate_change_check_{{ $nIndex }}"
+                                               name="nozzles[{{ $nIndex }}][has_rate_change]"
+                                               value="1"
+                                               onchange="toggleMidnightRateChange({{ $nIndex }})">
+                                        <label class="form-check-label small fw-semibold text-secondary" for="rate_change_check_{{ $nIndex }}" style="font-size: 0.7rem; cursor: pointer;">
+                                            <i class="bi bi-moon-stars text-primary me-1"></i> Midnight 12:00 AM Rate Change (Raat 12 Baje Rate Tabdeel Hua)
+                                        </label>
+                                    </div>
+                                    <span class="badge bg-light text-secondary border small" id="split_badge_{{ $nIndex }}" style="font-size: 0.62rem; display: none;">
+                                        Dual Rates Active (Pre-12 AM + Post-12 AM)
+                                    </span>
+                                </div>
+
+                                <!-- Collapsible Midnight Split Box -->
+                                <div class="col-12" id="midnight_split_{{ $nIndex }}" style="display: none;">
+                                    <div class="p-2 bg-light bg-opacity-75 rounded-2 border border-primary-subtle mt-1">
+                                        <div class="row g-1.5 align-items-center">
+                                            <!-- 12:00 AM Midnight Reading -->
+                                            <div class="col-12 col-sm-6 col-md-3">
+                                                <label class="compact-label text-primary fw-bold">12:00 AM Midnight Reading <span class="text-danger">*</span></label>
+                                                <input type="number" step="0.01" min="0"
+                                                       name="nozzles[{{ $nIndex }}][midnight_reading]"
+                                                       id="midnight_{{ $nIndex }}"
+                                                       class="form-control compact-input fw-bold border-primary text-primary"
+                                                       placeholder="Midnight Reading"
+                                                       oninput="calculateNozzleRow({{ $nIndex }})">
+                                                <small class="text-secondary" style="font-size: 0.6rem;">Reading recorded at 12:00 AM</small>
+                                            </div>
+
+                                            <!-- Pre-Midnight Rate -->
+                                            <div class="col-6 col-sm-3 col-md-2">
+                                                <label class="compact-label text-secondary">Old Rate (Pre-12 AM)</label>
+                                                <input type="number" step="0.01" min="0"
+                                                       name="nozzles[{{ $nIndex }}][old_fuel_rate]"
+                                                       id="old_rate_{{ $nIndex }}"
+                                                       class="form-control compact-input fw-semibold"
+                                                       value="{{ old("nozzles.{$nIndex}.old_fuel_rate", number_format($rate, 2, '.', '')) }}"
+                                                       oninput="calculateNozzleRow({{ $nIndex }})">
+                                            </div>
+
+                                            <!-- Post-Midnight Rate -->
+                                            <div class="col-6 col-sm-3 col-md-2">
+                                                <label class="compact-label text-success fw-bold">New Rate (Post-12 AM)</label>
+                                                <input type="number" step="0.01" min="0"
+                                                       name="nozzles[{{ $nIndex }}][new_fuel_rate]"
+                                                       id="new_rate_{{ $nIndex }}"
+                                                       class="form-control compact-input fw-bold border-success text-success"
+                                                       value="{{ old("nozzles.{$nIndex}.new_fuel_rate", number_format($rate, 2, '.', '')) }}"
+                                                       oninput="calculateNozzleRow({{ $nIndex }})">
+                                            </div>
+
+                                            <!-- Split Calculation Breakdown Display -->
+                                            <div class="col-12 col-md-5">
+                                                <div class="p-1.5 bg-white rounded border small" style="font-size: 0.65rem;">
+                                                    <div class="d-flex justify-content-between text-secondary">
+                                                        <span>Pre-12 AM (Old):</span>
+                                                        <strong class="text-dark" id="pre_calc_{{ $nIndex }}">0.00 Ltr @ Rs. 0.00 = Rs. 0.00</strong>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between text-secondary mt-0.5">
+                                                        <span>Post-12 AM (New):</span>
+                                                        <strong class="text-success" id="post_calc_{{ $nIndex }}">0.00 Ltr @ Rs. 0.00 = Rs. 0.00</strong>
+                                                    </div>
+                                                </div>
+                                                <input type="hidden" name="nozzles[{{ $nIndex }}][old_rate_liters]" id="old_ltr_{{ $nIndex }}" value="0.00">
+                                                <input type="hidden" name="nozzles[{{ $nIndex }}][new_rate_liters]" id="new_ltr_{{ $nIndex }}" value="0.00">
+                                                <input type="hidden" name="nozzles[{{ $nIndex }}][old_rate_subtotal]" id="old_sub_{{ $nIndex }}" value="0.00">
+                                                <input type="hidden" name="nozzles[{{ $nIndex }}][new_rate_subtotal]" id="new_sub_{{ $nIndex }}" value="0.00">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -701,15 +799,61 @@
     let expenseRowCount = 0;
 
     // 1. Calculate Single Nozzle Row
+    function toggleMidnightRateChange(nIndex) {
+        const chk = document.getElementById('rate_change_check_' + nIndex);
+        const splitBox = document.getElementById('midnight_split_' + nIndex);
+        const badge = document.getElementById('split_badge_' + nIndex);
+        if (chk && chk.checked) {
+            splitBox.style.display = 'block';
+            badge.style.display = 'inline-block';
+        } else {
+            splitBox.style.display = 'none';
+            badge.style.display = 'none';
+        }
+        calculateNozzleRow(nIndex);
+    }
+
     function calculateNozzleRow(nIndex) {
         const start = parseFloat(document.getElementById('start_' + nIndex).value) || 0;
         const end = parseFloat(document.getElementById('end_' + nIndex).value) || 0;
         const test = parseFloat(document.getElementById('testing_' + nIndex).value) || 0;
         const rate = parseFloat(document.getElementById('rate_' + nIndex).value) || 0;
+        const chk = document.getElementById('rate_change_check_' + nIndex);
 
-        const meterDiff = Math.max(0, end - start);
-        const soldLtr = Math.max(0, meterDiff - test);
-        const subtotal = soldLtr * rate;
+        let soldLtr = 0;
+        let subtotal = 0;
+
+        if (chk && chk.checked) {
+            const mid = parseFloat(document.getElementById('midnight_' + nIndex).value) || 0;
+            const oldRate = parseFloat(document.getElementById('old_rate_' + nIndex).value) || 0;
+            const newRate = parseFloat(document.getElementById('new_rate_' + nIndex).value) || 0;
+
+            const oldLtr = Math.max(0, mid - start);
+            const newLtr = Math.max(0, (end - mid) - test);
+            const oldSub = oldLtr * oldRate;
+            const newSub = newLtr * newRate;
+
+            soldLtr = oldLtr + newLtr;
+            subtotal = oldSub + newSub;
+
+            document.getElementById('old_ltr_' + nIndex).value = oldLtr.toFixed(2);
+            document.getElementById('new_ltr_' + nIndex).value = newLtr.toFixed(2);
+            document.getElementById('old_sub_' + nIndex).value = oldSub.toFixed(2);
+            document.getElementById('new_sub_' + nIndex).value = newSub.toFixed(2);
+
+            const preCalc = document.getElementById('pre_calc_' + nIndex);
+            if (preCalc) {
+                preCalc.textContent = `${oldLtr.toFixed(2)} Ltr @ Rs. ${oldRate.toFixed(2)} = Rs. ${oldSub.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            }
+            const postCalc = document.getElementById('post_calc_' + nIndex);
+            if (postCalc) {
+                postCalc.textContent = `${newLtr.toFixed(2)} Ltr @ Rs. ${newRate.toFixed(2)} = Rs. ${newSub.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            }
+        } else {
+            const meterDiff = Math.max(0, end - start);
+            soldLtr = Math.max(0, meterDiff - test);
+            subtotal = soldLtr * rate;
+        }
 
         document.getElementById('liters_display_' + nIndex).textContent = soldLtr.toFixed(2) + ' Ltr';
         document.getElementById('subtotal_display_' + nIndex).textContent = 'Rs. ' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

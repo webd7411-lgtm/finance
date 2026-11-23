@@ -127,6 +127,11 @@
                                             @if($noz->pump?->dispenser_unit)
                                                 <small class="text-muted d-block">{{ $noz->pump->dispenser_unit }}</small>
                                             @endif
+                                            @if($noz->has_rate_change)
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle d-inline-block mt-0.5" style="font-size: 0.65rem;">
+                                                    <i class="bi bi-moon-stars me-1"></i> 12 AM Midnight Split
+                                                </span>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge bg-light text-dark border">{{ $noz->product?->name }}</span>
@@ -138,8 +143,22 @@
                                             {{ $noz->testing_liters > 0 ? number_format($noz->testing_liters, 2) : '-' }}
                                         </td>
                                         <td class="text-end font-monospace fw-bold text-primary">{{ number_format($noz->sold_liters, 2) }}</td>
-                                        <td class="text-end font-monospace">Rs. {{ number_format($noz->fuel_rate, 2) }}</td>
-                                        <td class="text-end font-monospace fw-bold text-dark">Rs. {{ number_format($noz->subtotal, 2) }}</td>
+                                        <td class="text-end font-monospace">
+                                            @if($noz->has_rate_change)
+                                                <small class="d-block text-secondary">Pre: Rs. {{ number_format($noz->old_fuel_rate, 2) }}</small>
+                                                <small class="d-block text-success fw-bold">Post: Rs. {{ number_format($noz->new_fuel_rate, 2) }}</small>
+                                            @else
+                                                Rs. {{ number_format($noz->fuel_rate, 2) }}
+                                            @endif
+                                        </td>
+                                        <td class="text-end font-monospace fw-bold text-dark">
+                                            Rs. {{ number_format($noz->subtotal, 2) }}
+                                            @if($noz->has_rate_change)
+                                                <div class="small text-muted" style="font-size: 0.68rem;">
+                                                    Pre: {{ number_format($noz->old_rate_liters, 1) }}L | Post: {{ number_format($noz->new_rate_liters, 1) }}L
+                                                </div>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                                 <tr class="table-primary bg-opacity-10 fw-bold">

@@ -20,20 +20,18 @@ class DashboardController extends Controller
     {
         $today = Carbon::today()->toDateString();
 
-        // Today's Shifts
-        $morningShift = ShiftClosing::whereDate('date', $today)->where('shift_type', 'morning')->first();
-        $eveningShift = ShiftClosing::whereDate('date', $today)->where('shift_type', 'evening')->first();
+        // Today's Shifts (supports 24-hours, morning, evening, night)
+        $todayShifts = ShiftClosing::whereDate('date', $today)->get();
+        $morningShift = $todayShifts->firstWhere('shift_type', 'morning');
+        $eveningShift = $todayShifts->firstWhere('shift_type', 'evening');
 
         // Today's Day Closing Record
         $todayClosing = DayClosing::whereDate('date', $today)->first();
 
         // Today's Collections (Shift Counted Cash + Shift Digital Collections + Direct Payment In)
-        $shiftCashIn = ($morningShift ? (float)$morningShift->total_counted_cash : 0) +
-                       ($eveningShift ? (float)$eveningShift->total_counted_cash : 0);
-        $shiftBankIn = ($morningShift ? (float)$morningShift->bank_amount : 0) +
-                       ($eveningShift ? (float)$eveningShift->bank_amount : 0);
-        $shiftJazzIn = ($morningShift ? (float)$morningShift->jazzcash_amount : 0) +
-                       ($eveningShift ? (float)$eveningShift->jazzcash_amount : 0);
+        $shiftCashIn = (float) $todayShifts->sum('total_counted_cash');
+        $shiftBankIn = (float) $todayShifts->sum('bank_amount');
+        $shiftJazzIn = (float) $todayShifts->sum('jazzcash_amount');
         $directIn = (float) Transaction::whereDate('date', $today)
             ->whereNull('shift_closing_id')
             ->where('type', 'payment_in')
@@ -41,10 +39,8 @@ class DashboardController extends Controller
         $todayInflow = $shiftCashIn + $shiftBankIn + $shiftJazzIn + $directIn;
 
         // Today's Outflows (Shift Expenses + Shift Returns + Shift Party Payments + Direct Payment Out)
-        $shiftExpenses = ($morningShift ? (float)$morningShift->expenses_amount : 0) +
-                         ($eveningShift ? (float)$eveningShift->expenses_amount : 0);
-        $shiftReturns = ($morningShift ? (float)$morningShift->returns_amount : 0) +
-                        ($eveningShift ? (float)$eveningShift->returns_amount : 0);
+        $shiftExpenses = (float) $todayShifts->sum('expenses_amount');
+        $shiftReturns = (float) $todayShifts->sum('returns_amount');
         $shiftPartyPayments = (float) ShiftClosingPartyPayment::whereHas('shiftClosing', fn ($query) => $query->whereDate('date', $today))
             ->sum('amount');
         $directPaymentsOut = (float) Transaction::whereDate('date', $today)
@@ -54,8 +50,7 @@ class DashboardController extends Controller
         $todayOutflow = $shiftExpenses + $shiftReturns + $shiftPartyPayments + $directPaymentsOut;
 
         // Today's Shift Discrepancy / Variance
-        $todayVariance = ($morningShift ? (float)$morningShift->difference : 0) +
-                         ($eveningShift ? (float)$eveningShift->difference : 0);
+        $todayVariance = (float) $todayShifts->sum('difference');
 
         // Monthly Daily Sales Average (All completed calendar days of the month)
         $currentMonthShifts = ShiftClosing::whereMonth('date', Carbon::today()->month)

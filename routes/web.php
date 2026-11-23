@@ -12,6 +12,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PumpController;
 use App\Http\Controllers\TankController;
 use App\Http\Controllers\StationLocationController;
+use App\Http\Controllers\FuelRateRevisionController;
 use App\Http\Controllers\RentalController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ShiftClosingController;
@@ -67,6 +68,9 @@ Route::middleware('auth')->group(function () {
     Route::post('products/categories/quick-store', [ProductController::class, 'storeCategory'])->name('products.categories.quick-store');
     Route::post('products/units/quick-store', [ProductController::class, 'storeUnit'])->name('products.units.quick-store');
     Route::resource('products', ProductController::class);
+
+    // Fuel Rate Revisions & Tank Revaluation (Rate Difference / Stock Gain & Loss at 12:00 AM)
+    Route::resource('rate-revisions', FuelRateRevisionController::class);
 
     // Station Locations & Sites
     Route::resource('locations', StationLocationController::class)->except(['create', 'show', 'edit']);

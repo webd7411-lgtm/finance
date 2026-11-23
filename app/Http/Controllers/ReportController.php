@@ -1354,6 +1354,19 @@ class ReportController extends Controller
             $msg .= "• {$prodName}: *" . number_format($t->current_stock, 1) . " L* / " . number_format($t->capacity) . " L (Dip: {$dipMm} mm | Space: " . number_format($t->available_capacity, 1) . " L)\n";
         }
 
+        // 12:00 AM Midnight Rate Revisions & Tank Revaluation (Rate Difference Gain/Loss)
+        $rateRevisionsToday = \App\Models\FuelRateRevision::whereDate('effective_date', $date)->with('product')->get();
+        if ($rateRevisionsToday->isNotEmpty()) {
+            $msg .= "\n🔔 *12:00 AM MIDNIGHT RATE REVISIONS & TANK GAIN/LOSS:*\n";
+            foreach ($rateRevisionsToday as $rev) {
+                $sign = $rev->rate_difference >= 0 ? '+' : '';
+                $diffText = "{$sign}Rs. " . number_format($rev->rate_difference, 2) . "/Ltr";
+                $impactText = $rev->isGain() ? "Gain: +Rs. " . number_format($rev->stock_gain_loss_amount, 2) : "Loss: -Rs. " . number_format(abs($rev->stock_gain_loss_amount), 2);
+                $msg .= "• " . ($rev->product?->name ?? 'Fuel') . ": Rs. " . number_format($rev->old_sale_rate, 2) . " ➔ Rs. " . number_format($rev->new_sale_rate, 2) . " ({$diffText})\n";
+                $msg .= "  - Stock Volume: " . number_format($rev->stock_at_revision, 1) . " L | Impact: *{$impactText}*\n";
+            }
+        }
+
         $msg .= "\n⛽ *FUEL SALES & DISPENSING:*\n";
         $msg .= "• Total Liters Dispensed: *" . number_format($totalFuelLiters, 2) . " Ltr*\n";
         if ($totalTestingLiters > 0) {

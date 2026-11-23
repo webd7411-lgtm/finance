@@ -443,7 +443,7 @@
 
                         <!-- Master Setup Dropdown -->
                         <div class="dropdown">
-                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('tanks.*') || request()->routeIs('locations.*') || request()->routeIs('products.*') || request()->routeIs('pumps.*') || request()->routeIs('purchases.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="vip-nav-link border-0 bg-transparent dropdown-toggle {{ request()->routeIs('parties.*') || request()->routeIs('accounts.*') || request()->routeIs('tanks.*') || request()->routeIs('locations.*') || request()->routeIs('products.*') || request()->routeIs('rate-revisions.*') || request()->routeIs('pumps.*') || request()->routeIs('purchases.*') || request()->routeIs('expense-categories.*') || request()->routeIs('cashiers.*') ? 'active' : '' }}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-sliders"></i> Master Setup
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 230px;">
@@ -465,6 +465,11 @@
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}">
                                         <i class="bi bi-fuel-pump text-danger"></i> Products & Fuel Rates
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('rate-revisions.*') ? 'active' : '' }}" href="{{ route('rate-revisions.index') }}">
+                                        <i class="bi bi-clock-history text-danger"></i> Rate Revisions & Gain/Loss
                                     </a>
                                 </li>
                                 <li>
@@ -791,6 +796,9 @@
                 </a>
                 <a href="{{ route('products.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('products.*') ? 'active' : '' }}">
                     <i class="bi bi-fuel-pump text-danger"></i> Products & Fuel Rates
+                </a>
+                <a href="{{ route('rate-revisions.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('rate-revisions.*') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history text-danger"></i> Rate Revisions & Gain/Loss
                 </a>
                 <a href="{{ route('rentals.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('rentals.*') ? 'active' : '' }}">
                     <i class="bi bi-shop text-success"></i> Station Rentals & Leases
