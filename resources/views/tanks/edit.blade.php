@@ -165,7 +165,7 @@
                         <div class="input-group input-group-sm">
                             <input type="number" step="0.01" min="0" name="current_dip_reading" class="form-control font-monospace py-2"
                                    value="{{ old('current_dip_reading', $tank->current_dip_reading) }}">
-                            <span class="input-group-text">cm</span>
+                            <span class="input-group-text">mm</span>
                         </div>
                     </div>
 
@@ -176,7 +176,7 @@
                         <div class="input-group input-group-sm">
                             <input type="number" step="0.01" min="0" name="max_dip_reading" class="form-control font-monospace py-2"
                                    value="{{ old('max_dip_reading', $tank->max_dip_reading) }}">
-                            <span class="input-group-text">cm</span>
+                            <span class="input-group-text">mm</span>
                         </div>
                     </div>
                 </div>

@@ -350,19 +350,38 @@
     function handleProductChange() {
         const select = document.getElementById('product_id');
         const selected = select.options[select.selectedIndex];
+        const tankSelect = document.getElementById('tank_id');
+        const tankIndicator = document.getElementById('tankCapacityIndicator');
         
         if (selected && selected.value) {
             const unit = selected.getAttribute('data-unit') || 'Ltr';
             const cost = selected.getAttribute('data-cost') || '0';
             const stock = selected.getAttribute('data-stock') || '0';
             const tank = selected.getAttribute('data-tank');
+            const isFuel = selected.getAttribute('data-fuel') === '1';
 
             document.getElementById('quantityUnitLabel').textContent = unit;
             document.getElementById('unit_price').value = parseFloat(cost).toFixed(2);
             document.getElementById('productStockBadge').innerHTML = `Current Live Stock: <strong>${parseFloat(stock).toFixed(2)} ${unit}</strong>` + (tank ? ` &bull; Assigned to: <em>${tank}</em>` : '');
 
-            if (tank && !document.getElementById('tank_no').value) {
-                document.getElementById('tank_no').value = tank;
+            if (!isFuel) {
+                // Packaged Lubricants / Engine Oils / Goods (Audio 7)
+                if (tankIndicator) {
+                    tankIndicator.innerHTML = `<span class="badge bg-info-subtle text-info border border-info-subtle py-1 px-2"><i class="bi bi-box-seam me-1"></i>Packaged Lubricant / Store Shelf Item (No bulk fuel tank required)</span>`;
+                }
+                if (tankSelect) {
+                    tankSelect.value = '';
+                }
+                document.getElementById('tank_no').value = tank || 'Lubricant Store Shelf';
+            } else {
+                if (tank && !document.getElementById('tank_no').value) {
+                    document.getElementById('tank_no').value = tank;
+                }
+                if (tankSelect && tankSelect.value) {
+                    handleTankChange();
+                } else if (tankIndicator) {
+                    tankIndicator.textContent = 'Select a storage tank to view capacity & available space';
+                }
             }
         } else {
             document.getElementById('quantityUnitLabel').textContent = 'Ltr';

@@ -98,6 +98,133 @@
                 </div>
             </div>
 
+            <!-- Multi-Nozzle Meter Readings Audit Table (If Recorded) -->
+            @if($shiftClosing->nozzles->isNotEmpty())
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark mb-2 pb-1 border-bottom statement-section-title">
+                        <span class="statement-icon me-1"><i class="bi bi-speedometer2 text-primary"></i></span> Dispensers &amp; Nozzles Meter Readings Log
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr class="small text-uppercase text-secondary">
+                                    <th>Dispenser / Nozzle</th>
+                                    <th>Fuel Product</th>
+                                    <th class="text-end">Start Reading</th>
+                                    <th class="text-end">End Reading</th>
+                                    <th class="text-end">Gross Meter (L)</th>
+                                    <th class="text-end text-warning-emphasis">Test (Paimana)</th>
+                                    <th class="text-end text-primary">Net Sold (Ltr)</th>
+                                    <th class="text-end">Rate / Ltr</th>
+                                    <th class="text-end">Sale Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($shiftClosing->nozzles as $noz)
+                                    <tr>
+                                        <td>
+                                            <strong class="text-dark">{{ $noz->nozzle_name ?: ($noz->pump->name ?? 'Nozzle') }}</strong>
+                                            @if($noz->pump?->dispenser_unit)
+                                                <small class="text-muted d-block">{{ $noz->pump->dispenser_unit }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ $noz->product?->name }}</span>
+                                        </td>
+                                        <td class="text-end font-monospace">{{ number_format($noz->start_reading, 2) }}</td>
+                                        <td class="text-end font-monospace fw-bold text-primary">{{ number_format($noz->end_reading, 2) }}</td>
+                                        <td class="text-end font-monospace">{{ number_format($noz->meter_liters, 2) }}</td>
+                                        <td class="text-end font-monospace text-warning-emphasis fw-semibold">
+                                            {{ $noz->testing_liters > 0 ? number_format($noz->testing_liters, 2) : '-' }}
+                                        </td>
+                                        <td class="text-end font-monospace fw-bold text-primary">{{ number_format($noz->sold_liters, 2) }}</td>
+                                        <td class="text-end font-monospace">Rs. {{ number_format($noz->fuel_rate, 2) }}</td>
+                                        <td class="text-end font-monospace fw-bold text-dark">Rs. {{ number_format($noz->subtotal, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                                <tr class="table-primary bg-opacity-10 fw-bold">
+                                    <th colspan="4" class="text-end">Total Fuel Dispensed:</th>
+                                    <th class="text-end font-monospace">{{ number_format($shiftClosing->nozzles->sum('meter_liters'), 2) }} L</th>
+                                    <th class="text-end font-monospace text-warning-emphasis">{{ number_format($shiftClosing->nozzles->sum('testing_liters'), 2) }} L</th>
+                                    <th class="text-end font-monospace text-primary fs-6">{{ number_format($shiftClosing->nozzles->sum('sold_liters'), 2) }} Ltr</th>
+                                    <th class="text-end">Total:</th>
+                                    <th class="text-end font-monospace text-success fs-6">Rs. {{ number_format($shiftClosing->total_sale, 2) }}</th>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Lubricants & Credit Sales Rows (If Present) -->
+            @if($shiftClosing->lubricants->isNotEmpty() || $shiftClosing->credits->isNotEmpty())
+                <div class="row g-3 mb-4">
+                    @if($shiftClosing->lubricants->isNotEmpty())
+                        <div class="col-12 col-md-6">
+                            <h6 class="fw-bold text-dark mb-2 pb-1 border-bottom statement-section-title">
+                                <span class="statement-icon me-1"><i class="bi bi-box-seam text-info"></i></span> Engine Oils &amp; Lubricants Sold
+                            </h6>
+                            <table class="table table-sm table-bordered align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr class="small text-secondary">
+                                        <th>Lubricant / Oil Item</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-end">Unit Price</th>
+                                        <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($shiftClosing->lubricants as $lub)
+                                        <tr>
+                                            <td class="fw-semibold text-dark">{{ $lub->product?->name }}</td>
+                                            <td class="text-center font-monospace">{{ number_format($lub->quantity, 0) }} {{ $lub->product?->unit ?? 'cans' }}</td>
+                                            <td class="text-end font-monospace">Rs. {{ number_format($lub->unit_price, 2) }}</td>
+                                            <td class="text-end font-monospace fw-bold text-info">Rs. {{ number_format($lub->subtotal, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="table-light fw-bold">
+                                        <th colspan="3" class="text-end">Total Oil Sales:</th>
+                                        <th class="text-end text-info font-monospace">Rs. {{ number_format($shiftClosing->total_lubricant_sales, 2) }}</th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+
+                    @if($shiftClosing->credits->isNotEmpty())
+                        <div class="col-12 col-md-6">
+                            <h6 class="fw-bold text-dark mb-2 pb-1 border-bottom statement-section-title">
+                                <span class="statement-icon me-1"><i class="bi bi-journal-arrow-down text-warning-emphasis"></i></span> Credit / Udhar Sales (Party Khata)
+                            </h6>
+                            <table class="table table-sm table-bordered align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr class="small text-secondary">
+                                        <th>Party / Customer</th>
+                                        <th>Veh / Slip</th>
+                                        <th class="text-end">Liters</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($shiftClosing->credits as $cr)
+                                        <tr>
+                                            <td class="fw-semibold text-dark">{{ $cr->party?->name }}</td>
+                                            <td class="small font-monospace text-muted">{{ $cr->vehicle_no ?: ($cr->slip_no ?: '-') }}</td>
+                                            <td class="text-end font-monospace">{{ number_format($cr->liters, 2) }}</td>
+                                            <td class="text-end font-monospace fw-bold text-danger">Rs. {{ number_format($cr->amount, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="table-light fw-bold">
+                                        <th colspan="3" class="text-end">Total Credit (Udhar):</th>
+                                        <th class="text-end text-danger font-monospace">Rs. {{ number_format($shiftClosing->total_credit_sales, 2) }}</th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
             <!-- Two-Column Breakdown (Physical Currency vs Sales Reconciliation) -->
             <div class="row g-4 mb-4 statement-grid">
                 <!-- Left Table: Denomination Breakdown -->
@@ -190,6 +317,19 @@
                                     <td class="text-end font-monospace">Rs. {{ number_format($shiftClosing->bank_amount, 2) }}</td>
                                 </tr>
                             @endif
+
+                            @if($shiftClosing->govt_subsidy_amount > 0)
+                                <tr class="table-success bg-opacity-10">
+                                    <td>
+                                        <span class="fw-semibold text-success"><i class="bi bi-phone me-1"></i>Government Fuel Subsidy:</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle small ms-1">Mobile App / BISP</span>
+                                        @if($shiftClosing->govt_subsidy_remarks)
+                                            <small class="d-block text-muted">{{ $shiftClosing->govt_subsidy_remarks }}</small>
+                                        @endif
+                                    </td>
+                                    <td class="text-end font-monospace fw-bold text-success">Rs. {{ number_format($shiftClosing->govt_subsidy_amount, 2) }}</td>
+                                </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -257,47 +397,49 @@
                             @endif
 
                             <tr>
-                                <td class="fw-semibold">Total Gross Sale:</td>
+                                <td class="fw-semibold">Total Fuel Sales:</td>
                                 <td class="text-end font-monospace fw-bold text-dark fs-6">Rs. {{ number_format($shiftClosing->total_sale, 2) }}</td>
                             </tr>
-                            <tr>
-                                <td class="text-muted">(-) Sales Returns:</td>
-                                <td class="text-end font-monospace text-danger">
-                                    - Rs. {{ number_format($shiftClosing->returns_amount, 2) }}
-                                    @if($shiftClosing->return_invoice_start && $shiftClosing->return_invoice_end)
-                                        <small class="d-block text-muted">Invoices {{ number_format($shiftClosing->return_invoice_start) }} - {{ number_format($shiftClosing->return_invoice_end) }} ({{ number_format($shiftClosing->total_return_invoices) }} bills)</small>
-                                    @elseif($shiftClosing->return_invoice_number)
-                                        <small class="d-block text-muted">Invoice: {{ $shiftClosing->return_invoice_number }}</small>
-                                    @endif
-                                </td>
-                            </tr>
-                            <tr class="table-light">
-                                <td class="fw-bold text-success">
-                                    Shift Net Sale:
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1 ms-1" style="font-size: 0.68rem;">Gross - Return</span>
-                                    <small class="d-block text-muted fw-normal" style="font-size: 0.72rem;">Net sales after subtracting sale returns</small>
-                                </td>
-                                <td class="text-end font-monospace fw-bold text-success fs-6">
-                                    Rs. {{ number_format($shiftClosing->net_sale, 2) }}
-                                </td>
-                            </tr>
-                            @foreach($shiftClosing->partyPayments as $payment)
+                            @if($shiftClosing->total_lubricant_sales > 0)
                                 <tr>
-                                    <td class="text-muted">
-                                        (-) Cash Paid to {{ $payment->party->name ?? 'Deleted Party' }}:
-                                        @if($payment->expenseCategory)
-                                            <span class="badge bg-secondary-subtle text-secondary border small ms-1">{{ $payment->expenseCategory->name }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end font-monospace text-danger">
-                                        - Rs. {{ number_format($payment->amount, 2) }}
-                                        <small class="d-block text-muted">{{ $payment->details }}</small>
+                                    <td class="text-info fw-semibold">(+) Engine Oils &amp; Lubricants:</td>
+                                    <td class="text-end font-monospace fw-bold text-info">+ Rs. {{ number_format($shiftClosing->total_lubricant_sales, 2) }}</td>
+                                </tr>
+                            @endif
+                            <tr class="table-light">
+                                <td class="fw-bold text-dark">
+                                    Gross Sales Revenue:
+                                    <span class="badge bg-light text-secondary border small ms-1">Fuel + Oil</span>
+                                </td>
+                                <td class="text-end font-monospace fw-bold text-dark fs-6">
+                                    Rs. {{ number_format($shiftClosing->total_sale + $shiftClosing->total_lubricant_sales, 2) }}
+                                </td>
+                            </tr>
+
+                            @if($shiftClosing->total_credit_sales > 0)
+                                <tr>
+                                    <td class="text-danger">(-) Credit / Udhar Sales (Party Khata):</td>
+                                    <td class="text-end font-monospace text-danger fw-semibold">
+                                        - Rs. {{ number_format($shiftClosing->total_credit_sales, 2) }}
                                     </td>
                                 </tr>
-                            @endforeach
-                            @if($shiftClosing->partyPayments->isEmpty() && $shiftClosing->expenses_amount > 0)
+                            @endif
+
+                            @if($shiftClosing->expenses->isNotEmpty())
+                                @foreach($shiftClosing->expenses as $exp)
+                                    <tr>
+                                        <td class="text-muted">
+                                            (-) {{ $exp->category_name ?: 'Counter Expense' }}:
+                                            @if($exp->details)
+                                                <small class="d-block text-muted">{{ $exp->details }}</small>
+                                            @endif
+                                        </td>
+                                        <td class="text-end font-monospace text-danger">- Rs. {{ number_format($exp->amount, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            @elseif($shiftClosing->expenses_amount > 0)
                                 <tr>
-                                    <td class="text-muted">(-) Shift Cash Expenses:</td>
+                                    <td class="text-muted">(-) Shift Counter Expenses:</td>
                                     <td class="text-end font-monospace text-danger">
                                         - Rs. {{ number_format($shiftClosing->expenses_amount, 2) }}
                                         @if($shiftClosing->expenses_details)
@@ -306,6 +448,7 @@
                                     </td>
                                 </tr>
                             @endif
+
                             <tr class="table-light total-row">
                                 <th class="text-secondary">Expected Net Cash:</th>
                                 <th class="text-end font-monospace text-secondary fs-6">Rs. {{ number_format($shiftClosing->expected_cash, 2) }}</th>

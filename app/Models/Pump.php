@@ -14,6 +14,7 @@ class Pump extends Model
         'location_id',
         'tank_id',
         'name',
+        'dispenser_unit',
         'code',
         'nozzle_number',
         'meter_type',

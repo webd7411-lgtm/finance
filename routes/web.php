@@ -12,6 +12,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PumpController;
 use App\Http\Controllers\TankController;
 use App\Http\Controllers\StationLocationController;
+use App\Http\Controllers\RentalController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ShiftClosingController;
 use App\Http\Controllers\TransactionController;
@@ -99,11 +100,18 @@ Route::middleware('auth')->group(function () {
     Route::resource('day-closings', DayClosingController::class)->except(['edit', 'update', 'create']);
     Route::post('day-closings/{dayClosing}/reopen', [DayClosingController::class, 'reopen'])->name('day-closings.reopen');
 
+    // Station Commercial Rentals & Incomes (Car Wash, Tyre Shop, Tuck Shop, ATM) (Audio 5)
+    Route::resource('rentals', RentalController::class)->except(['create', 'show', 'edit']);
+    Route::post('rentals/{rental}/collect', [RentalController::class, 'collectRent'])->name('rentals.collect');
+    Route::delete('rentals/collections/{collection}', [RentalController::class, 'destroyCollection'])->name('rentals.collections.destroy');
+
     // Step 6: Ledgers & Reports Module
     Route::get('ledgers/party/{party?}', [LedgerController::class, 'partyLedger'])->name('ledgers.party');
     Route::get('ledgers/cash-book', [LedgerController::class, 'cashBook'])->name('ledgers.cash-book');
     Route::get('ledgers/bank-book', [LedgerController::class, 'bankBook'])->name('ledgers.bank-book');
 
+    Route::get('reports/daily-whatsapp', [ReportController::class, 'dailyWhatsappSummary'])->name('reports.daily-whatsapp');
+    Route::post('reports/whatsapp-settings', [ReportController::class, 'saveWhatsappSettings'])->name('reports.whatsapp-settings');
     Route::get('reports/daily-closing', [ReportController::class, 'dailyClosingSummary'])->name('reports.daily-closing');
     Route::get('reports/daily-register', [ReportController::class, 'dailyRegister'])->name('reports.daily-register');
     Route::get('reports/daily-register/export', [ReportController::class, 'exportDailyRegisterCsv'])->name('reports.daily-register.export');

@@ -11,17 +11,20 @@
 
 @section('page_actions')
     <div class="d-flex flex-wrap gap-1 gap-sm-2 w-100 justify-content-start justify-content-sm-end">
+        <a href="{{ route('reports.daily-whatsapp') }}" class="btn btn-success btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
+            <i class="bi bi-whatsapp me-1"></i> WhatsApp Summary
+        </a>
+        <a href="{{ route('tanks.index') }}" class="btn btn-outline-info btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
+            <i class="bi bi-database-fill-gear me-1"></i> Storage Tanks
+        </a>
         <a href="{{ route('pumps.index') }}" class="btn btn-outline-primary btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
             <i class="bi bi-speedometer2 me-1"></i> Pump Machines
         </a>
         <a href="{{ route('products.index') }}" class="btn btn-outline-danger btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
             <i class="bi bi-fuel-pump me-1"></i> Products & Fuel
         </a>
-        <a href="{{ route('shift-closings.index') }}" class="btn btn-primary btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
+        <a href="{{ route('shift-closings.create') }}" class="btn btn-primary btn-sm rounded-3 fw-semibold shadow-sm flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
             <i class="bi bi-plus-circle me-1"></i> Shift Closing
-        </a>
-        <a href="{{ route('transactions.index') }}" class="btn btn-dark btn-sm rounded-3 fw-semibold flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
-            <i class="bi bi-arrow-left-right me-1"></i> Voucher
         </a>
         <a href="{{ route('day-closings.index') }}" class="btn btn-outline-secondary btn-sm rounded-3 fw-semibold flex-fill flex-sm-grow-0 text-nowrap px-2 px-sm-3 btn-action-mobile">
             <i class="bi bi-calendar2-check me-1"></i> Day Closing
@@ -79,6 +82,157 @@
 @endpush
 
 @section('content')
+<!-- Audio 9: Live Fuel Storage Tanks & Lubricants Stock Overview Ribbon -->
+<div class="d-flex align-items-center justify-content-between mb-1.5">
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-uppercase text-dark fw-bold" style="letter-spacing: 0.5px; font-size: 0.72rem;">
+            <i class="bi bi-database-check text-primary me-1"></i> Live Storage Tanks &amp; Lubricant Inventory (Audio 9)
+        </span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ route('reports.daily-whatsapp') }}" class="badge bg-success text-white text-decoration-none py-1 px-2 small">
+            <i class="bi bi-whatsapp me-1"></i> Send Owner Daily Report
+        </a>
+        <a href="{{ route('tanks.index') }}" class="text-primary text-decoration-none small fw-semibold" style="font-size: 0.72rem;">
+            View All Tanks &rarr;
+        </a>
+    </div>
+</div>
+
+<div class="row g-2 g-md-2.5 mb-3">
+    @php
+        $tankPetrol = $allTanks->firstWhere('tank_number', 'TK-01') ?? $allTanks->first();
+        $tankDiesel = $allTanks->firstWhere('tank_number', 'TK-02');
+        $tankOctane = $allTanks->firstWhere('tank_number', 'TK-03');
+    @endphp
+
+    <!-- 1. Super Petrol (RON 92 / PMG) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-danger shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Super Petrol (PMG / RON 92)</span>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
+                    {{ $tankPetrol?->tank_number ?: 'Tank 1' }}
+                </span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <div class="fw-bold text-dark font-monospace fs-5">
+                    {{ number_format($petrolProduct?->current_stock ?? ($tankPetrol?->current_stock ?? 0), 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
+                </div>
+                <div class="small text-muted" style="font-size: 0.72rem;">
+                    Dip: <strong class="text-dark">{{ $tankPetrol?->current_dip_reading ?? 140 }} mm</strong>
+                </div>
+            </div>
+            @php
+                $pCap = $tankPetrol?->capacity ?? 25000;
+                $pStock = $petrolProduct?->current_stock ?? ($tankPetrol?->current_stock ?? 0);
+                $pPct = $pCap > 0 ? min(100, round(($pStock / $pCap) * 100)) : 0;
+                $pUllage = max(0, $pCap - $pStock);
+            @endphp
+            <div class="progress mt-1.5" style="height: 6px;">
+                <div class="progress-bar bg-danger" style="width: {{ $pPct }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
+                <span>Total Cap: {{ number_format($pCap) }} L</span>
+                <span class="text-primary fw-semibold">Space: {{ number_format($pUllage, 1) }} L</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. High Speed Diesel (HSD) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-primary shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">High Speed Diesel (HSD)</span>
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
+                    {{ $tankDiesel?->tank_number ?: 'Tank 2' }}
+                </span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <div class="fw-bold text-dark font-monospace fs-5">
+                    {{ number_format($dieselProduct?->current_stock ?? ($tankDiesel?->current_stock ?? 0), 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
+                </div>
+                <div class="small text-muted" style="font-size: 0.72rem;">
+                    Dip: <strong class="text-dark">{{ $tankDiesel?->current_dip_reading ?? 140 }} mm</strong>
+                </div>
+            </div>
+            @php
+                $dCap = $tankDiesel?->capacity ?? 50000;
+                $dStock = $dieselProduct?->current_stock ?? ($tankDiesel?->current_stock ?? 0);
+                $dPct = $dCap > 0 ? min(100, round(($dStock / $dCap) * 100)) : 0;
+                $dUllage = max(0, $dCap - $dStock);
+            @endphp
+            <div class="progress mt-1.5" style="height: 6px;">
+                <div class="progress-bar bg-primary" style="width: {{ $dPct }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
+                <span>Total Cap: {{ number_format($dCap) }} L</span>
+                <span class="text-primary fw-semibold">Space: {{ number_format($dUllage, 1) }} L</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Hi-Octane 97 (HOBC) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-warning shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Hi-Octane 97 (HOBC)</span>
+                <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
+                    {{ $tankOctane?->tank_number ?: 'Tank 3' }}
+                </span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <div class="fw-bold text-dark font-monospace fs-5">
+                    {{ number_format($octaneProduct?->current_stock ?? ($tankOctane?->current_stock ?? 0), 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
+                </div>
+                <div class="small text-muted" style="font-size: 0.72rem;">
+                    Dip: <strong class="text-dark">{{ $tankOctane?->current_dip_reading ?? 140 }} mm</strong>
+                </div>
+            </div>
+            @php
+                $oCap = $tankOctane?->capacity ?? 15000;
+                $oStock = $octaneProduct?->current_stock ?? ($tankOctane?->current_stock ?? 0);
+                $oPct = $oCap > 0 ? min(100, round(($oStock / $oCap) * 100)) : 0;
+                $oUllage = max(0, $oCap - $oStock);
+            @endphp
+            <div class="progress mt-1.5" style="height: 6px;">
+                <div class="progress-bar bg-warning" style="width: {{ $oPct }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
+                <span>Total Cap: {{ number_format($oCap) }} L</span>
+                <span class="text-primary fw-semibold">Space: {{ number_format($oUllage, 1) }} L</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Caltex Havoline Lubricants (Audio 6 & 9) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-info shadow-sm position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Caltex Havoline &amp; Oils</span>
+                <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
+                    Shelf Store
+                </span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <div class="fw-bold text-info font-monospace fs-5">
+                    {{ number_format($totalLubricantUnits, 0) }} <small class="fs-6 fw-normal text-muted">Cans / Packs</small>
+                </div>
+                <div class="small text-muted" style="font-size: 0.72rem;">
+                    <strong class="text-dark">{{ $lubricantProducts->count() }}</strong> SKUs
+                </div>
+            </div>
+            <div class="progress mt-1.5" style="height: 6px;">
+                <div class="progress-bar bg-info" style="width: 75%"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
+                <span>Havoline, Helix, 4T Oils</span>
+                <a href="{{ route('products.index') }}" class="text-info text-decoration-none fw-semibold">Manage Store &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Row 1: Liquid Funds & Closing Balances -->
 <div class="d-flex align-items-center justify-content-between mb-1.5">
     <div class="d-flex align-items-center gap-2">

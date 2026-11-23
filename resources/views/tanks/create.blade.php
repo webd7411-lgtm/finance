@@ -172,8 +172,8 @@
                         </label>
                         <div class="input-group input-group-sm">
                             <input type="number" step="0.01" min="0" name="current_dip_reading" class="form-control font-monospace py-2"
-                                   placeholder="e.g. 142.5" value="{{ old('current_dip_reading') }}">
-                            <span class="input-group-text">cm</span>
+                                   placeholder="e.g. 1425" value="{{ old('current_dip_reading') }}">
+                            <span class="input-group-text">mm</span>
                         </div>
                         <div class="text-muted small mt-1" style="font-size: 0.72rem;">Measured dip stick reading</div>
                     </div>
@@ -184,8 +184,8 @@
                         </label>
                         <div class="input-group input-group-sm">
                             <input type="number" step="0.01" min="0" name="max_dip_reading" class="form-control font-monospace py-2"
-                                   placeholder="e.g. 220" value="{{ old('max_dip_reading', '220') }}">
-                            <span class="input-group-text">cm</span>
+                                   placeholder="e.g. 2200" value="{{ old('max_dip_reading', '2200') }}">
+                            <span class="input-group-text">mm</span>
                         </div>
                         <div class="text-muted small mt-1" style="font-size: 0.72rem;">Dip stick chart height limit</div>
                     </div>

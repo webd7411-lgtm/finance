@@ -12,6 +12,7 @@ class TankDipReading extends Model
     protected $fillable = [
         'tank_id',
         'reading_date',
+        'reading_time',
         'dip_cm',
         'measured_liters',
         'book_stock_liters',

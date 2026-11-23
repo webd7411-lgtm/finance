@@ -408,6 +408,7 @@ class TankController extends Controller
             'dip_cm'          => ['required', 'numeric', 'min:0'],
             'measured_liters' => ['required', 'numeric', 'min:0'],
             'reading_date'    => ['required', 'date'],
+            'reading_time'    => ['nullable', 'string', 'max:20'],
             'notes'           => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -418,6 +419,7 @@ class TankController extends Controller
         TankDipReading::create([
             'tank_id'           => $tank->id,
             'reading_date'      => $validated['reading_date'],
+            'reading_time'      => $validated['reading_time'] ?? null,
             'dip_cm'            => $validated['dip_cm'],
             'measured_liters'   => $measured,
             'book_stock_liters' => $bookStock,
@@ -434,7 +436,7 @@ class TankController extends Controller
             'user_id' => auth()->id(),
             'action'  => 'dip_reading',
             'module'  => 'tanks',
-            'details' => "Recorded Dip for {$tank->name}: {$validated['dip_cm']} cm ({$measured} Ltr). Book Variance: " . number_format($variance, 2) . " Ltr",
+            'details' => "Recorded Dip for {$tank->name}: {$validated['dip_cm']} mm ({$measured} Ltr). Book Variance: " . number_format($variance, 2) . " Ltr",
         ]);
 
         return back()->with('success', "Dip reading recorded for {$tank->name}! Physical: {$measured} Ltr, Variance: " . number_format($variance, 2) . " Ltr");

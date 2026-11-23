@@ -9,6 +9,8 @@ use App\Models\ShiftClosingPartyPayment;
 use App\Models\Transaction;
 use App\Models\DayClosing;
 use App\Models\ActivityLog;
+use App\Models\Product;
+use App\Models\Tank;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -136,6 +138,27 @@ class DashboardController extends Controller
         // Recent Activity Logs (Last 5)
         $recentLogs = ActivityLog::with('user')->latest('id')->take(5)->get();
 
+        // Audio 9: Live Fuel & Lubricant Stock Status for Dashboard
+        $allTanks = Tank::with('product')->active()->orderBy('tank_number')->get();
+        $petrolProduct = Product::where('code', 'PET-92')->first();
+        $dieselProduct = Product::where('code', 'HSD-01')->first();
+        $octaneProduct = Product::where('code', 'HOBC-97')->first();
+
+        $lubricantProducts = Product::where('is_fuel', false)
+            ->where(function ($q) {
+                $q->where('category', 'lubricant')
+                  ->orWhere('name', 'like', '%Havoline%')
+                  ->orWhere('name', 'like', '%Oil%');
+            })
+            ->get();
+        $totalLubricantUnits = $lubricantProducts->sum('current_stock');
+
+        // Today's Sales & Liters
+        $todayFuelLiters = ShiftClosing::whereDate('date', $today)->sum('total_liters');
+        $todayFuelSales = ShiftClosing::whereDate('date', $today)->sum('total_sale');
+        $todayLubricantSales = ShiftClosing::whereDate('date', $today)->sum('total_lubricant_sales');
+        $todayCreditSales = ShiftClosing::whereDate('date', $today)->sum('total_credit_sales');
+
         return view('dashboard', compact(
             'today',
             'morningShift',
@@ -163,7 +186,17 @@ class DashboardController extends Controller
             'accountBalances',
             'recentTransactions',
             'recentShifts',
-            'recentLogs'
+            'recentLogs',
+            'allTanks',
+            'petrolProduct',
+            'dieselProduct',
+            'octaneProduct',
+            'lubricantProducts',
+            'totalLubricantUnits',
+            'todayFuelLiters',
+            'todayFuelSales',
+            'todayLubricantSales',
+            'todayCreditSales'
         ));
     }
 }

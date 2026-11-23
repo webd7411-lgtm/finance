@@ -22,11 +22,14 @@ class ShiftClosing extends Model
         'start_reading',
         'end_reading',
         'total_liters',
+        'testing_liters',
         'fuel_rate',
         'total_invoices',
         'invoice_start',
         'invoice_end',
         'total_sale',
+        'total_credit_sales',
+        'total_lubricant_sales',
         'returns_amount',
         'return_invoice_number',
         'return_invoice_start',
@@ -45,6 +48,9 @@ class ShiftClosing extends Model
         'total_counted_cash',
         'jazzcash_amount',
         'bank_amount',
+        'govt_subsidy_amount',
+        'govt_subsidy_account_id',
+        'govt_subsidy_remarks',
         'total_actual_received',
         'expected_cash',
         'difference',
@@ -59,13 +65,17 @@ class ShiftClosing extends Model
         'start_reading' => 'decimal:2',
         'end_reading' => 'decimal:2',
         'total_liters' => 'decimal:2',
+        'testing_liters' => 'decimal:2',
         'fuel_rate' => 'decimal:2',
         'total_sale' => 'decimal:2',
+        'total_credit_sales' => 'decimal:2',
+        'total_lubricant_sales' => 'decimal:2',
         'returns_amount' => 'decimal:2',
         'expenses_amount' => 'decimal:2',
         'total_counted_cash' => 'decimal:2',
         'jazzcash_amount' => 'decimal:2',
         'bank_amount' => 'decimal:2',
+        'govt_subsidy_amount' => 'decimal:2',
         'total_actual_received' => 'decimal:2',
         'expected_cash' => 'decimal:2',
         'difference' => 'decimal:2',
@@ -113,6 +123,31 @@ class ShiftClosing extends Model
     public function partyPayments()
     {
         return $this->hasMany(ShiftClosingPartyPayment::class);
+    }
+
+    public function nozzles()
+    {
+        return $this->hasMany(ShiftClosingNozzle::class);
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(ShiftClosingExpense::class);
+    }
+
+    public function lubricants()
+    {
+        return $this->hasMany(ShiftClosingLubricant::class);
+    }
+
+    public function credits()
+    {
+        return $this->hasMany(ShiftClosingCredit::class);
+    }
+
+    public function govtSubsidyAccount()
+    {
+        return $this->belongsTo(Account::class, 'govt_subsidy_account_id');
     }
 
     public function tank()

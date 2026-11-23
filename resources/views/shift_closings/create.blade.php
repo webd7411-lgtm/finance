@@ -5,15 +5,15 @@
 
 @section('page_badge')
     <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-0.5 small" style="font-size: 0.72rem;">
-        <i class="bi bi-fuel-pump me-1"></i> Meter Reading & Cash Reconciliation
+        <i class="bi bi-fuel-pump me-1"></i> Multi-Dispenser Meter Reading &amp; Cash Reconciliation
     </span>
 @endsection
 
 @section('page_actions')
     <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-light text-secondary border px-2 py-1 small d-none d-md-inline-block" style="font-size: 0.72rem;">
-            <i class="bi bi-person-circle me-1 text-primary"></i> {{ auth()->user()->name }} ({{ ucfirst(auth()->user()->role) }})
-        </span>
+        <a href="{{ route('reports.daily-whatsapp') }}" target="_blank" class="btn btn-outline-success btn-sm py-0.5 px-2 rounded-2" style="font-size: 0.75rem;">
+            <i class="bi bi-whatsapp me-1"></i> WhatsApp Report
+        </a>
         <a href="{{ route('shift-closings.index') }}" class="btn btn-outline-secondary btn-sm py-0.5 px-2 rounded-2" style="font-size: 0.75rem;">
             <i class="bi bi-arrow-left me-1"></i> History
         </a>
@@ -28,31 +28,8 @@
         font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
         letter-spacing: normal !important;
     }
-    /* Preserve Icon Fonts */
-    .fa, .fas, .fa-solid, [class^="fa-"], [class*=" fa-"] {
-        font-family: "Font Awesome 6 Free", "FontAwesome" !important;
-        font-weight: 900 !important;
-    }
-    .far, .fa-regular {
-        font-family: "Font Awesome 6 Free", "FontAwesome" !important;
-        font-weight: 400 !important;
-    }
-    .fab, .fa-brands {
-        font-family: "Font Awesome 6 Brands", "FontAwesome" !important;
-        font-weight: 400 !important;
-    }
     .bi, [class^="bi-"], [class*=" bi-"] {
         font-family: "bootstrap-icons" !important;
-    }
-
-    /* Compact Layout Overrides */
-    .sub-header {
-        padding: 0.3rem 0 !important;
-        margin-bottom: 0.4rem !important;
-    }
-    .sub-header h5 {
-        font-size: 0.95rem !important;
-        margin: 0 !important;
     }
 
     /* Compact Cards */
@@ -61,21 +38,21 @@
         border-radius: 8px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-        padding: 0.45rem 0.75rem;
-        margin-bottom: 0.45rem;
+        padding: 0.55rem 0.85rem;
+        margin-bottom: 0.65rem;
     }
     .closing-card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-bottom: 0.25rem;
-        margin-bottom: 0.35rem;
+        padding-bottom: 0.35rem;
+        margin-bottom: 0.45rem;
         border-bottom: 1px solid #f1f5f9;
     }
     .closing-step-num {
-        width: 19px;
-        height: 19px;
-        font-size: 0.7rem;
+        width: 22px;
+        height: 22px;
+        font-size: 0.75rem;
         font-weight: 700;
         border-radius: 50%;
         display: inline-flex;
@@ -83,13 +60,12 @@
         justify-content: center;
     }
     .closing-card-title {
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 700;
         color: #1e293b;
         margin: 0;
     }
 
-    /* Form Inputs */
     .compact-label {
         font-size: 0.7rem;
         font-weight: 600;
@@ -101,14 +77,14 @@
         line-height: 1.2;
     }
     .compact-input {
-        height: 29px !important;
-        padding: 0.15rem 0.45rem !important;
+        height: 30px !important;
+        padding: 0.2rem 0.5rem !important;
         font-size: 0.8rem !important;
         border-radius: 5px !important;
     }
     .compact-addon {
-        height: 29px !important;
-        padding: 0.15rem 0.45rem !important;
+        height: 30px !important;
+        padding: 0.2rem 0.5rem !important;
         font-size: 0.75rem !important;
     }
 
@@ -116,13 +92,13 @@
     .kpi-compact-card {
         background: #ffffff;
         border-radius: 6px;
-        padding: 0.3rem 0.55rem;
+        padding: 0.35rem 0.6rem;
         border-left: 3.5px solid;
         border-top: 1px solid #e2e8f0;
         border-right: 1px solid #e2e8f0;
         border-bottom: 1px solid #e2e8f0;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-        min-height: 52px;
+        min-height: 54px;
     }
     .kpi-title {
         font-size: 0.62rem;
@@ -130,9 +106,23 @@
         line-height: 1.1;
     }
     .kpi-value {
-        font-size: 1.02rem;
+        font-size: 1.05rem;
         line-height: 1.2;
         margin-top: 1px;
+    }
+
+    .nozzle-row-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.45rem 0.65rem;
+        margin-bottom: 0.45rem;
+    }
+    .dispenser-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
     }
 
     /* Denomination Table */
@@ -142,12 +132,12 @@
         margin-bottom: 0.3rem;
     }
     .denomination-table th, .denomination-table td {
-        padding: 0.15rem 0.35rem !important;
+        padding: 0.18rem 0.4rem !important;
         vertical-align: middle;
         font-size: 0.78rem;
     }
     .note-input {
-        height: 23px !important;
+        height: 24px !important;
         font-size: 0.8rem !important;
         padding: 0.05rem 0.3rem !important;
         text-align: center;
@@ -166,44 +156,53 @@
     @csrf
 
     <!-- Top Live KPI Ribbon (Instant Shift Position) -->
-    <div class="row g-1.5 mb-2 row-cols-2 row-cols-md-3 row-cols-lg-5">
+    <div class="row g-1.5 mb-2.5 row-cols-2 row-cols-md-3 row-cols-lg-6">
         <!-- KPI 1: Total Volume Dispensed -->
         <div class="col">
             <div class="kpi-compact-card border-start border-4 border-primary h-100">
                 <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Fuel Dispensed</div>
                 <div class="fw-bold text-primary kpi-value text-truncate" id="kpi_liters">0.00 Ltr</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">End - Start Reading</small>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.62rem;">Net Sold Liters</small>
             </div>
         </div>
 
-        <!-- KPI 2: Total Gross Sales -->
+        <!-- KPI 2: Test Paimana Liters (Audio 2) -->
+        <div class="col">
+            <div class="kpi-compact-card border-start border-4 border-warning h-100">
+                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Testing (Paimana)</div>
+                <div class="fw-bold text-warning-emphasis kpi-value text-truncate" id="kpi_testing">0.00 Ltr</div>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.62rem;">Poured back into Tank</small>
+            </div>
+        </div>
+
+        <!-- KPI 3: Total Gross Sales -->
         <div class="col">
             <div class="kpi-compact-card border-start border-4 border-info h-100">
                 <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Gross Total Sales</div>
                 <div class="fw-bold text-dark kpi-value text-truncate" id="kpi_sales">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">Liters &times; Fuel Rate</small>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.62rem;">Fuel + Lubricants</small>
             </div>
         </div>
 
-        <!-- KPI 3: Expected Cash -->
+        <!-- KPI 4: Expected Net Cash -->
         <div class="col">
-            <div class="kpi-compact-card border-start border-4 border-warning h-100">
-                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Expected Net Cash</div>
-                <div class="fw-bold text-warning-emphasis kpi-value text-truncate" id="kpi_expected">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">Total Sale - Expenses</small>
+            <div class="kpi-compact-card border-start border-4 border-secondary h-100">
+                <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Expected Cash</div>
+                <div class="fw-bold text-dark kpi-value text-truncate" id="kpi_expected">Rs. 0.00</div>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.62rem;">Sale - Credit - Expense</small>
             </div>
         </div>
 
-        <!-- KPI 4: Actual Received -->
+        <!-- KPI 5: Actual Received -->
         <div class="col">
             <div class="kpi-compact-card border-start border-4 border-success h-100">
                 <div class="text-muted fw-semibold text-uppercase kpi-title text-truncate">Actual Collected</div>
                 <div class="fw-bold text-success kpi-value text-truncate" id="kpi_actual">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" style="font-size: 0.65rem; line-height: 1;">Cash + Digital</small>
+                <small class="text-secondary d-none d-sm-block" style="font-size: 0.62rem;">Cash + Digital + Subsidy</small>
             </div>
         </div>
 
-        <!-- KPI 5: Shift Variance / Reconciliation -->
+        <!-- KPI 6: Shift Variance -->
         <div class="col col-12 col-md-12 col-lg">
             <div class="kpi-compact-card border-start border-4 border-secondary h-100" id="kpi_variance_card">
                 <div class="d-flex justify-content-between align-items-center gap-1">
@@ -211,40 +210,40 @@
                     <span class="badge bg-success small py-0 px-1" id="kpi_variance_badge" style="font-size: 0.62rem;">Balanced</span>
                 </div>
                 <div class="fw-bold text-dark kpi-value text-truncate" id="kpi_variance">Rs. 0.00</div>
-                <small class="text-secondary d-none d-sm-block" id="kpi_variance_text" style="font-size: 0.65rem; line-height: 1;">Actual minus Expected</small>
+                <small class="text-secondary d-none d-sm-block" id="kpi_variance_text" style="font-size: 0.62rem;">Actual minus Expected</small>
             </div>
         </div>
     </div>
 
-    <!-- Step 1: Shift & Pump Machine Configuration -->
+    <!-- Step 1: Shift Session Setup -->
     <div class="closing-card">
         <div class="closing-card-header">
             <div class="d-flex align-items-center gap-1.5">
                 <span class="badge bg-primary text-white closing-step-num">1</span>
-                <h6 class="closing-card-title">Shift Session & Pump Machine Setup</h6>
+                <h6 class="closing-card-title">Shift Session &amp; Cashier Setup</h6>
             </div>
             <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-1.5 py-0.5" style="font-size: 0.68rem;">
-                <i class="bi bi-infinity me-1"></i> Multiple Shifts Daily
+                <i class="bi bi-infinity me-1"></i> Continuous Stations Workflow
             </span>
         </div>
 
-        <div class="row g-1.5">
+        <div class="row g-2">
             <!-- Date -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-4">
                 <label class="compact-label" for="closing_date">
                     <span><i class="bi bi-calendar3 text-primary me-1"></i>Closing Date <span class="text-danger">*</span></span>
                 </label>
                 <input type="date" id="closing_date" name="date"
                        class="form-control compact-input fw-semibold @error('date') is-invalid @enderror"
                        value="{{ old('date', date('Y-m-d')) }}"
-                       min="{{ now()->subDay()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                       min="{{ now()->subDays(2)->toDateString() }}" max="{{ now()->toDateString() }}" required>
                 @error('date')
                     <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
                 @enderror
             </div>
 
-            <!-- Shift Type (Multiple allowed per day) -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <!-- Shift Type -->
+            <div class="col-12 col-sm-4">
                 <label class="compact-label" for="shift_type_select">
                     <span><i class="bi bi-clock text-primary me-1"></i>Shift Cycle <span class="text-danger">*</span></span>
                 </label>
@@ -258,7 +257,7 @@
             </div>
 
             <!-- Cashier Selection -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-4">
                 <label class="compact-label" for="cashier_id">
                     <span><i class="bi bi-person-badge text-primary me-1"></i>Shift Cashier <span class="text-danger">*</span></span>
                     <a href="{{ route('hr.employees.index') }}" target="_blank" class="text-primary text-decoration-none" style="font-size: 0.65rem;">+ Add / Manage</a>
@@ -275,214 +274,225 @@
                     <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
                 @enderror
             </div>
-
-            <!-- Dynamic Pump Machine Selection -->
-            <div class="col-12 col-sm-6 col-lg-3">
-                <label class="compact-label" for="pump_id">
-                    <span><i class="bi bi-fuel-pump text-primary me-1"></i>Pump Machine <span class="badge bg-light text-primary border ms-1" style="font-size: 0.63rem;">{{ count($pumps) }} Units</span> <span class="text-danger">*</span></span>
-                    <div class="d-flex gap-1.5 align-items-center">
-                        <button type="button" class="btn btn-link p-0 text-primary text-decoration-none fw-semibold" style="font-size: 0.65rem;" data-bs-toggle="modal" data-bs-target="#quickAddPumpModal">
-                            + Add New
-                        </button>
-                        <span class="text-muted" style="font-size: 0.6rem;">|</span>
-                        <a href="{{ route('pumps.index') }}" target="_blank" class="text-primary text-decoration-none" style="font-size: 0.65rem;">Manage</a>
-                    </div>
-                </label>
-                <select name="pump_id" id="pump_id" class="form-select compact-input fw-bold @error('pump_id') is-invalid @enderror" onchange="handlePumpSelection()">
-                    <option value="">-- Choose Pump Machine ({{ count($pumps) }} Available) --</option>
-                    @foreach($pumps as $pump)
-                        <option value="{{ $pump->id }}"
-                                data-name="{{ $pump->name }}"
-                                data-reading="{{ $pump->last_reading }}"
-                                data-product-id="{{ $pump->product_id }}"
-                                data-product-rate="{{ $pump->product?->sale_price ?? 0 }}"
-                                data-product-unit="{{ $pump->product?->unit_label ?? 'Ltr' }}"
-                                data-tank="{{ $pump->tank_no ?: ($pump->product?->tank_or_shelf ?: 'Underground Tank') }}"
-                                data-stock="{{ $pump->product?->current_stock ?? 0 }}"
-                                {{ (old('pump_id', $selectedPumpId ?? null) == $pump->id) ? 'selected' : '' }}>
-                            #{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }} • {{ $pump->name }} (Last: {{ number_format($pump->last_reading, 2) }})
-                        </option>
-                    @endforeach
-                </select>
-                <input type="hidden" name="pump_machine" id="pump_machine" value="{{ old('pump_machine') }}">
-                <div id="pump_stock_sync_badge" class="mt-1 d-none">
-                    <span class="badge bg-light text-dark border py-0.5 px-1.5 small" style="font-size: 0.65rem;">
-                        <i class="bi bi-database text-primary me-1"></i><span id="pump_tank_display">Tank</span>:
-                        <strong id="pump_stock_display" class="text-success">0 Ltr</strong> stock
-                    </span>
-                </div>
-                @error('pump_id')
-                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
-                @enderror
-            </div>
         </div>
     </div>
 
-    <!-- Step 2: Petrol Pump Meter Reading & Auto-Calculation System (Single Unified Row) -->
+    <!-- Step 2: Multi-Dispenser & Multi-Nozzle Meter Readings (Audio 1 & Audio 2) -->
     <div class="closing-card border-primary border-opacity-25" style="border-left: 3.5px solid #2563eb;">
         <div class="closing-card-header">
             <div class="d-flex align-items-center gap-1.5">
                 <span class="badge bg-primary text-white closing-step-num">2</span>
                 <h6 class="closing-card-title">
-                    <i class="bi bi-speedometer2 text-primary me-1"></i> Meter Readings & Automatic Sale Calculation
+                    <i class="bi bi-speedometer2 text-primary me-1"></i> Dispensers &amp; Nozzles Meter Readings (Audio 1: All 3 Units)
                 </h6>
             </div>
-            <div class="badge bg-light text-primary border px-1.5 py-0.5" style="font-size: 0.68rem;">
-                Liters = End - Start Reading
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-primary border" style="font-size: 0.68rem;">
+                    Formula: Net Sold = (End - Start) - Testing Liters
+                </span>
             </div>
         </div>
 
-        <div class="row g-1.5 align-items-end">
-            <!-- 1. Fuel Product Selection -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="compact-label" for="product_id">
-                    <span>Fuel Product <span class="text-danger">*</span></span>
-                </label>
-                <select name="product_id" id="product_id" class="form-select compact-input fw-semibold" onchange="handleProductRateChange()">
-                    <option value="">-- Choose Product --</option>
-                    @foreach($fuelProducts as $fProd)
-                        <option value="{{ $fProd->id }}"
-                                data-rate="{{ $fProd->sale_price }}"
-                                data-unit="{{ $fProd->unit_label }}"
-                                {{ old('product_id') == $fProd->id ? 'selected' : '' }}>
-                            {{ $fProd->name }} (Rs. {{ number_format($fProd->sale_price, 2) }})
-                        </option>
+        <div class="d-flex flex-column gap-1.5">
+            @php
+                $groupedPumps = $pumps->groupBy(function($item) {
+                    return $item->dispenser_unit ?: 'Dispenser Unit 1';
+                });
+            @endphp
+
+            @foreach($groupedPumps as $dispenserUnit => $dispenserNozzles)
+                <div class="border rounded-2 p-2 bg-white mb-2 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center pb-1 mb-1.5 border-bottom">
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle dispenser-badge">
+                            <i class="bi bi-fuel-pump me-1"></i>{{ $dispenserUnit }} ({{ $dispenserNozzles->count() }} Nozzles)
+                        </span>
+                        <span class="text-muted small" style="font-size: 0.68rem;">Dispenser Mechanical/Electronic Totalizers</span>
+                    </div>
+
+                    @foreach($dispenserNozzles as $nozzle)
+                        @php
+                            $nIndex = $nozzle->id;
+                            $rate = $nozzle->product?->sale_price ?? 0;
+                            $lastRead = $nozzle->last_reading ?? 0;
+                        @endphp
+                        <div class="nozzle-row-box" id="nozzle_box_{{ $nIndex }}">
+                            <div class="row g-1.5 align-items-center">
+                                <input type="hidden" name="nozzles[{{ $nIndex }}][pump_id]" value="{{ $nozzle->id }}">
+                                <input type="hidden" name="nozzles[{{ $nIndex }}][tank_id]" value="{{ $nozzle->tank_id }}">
+                                <input type="hidden" name="nozzles[{{ $nIndex }}][product_id]" value="{{ $nozzle->product_id }}">
+                                <input type="hidden" name="nozzles[{{ $nIndex }}][nozzle_name]" value="{{ $nozzle->name }}">
+
+                                <!-- Nozzle & Product Title -->
+                                <div class="col-12 col-md-3">
+                                    <div class="fw-bold text-dark text-truncate" style="font-size: 0.78rem;">
+                                        <i class="bi bi-droplet-fill text-primary me-1"></i>{{ $nozzle->name }}
+                                    </div>
+                                    <div class="text-secondary small d-flex gap-1.5" style="font-size: 0.65rem;">
+                                        <span>Product: <strong class="text-dark">{{ $nozzle->product?->name }}</strong></span>
+                                        <span>• Tank: <em>{{ $nozzle->tank?->tank_number ?: 'Tank' }}</em></span>
+                                    </div>
+                                </div>
+
+                                <!-- Start Reading (Opening) -->
+                                <div class="col-6 col-sm-4 col-md-2">
+                                    <label class="compact-label">Start Reading <span class="text-muted" style="font-size: 0.6rem;">(Opening)</span></label>
+                                    <input type="number" step="0.01" min="0"
+                                           name="nozzles[{{ $nIndex }}][start_reading]"
+                                           id="start_{{ $nIndex }}"
+                                           class="form-control compact-input fw-semibold"
+                                           value="{{ old("nozzles.{$nIndex}.start_reading", number_format($lastRead, 2, '.', '')) }}"
+                                           oninput="calculateNozzleRow({{ $nIndex }})">
+                                </div>
+
+                                <!-- End Reading (Closing) -->
+                                <div class="col-6 col-sm-4 col-md-2">
+                                    <label class="compact-label">End Reading <span class="text-muted" style="font-size: 0.6rem;">(Closing)</span></label>
+                                    <input type="number" step="0.01" min="0"
+                                           name="nozzles[{{ $nIndex }}][end_reading]"
+                                           id="end_{{ $nIndex }}"
+                                           class="form-control compact-input fw-bold border-primary text-primary"
+                                           value="{{ old("nozzles.{$nIndex}.end_reading", number_format($lastRead, 2, '.', '')) }}"
+                                           placeholder="{{ number_format($lastRead, 2, '.', '') }}"
+                                           oninput="calculateNozzleRow({{ $nIndex }})">
+                                </div>
+
+                                <!-- Testing / Paimana Liters (Audio 2) -->
+                                <div class="col-6 col-sm-4 col-md-1.5" style="flex: 0 0 13%; max-width: 13%;">
+                                    <label class="compact-label text-warning-emphasis" title="Test measure (paimana) liters poured back into tank">
+                                        Test (Paimana) <i class="bi bi-info-circle text-muted" style="font-size: 0.6rem;"></i>
+                                    </label>
+                                    <input type="number" step="0.01" min="0"
+                                           name="nozzles[{{ $nIndex }}][testing_liters]"
+                                           id="testing_{{ $nIndex }}"
+                                           class="form-control compact-input fw-semibold border-warning bg-warning bg-opacity-10"
+                                           value="{{ old("nozzles.{$nIndex}.testing_liters", '0.00') }}"
+                                           placeholder="0.00"
+                                           oninput="calculateNozzleRow({{ $nIndex }})">
+                                </div>
+
+                                <!-- Rate / Ltr (Rs.) -->
+                                <div class="col-6 col-sm-4 col-md-1.5" style="flex: 0 0 13%; max-width: 13%;">
+                                    <label class="compact-label">Rate / Ltr</label>
+                                    <input type="number" step="0.01" min="0"
+                                           name="nozzles[{{ $nIndex }}][fuel_rate]"
+                                           id="rate_{{ $nIndex }}"
+                                           class="form-control compact-input fw-semibold"
+                                           value="{{ old("nozzles.{$nIndex}.fuel_rate", number_format($rate, 2, '.', '')) }}"
+                                           oninput="calculateNozzleRow({{ $nIndex }})">
+                                </div>
+
+                                <!-- Calculated Net Sale Liters & Subtotal Amount -->
+                                <div class="col-12 col-md-2 text-md-end">
+                                    <div class="fw-bold text-dark" style="font-size: 0.82rem;" id="subtotal_display_{{ $nIndex }}">Rs. 0.00</div>
+                                    <div class="text-secondary small" style="font-size: 0.65rem;">
+                                        Sold: <strong class="text-primary" id="liters_display_{{ $nIndex }}">0.00 Ltr</strong>
+                                    </div>
+                                    <input type="hidden" name="nozzles[{{ $nIndex }}][subtotal]" id="subtotal_val_{{ $nIndex }}" value="0.00">
+                                </div>
+                            </div>
+                        </div>
                     @endforeach
-                </select>
-                @error('product_id')
-                    <div class="text-danger small mt-0.5" style="font-size: 0.68rem;">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- 2. Start Meter Reading -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="compact-label" for="start_reading">
-                    <span>Start Reading <span class="text-danger">*</span></span>
-                    <span class="text-muted" style="font-size: 0.62rem;">Opening</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light text-success compact-addon"><i class="bi bi-play-fill"></i></span>
-                    <input type="number" step="0.01" min="0" id="start_reading" name="start_reading"
-                           class="form-control compact-input fw-bold @error('start_reading') is-invalid @enderror"
-                           placeholder="0.00" value="{{ old('start_reading', '0.00') }}" required oninput="calculateReadings()">
                 </div>
-                @error('start_reading')
-                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- 3. End Meter Reading -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="compact-label" for="end_reading">
-                    <span>End Reading <span class="text-danger">*</span></span>
-                    <span class="text-muted" style="font-size: 0.62rem;">Closing</span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light text-danger compact-addon"><i class="bi bi-stop-fill"></i></span>
-                    <input type="number" step="0.01" min="0" id="end_reading" name="end_reading"
-                           class="form-control compact-input fw-bold @error('end_reading') is-invalid @enderror"
-                           placeholder="0.00" value="{{ old('end_reading', '0.00') }}" required oninput="calculateReadings()">
-                </div>
-                @error('end_reading')
-                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- 4. Fuel Unit Rate -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="compact-label" for="fuel_rate">
-                    <span>Rate / Ltr (Rs.) <span class="text-danger">*</span></span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light fw-semibold compact-addon">Rs.</span>
-                    <input type="number" step="0.01" min="0" id="fuel_rate" name="fuel_rate"
-                           class="form-control compact-input fw-bold @error('fuel_rate') is-invalid @enderror"
-                           placeholder="0.00" value="{{ old('fuel_rate', '0.00') }}" required oninput="calculateReadings()">
-                </div>
-                @error('fuel_rate')
-                    <div class="invalid-feedback d-block small" style="font-size: 0.68rem;">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- 5. Total Liters (Calculated) -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="compact-label">
-                    <span>Total Dispensed</span>
-                </label>
-                <div class="input-group">
-                    <input type="number" step="0.01" id="total_liters" name="total_liters"
-                           class="form-control compact-input fw-bold text-center text-primary bg-light"
-                           value="{{ old('total_liters', '0.00') }}" readonly>
-                    <span class="input-group-text bg-light text-muted compact-addon" id="litersUnitBadge">Ltr</span>
-                </div>
-            </div>
-
-            <!-- 6. Gross Sale (Auto Calculated & Inline) -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="compact-label text-success" for="total_sale">
-                    <span class="fw-bold">Gross Sale (Rs.) <span class="text-danger">*</span></span>
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-success bg-opacity-10 text-success fw-bold compact-addon">Rs.</span>
-                    <input type="number" step="0.01" min="0" id="total_sale" name="total_sale"
-                           class="form-control compact-input fw-bold text-dark text-end bg-success bg-opacity-10 border-success"
-                           value="{{ old('total_sale', '0.00') }}" required oninput="calculateCashBalance()">
-                </div>
-            </div>
+            @endforeach
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top border-light-subtle">
-            <span class="text-secondary" style="font-size: 0.68rem;">
-                <i class="bi bi-info-circle me-1"></i>Formula: <span id="saleFormulaDisplay" class="fw-semibold text-dark">0.00 Liters &times; Rs. 0.00</span>
+        <!-- Total Fuel Summary Banner -->
+        <div class="p-2 bg-light rounded-2 border d-flex flex-wrap justify-content-between align-items-center mt-1">
+            <span class="small fw-semibold text-secondary">
+                Total Fuel Dispensed: <strong class="text-primary" id="disp_total_fuel_liters">0.00 Ltr</strong> &bull;
+                Total Test (Paimana): <strong class="text-warning-emphasis" id="disp_total_testing_liters">0.00 Ltr</strong>
             </span>
-            <span class="text-muted" style="font-size: 0.65rem;">Gross sale editable if manual adjustment needed</span>
+            <span class="fw-bold text-dark fs-6">
+                Total Fuel Revenue: <span class="text-success" id="disp_total_fuel_sales">Rs. 0.00</span>
+            </span>
         </div>
     </div>
 
     <!-- Main Workspace (2-Column Balanced Grid) -->
     <div class="row g-2">
-        <!-- LEFT COLUMN: Shift Expenses & Digital / Online Collections -->
+        <!-- LEFT COLUMN: Lubricant Sales, Credit Sales, Expenses -->
         <div class="col-12 col-lg-6">
             <div class="d-flex flex-column gap-2">
 
-                <!-- Step 3: Shift Counter Expenses -->
-                <div class="closing-card">
+                <!-- Step 3: Engine Oil / Lubricants Counter Sales (Audio 6: Caltex Havoline, etc.) -->
+                <div class="closing-card border-info border-opacity-25" style="border-left: 3.5px solid #0284c7;">
                     <div class="closing-card-header">
                         <div class="d-flex align-items-center gap-1.5">
-                            <span class="badge bg-primary text-white closing-step-num">3</span>
+                            <span class="badge bg-info text-white closing-step-num">3</span>
                             <h6 class="closing-card-title">
-                                <i class="bi bi-wallet2 text-danger me-1"></i> Shift Counter Expenses
+                                <i class="bi bi-box-seam text-info me-1"></i> Lubricants / Engine Oil Sales (Audio 6: Havoline &amp; Cans)
                             </h6>
                         </div>
-                        <span class="text-muted" style="font-size: 0.65rem;">Petty cash from counter</span>
+                        <button type="button" class="btn btn-outline-info btn-sm rounded-pill py-0.5 px-2" style="font-size: 0.72rem;" onclick="addLubricantRow()">
+                            <i class="bi bi-plus-circle me-1"></i> Add Oil Sale
+                        </button>
                     </div>
 
-                    <div class="row g-1.5">
-                        <div class="col-12 col-sm-5">
-                            <label class="compact-label" for="expenses_amount">Total Cash Expenses</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-danger fw-bold compact-addon">Rs.</span>
-                                <input type="number" step="0.01" min="0" class="form-control compact-input text-danger fw-bold"
-                                       id="expenses_amount" name="expenses_amount"
-                                       value="{{ old('expenses_amount', '0.00') }}" placeholder="0.00" oninput="calculateCashBalance()">
-                            </div>
-                        </div>
+                    <div id="lubricantSalesContainer" class="d-flex flex-column gap-1.5">
+                        <!-- Dynamic Lubricant Rows -->
+                    </div>
 
-                        <div class="col-12 col-sm-7">
-                            <label class="compact-label" for="expenses_details">Expense Details / Category</label>
-                            <input type="text" class="form-control compact-input" id="expenses_details" name="expenses_details"
-                                   value="{{ old('expenses_details') }}" placeholder="e.g. Pump cleaning, Tea, Generator oil">
-                        </div>
+                    <div class="p-1.5 px-2 bg-light rounded-2 mt-1 d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-secondary" style="font-size: 0.72rem;">Total Lubricants Sale Revenue:</span>
+                        <strong class="text-info fw-bold" id="display_lubricant_total" style="font-size: 0.82rem;">Rs. 0.00</strong>
                     </div>
                 </div>
 
-                <!-- Step 4: Digital & Card Collections -->
+                <!-- Step 4: Credit / Udhar Fuel Sales to Parties (Audio 8: Party Khata) -->
+                <div class="closing-card border-warning border-opacity-25" style="border-left: 3.5px solid #d97706;">
+                    <div class="closing-card-header">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-warning text-dark closing-step-num">4</span>
+                            <h6 class="closing-card-title">
+                                <i class="bi bi-journal-arrow-down text-warning-emphasis me-1"></i> Credit / Udhar Sales (Audio 8: Party Khata)
+                            </h6>
+                        </div>
+                        <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill py-0.5 px-2" style="font-size: 0.72rem;" onclick="addCreditRow()">
+                            <i class="bi bi-plus-circle me-1"></i> Add Credit (Udhar)
+                        </button>
+                    </div>
+
+                    <div id="creditSalesContainer" class="d-flex flex-column gap-1.5">
+                        <!-- Dynamic Credit Rows -->
+                    </div>
+
+                    <div class="p-1.5 px-2 bg-light rounded-2 mt-1 d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-secondary" style="font-size: 0.72rem;">Total Credit Given (Deducted from Cash):</span>
+                        <strong class="text-danger fw-bold" id="display_credit_total" style="font-size: 0.82rem;">-Rs. 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Step 5: Counter Shift Expenses (Video Walkthrough: Multi-Item Categories) -->
+                <div class="closing-card border-danger border-opacity-25" style="border-left: 3.5px solid #dc2626;">
+                    <div class="closing-card-header">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="badge bg-danger text-white closing-step-num">5</span>
+                            <h6 class="closing-card-title">
+                                <i class="bi bi-wallet2 text-danger me-1"></i> Shift Counter Expenses (Video Walkthrough)
+                            </h6>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0.5 px-2" style="font-size: 0.72rem;" onclick="addExpenseRow()">
+                            <i class="bi bi-plus-circle me-1"></i> Add Expense
+                        </button>
+                    </div>
+
+                    <div id="counterExpensesContainer" class="d-flex flex-column gap-1.5">
+                        <!-- Dynamic Expense Rows -->
+                    </div>
+
+                    <div class="p-1.5 px-2 bg-light rounded-2 mt-1 d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-secondary" style="font-size: 0.72rem;">Total Counter Petty Cash Expenses:</span>
+                        <strong class="text-danger fw-bold" id="display_expenses_total" style="font-size: 0.82rem;">-Rs. 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Step 6: Digital, Card & Government Fuel Subsidy Collections (Audio 3) -->
                 <div class="closing-card">
                     <div class="closing-card-header">
                         <div class="d-flex align-items-center gap-1.5">
-                            <span class="badge bg-primary text-white closing-step-num">4</span>
+                            <span class="badge bg-primary text-white closing-step-num">6</span>
                             <h6 class="closing-card-title">
-                                <i class="bi bi-bank text-info me-1"></i> Digital & Card Collections
+                                <i class="bi bi-bank text-primary me-1"></i> Digital, Card &amp; Govt Subsidy Collections
                             </h6>
                         </div>
                         <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0.5 px-2" style="font-size: 0.72rem;" id="addAccountPayment">
@@ -491,23 +501,60 @@
                     </div>
 
                     <div id="accountPaymentRows" class="d-flex flex-column gap-1.5">
-                        <!-- Dynamic Account Payment Rows Added by JS -->
+                        <!-- Dynamic Digital Rows -->
+                    </div>
+
+                    <!-- Government Subsidy Section (Audio 3) -->
+                    <div class="p-2 border rounded-2 bg-light mt-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="small fw-bold text-dark"><i class="bi bi-phone text-success me-1"></i> Government Fuel Subsidy (Audio 3)</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.65rem;">App / BISP Voucher</span>
+                        </div>
+                        <div class="row g-1.5 align-items-center">
+                            <div class="col-12 col-sm-4">
+                                <label class="compact-label" for="govt_subsidy_amount">Subsidy Amount (Rs.)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white compact-addon fw-bold text-success">Rs.</span>
+                                    <input type="number" step="0.01" min="0" name="govt_subsidy_amount" id="govt_subsidy_amount"
+                                           class="form-control compact-input fw-bold text-success"
+                                           value="{{ old('govt_subsidy_amount', '0.00') }}" placeholder="0.00" oninput="calculateCashBalance()">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="compact-label" for="govt_subsidy_account_id">Receivable Account</label>
+                                <select name="govt_subsidy_account_id" id="govt_subsidy_account_id" class="form-select compact-input">
+                                    @if($subsidyAccount)
+                                        <option value="{{ $subsidyAccount->id }}" selected>{{ $subsidyAccount->name }}</option>
+                                    @endif
+                                    @foreach($accounts as $acc)
+                                        @if(!$subsidyAccount || $subsidyAccount->id !== $acc->id)
+                                            <option value="{{ $acc->id }}">{{ $acc->name }} ({{ ucfirst($acc->type) }})</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="compact-label" for="govt_subsidy_remarks">Voucher Details / Notes</label>
+                                <input type="text" name="govt_subsidy_remarks" id="govt_subsidy_remarks"
+                                       class="form-control compact-input" placeholder="e.g. 5 App vouchers @ 500" value="{{ old('govt_subsidy_remarks') }}">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="p-1.5 px-2 bg-light rounded-2 mt-1.5 d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold text-secondary" style="font-size: 0.75rem;">Total Online Collections:</span>
-                        <span class="fw-bold text-primary" id="display_digital_total" style="font-size: 0.85rem;">Rs. 0.00</span>
+                        <span class="fw-semibold text-secondary" style="font-size: 0.72rem;">Total Online &amp; Subsidy:</span>
+                        <strong class="text-primary fw-bold" id="display_digital_total" style="font-size: 0.82rem;">Rs. 0.00</strong>
                     </div>
                 </div>
 
-                <!-- Shift Remarks -->
+                <!-- Operator Remarks -->
                 <div class="closing-card">
                     <label class="compact-label mb-1" for="remarks">
                         <span><i class="bi bi-chat-text text-primary me-1"></i> Shift Operator Remarks / Notes</span>
                     </label>
                     <textarea class="form-control compact-input" id="remarks" name="remarks" rows="1"
                               style="height: 32px; resize: vertical;"
-                              placeholder="Optional pump calibration notes, power outage, or dip details...">{{ old('remarks') }}</textarea>
+                              placeholder="Power outage, generator hours, dip check readings...">{{ old('remarks') }}</textarea>
                 </div>
 
             </div>
@@ -517,17 +564,17 @@
         <div class="col-12 col-lg-6">
             <div class="d-flex flex-column gap-2">
 
-                <!-- Step 5: Cash Note Denominations -->
+                <!-- Step 7: Cash Note Denominations -->
                 <div class="closing-card border-success border-opacity-25" style="border-left: 3.5px solid #16a34a;">
                     <div class="closing-card-header">
                         <div class="d-flex align-items-center gap-1.5">
-                            <span class="badge bg-success text-white closing-step-num">5</span>
+                            <span class="badge bg-success text-white closing-step-num">7</span>
                             <h6 class="closing-card-title">
                                 <i class="bi bi-cash-stack text-success me-1"></i> Physical Cash Denomination Counter
                             </h6>
                         </div>
                         <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size: 0.65rem;">
-                            Drawer Cash
+                            Cash in Drawer
                         </span>
                     </div>
 
@@ -591,30 +638,45 @@
                     </table>
                 </div>
 
-                <!-- Final Reconciliation Summary & Submit Card -->
+                <!-- Final Comprehensive Shift Reconciliation Card -->
                 <div class="closing-card border-dark border-opacity-25">
                     <h6 class="fw-bold text-dark mb-1.5 pb-1 border-bottom" style="font-size: 0.8rem;">
-                        <i class="bi bi-shield-check text-primary me-1"></i> Final Shift Reconciliation
+                        <i class="bi bi-shield-check text-primary me-1"></i> Complete Shift Reconciliation
                     </h6>
 
-                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.75rem;">
-                        <span class="text-secondary">Expected Cash (Sale - Expenses):</span>
-                        <strong class="text-dark fw-bold" id="summary_expected">Rs. 0.00</strong>
+                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.72rem;">
+                        <span class="text-secondary">Gross Total Sales (Fuel + Oil):</span>
+                        <strong class="text-dark fw-bold" id="summary_gross_sales">Rs. 0.00</strong>
                     </div>
 
-                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.75rem;">
-                        <span class="text-secondary">Actual Received (Cash + Digital):</span>
+                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.72rem;">
+                        <span class="text-danger">Less Credit Sales (Party Khata):</span>
+                        <strong class="text-danger fw-bold" id="summary_credit_sales">-Rs. 0.00</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.72rem;">
+                        <span class="text-danger">Less Counter Petty Expenses:</span>
+                        <strong class="text-danger fw-bold" id="summary_expenses">-Rs. 0.00</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between p-1 px-2 bg-warning-subtle rounded-2 small mb-1" style="font-size: 0.72rem;">
+                        <span class="text-warning-emphasis fw-bold">Net Expected Cash to Submit:</span>
+                        <strong class="text-warning-emphasis fw-bold fs-6" id="summary_expected">Rs. 0.00</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between p-1 px-2 bg-light rounded-2 small mb-1" style="font-size: 0.72rem;">
+                        <span class="text-secondary">Actual Received (Cash + Digital + Subsidy):</span>
                         <strong class="text-success fw-bold" id="summary_actual">Rs. 0.00</strong>
                     </div>
 
-                    <div class="d-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border" id="summary_variance_box" style="font-size: 0.75rem;">
+                    <div class="d-flex justify-content-between p-1.5 px-2 rounded-2 small mb-2 border" id="summary_variance_box" style="font-size: 0.75rem;">
                         <span class="fw-bold">Shift Variance (Difference):</span>
                         <strong class="fw-bold" id="summary_difference">Rs. 0.00</strong>
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-sm rounded-2 fw-bold shadow-sm py-1.5" id="submitClosingBtn" style="font-size: 0.88rem;">
-                            <i class="bi bi-lock-fill me-1"></i> Lock & Finalize Shift Closing
+                        <button type="submit" class="btn btn-primary btn-sm rounded-2 fw-bold shadow-sm py-2" id="submitClosingBtn" style="font-size: 0.88rem;">
+                            <i class="bi bi-lock-fill me-1"></i> Lock &amp; Finalize Shift Closing
                         </button>
                     </div>
                 </div>
@@ -627,383 +689,382 @@
 
 @push('scripts')
 <script>
-    // Accounts dataset for online payment row creation
+    // Datasets
     const availableAccounts = @json($accounts);
+    const lubricantProducts = @json($lubricantProducts);
+    const creditParties = @json($creditParties);
+    const expenseCategories = @json($expenseCategories);
 
-    // 1. Pump Selection Handler
-    function handlePumpSelection() {
-        const pumpSelect = document.getElementById('pump_id');
-        const selected = pumpSelect.options[pumpSelect.selectedIndex];
-        const syncBadge = document.getElementById('pump_stock_sync_badge');
+    let digitalRowCount = 0;
+    let lubricantRowCount = 0;
+    let creditRowCount = 0;
+    let expenseRowCount = 0;
 
-        if (selected && selected.value) {
-            const name = selected.getAttribute('data-name');
-            const lastReading = parseFloat(selected.getAttribute('data-reading')) || 0;
-            const prodId = selected.getAttribute('data-product-id');
-            const prodRate = parseFloat(selected.getAttribute('data-product-rate')) || 0;
-            const tank = selected.getAttribute('data-tank') || 'Storage Tank';
-            const stock = parseFloat(selected.getAttribute('data-stock')) || 0;
+    // 1. Calculate Single Nozzle Row
+    function calculateNozzleRow(nIndex) {
+        const start = parseFloat(document.getElementById('start_' + nIndex).value) || 0;
+        const end = parseFloat(document.getElementById('end_' + nIndex).value) || 0;
+        const test = parseFloat(document.getElementById('testing_' + nIndex).value) || 0;
+        const rate = parseFloat(document.getElementById('rate_' + nIndex).value) || 0;
 
-            document.getElementById('pump_machine').value = name;
-            document.getElementById('start_reading').value = lastReading.toFixed(2);
+        const meterDiff = Math.max(0, end - start);
+        const soldLtr = Math.max(0, meterDiff - test);
+        const subtotal = soldLtr * rate;
 
-            // Update Tank and Stock badge
-            if (syncBadge) {
-                syncBadge.classList.remove('d-none');
-                document.getElementById('pump_tank_display').textContent = tank;
-                const stockDisplay = document.getElementById('pump_stock_display');
-                stockDisplay.textContent = stock.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' Ltr';
-                if (stock <= 3000) {
-                    stockDisplay.className = 'text-danger fw-bold';
-                } else {
-                    stockDisplay.className = 'text-success fw-bold';
-                }
-            }
+        document.getElementById('liters_display_' + nIndex).textContent = soldLtr.toFixed(2) + ' Ltr';
+        document.getElementById('subtotal_display_' + nIndex).textContent = 'Rs. ' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('subtotal_val_' + nIndex).value = subtotal.toFixed(2);
 
-            // Select corresponding fuel product
-            if (prodId) {
-                const prodSelect = document.getElementById('product_id');
-                prodSelect.value = prodId;
-                handleProductRateChange();
-            } else if (prodRate > 0) {
-                document.getElementById('fuel_rate').value = prodRate.toFixed(2);
-            }
-        } else {
-            if (syncBadge) {
-                syncBadge.classList.add('d-none');
-            }
-        }
-        calculateReadings();
+        calculateGrandTotals();
     }
 
-    // 2. Product Rate Selection Handler
-    function handleProductRateChange() {
-        const prodSelect = document.getElementById('product_id');
-        const selected = prodSelect.options[prodSelect.selectedIndex];
+    // 2. Add Lubricant Sale Row (Audio 6)
+    function addLubricantRow() {
+        const container = document.getElementById('lubricantSalesContainer');
+        const id = ++lubricantRowCount;
 
-        if (selected && selected.value) {
-            const rate = parseFloat(selected.getAttribute('data-rate')) || 0;
-            const unit = selected.getAttribute('data-unit') || 'Ltr';
-            document.getElementById('fuel_rate').value = rate.toFixed(2);
-            document.getElementById('litersUnitBadge').textContent = unit;
-        }
-        calculateReadings();
-    }
-
-    // 3. Real-Time Meter Reading & Sale Calculation (Core Feature!)
-    function calculateReadings() {
-        const start = parseFloat(document.getElementById('start_reading').value) || 0;
-        const end = parseFloat(document.getElementById('end_reading').value) || 0;
-        const rate = parseFloat(document.getElementById('fuel_rate').value) || 0;
-
-        const liters = Math.max(0, end - start);
-        const sale = liters * rate;
-
-        document.getElementById('total_liters').value = liters.toFixed(2);
-        document.getElementById('total_sale').value = sale.toFixed(2);
-
-        document.getElementById('kpi_liters').textContent = liters.toFixed(2) + ' Ltr';
-        document.getElementById('kpi_sales').textContent = 'Rs. ' + sale.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('saleFormulaDisplay').textContent = `${liters.toFixed(2)} Liters × Rs. ${rate.toFixed(2)}`;
-
-        calculateCashBalance();
-    }
-
-    // 4. Denomination Calculator
-    function calculateDenominations() {
-        let totalCounted = 0;
-        const multipliers = [5000, 1000, 500, 100, 50, 20, 10];
-
-        multipliers.forEach(mult => {
-            const input = document.getElementById('note_' + mult);
-            const count = parseInt(input.value) || 0;
-            const noteTotal = count * mult;
-            totalCounted += noteTotal;
-            document.getElementById('total_note_' + mult).textContent = noteTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        let options = '<option value="">-- Choose Oil / Pack --</option>';
+        lubricantProducts.forEach(p => {
+            options += `<option value="${p.id}" data-price="${p.sale_price}" data-unit="${p.unit}">${p.name} (Rs. ${parseFloat(p.sale_price).toFixed(2)})</option>`;
         });
 
-        const coins = parseFloat(document.getElementById('coins').value) || 0;
-        totalCounted += coins;
-        document.getElementById('total_coins').textContent = coins.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        document.getElementById('display_counted_cash').textContent = 'Rs. ' + totalCounted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        calculateCashBalance();
-    }
-
-    // 5. Total Digital Collections
-    function calculateDigitalTotal() {
-        let digitalTotal = 0;
-        document.querySelectorAll('.digital-account-amount').forEach(inp => {
-            digitalTotal += parseFloat(inp.value) || 0;
-        });
-        document.getElementById('display_digital_total').textContent = 'Rs. ' + digitalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return digitalTotal;
-    }
-
-    // 6. Overall Cash Reconciliation & Variance Calculator
-    function calculateCashBalance() {
-        const totalSale = parseFloat(document.getElementById('total_sale').value) || 0;
-        const expenses = parseFloat(document.getElementById('expenses_amount').value) || 0;
-
-        // Expected Cash = Total Sale - Shift Expenses
-        const expectedCash = Math.max(0, totalSale - expenses);
-
-        // Counted Cash
-        let countedCash = 0;
-        [5000, 1000, 500, 100, 50, 20, 10].forEach(mult => {
-            countedCash += (parseInt(document.getElementById('note_' + mult)?.value) || 0) * mult;
-        });
-        countedCash += (parseFloat(document.getElementById('coins')?.value) || 0);
-
-        // Digital Collections
-        const digitalCollections = calculateDigitalTotal();
-
-        // Actual Received
-        const actualReceived = countedCash + digitalCollections;
-
-        // Variance = Actual - Expected
-        const difference = actualReceived - expectedCash;
-
-        // Update KPIs & Summary
-        document.getElementById('kpi_expected').textContent = 'Rs. ' + expectedCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('kpi_actual').textContent = 'Rs. ' + actualReceived.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('summary_expected').textContent = 'Rs. ' + expectedCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('summary_actual').textContent = 'Rs. ' + actualReceived.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        const varianceCard = document.getElementById('kpi_variance_card');
-        const varianceBadge = document.getElementById('kpi_variance_badge');
-        const varianceText = document.getElementById('kpi_variance');
-        const summaryDiff = document.getElementById('summary_difference');
-        const summaryBox = document.getElementById('summary_variance_box');
-
-        if (Math.abs(difference) < 0.01) {
-            varianceCard.className = 'kpi-compact-card border-start border-4 border-success h-100 shadow-sm';
-            varianceBadge.className = 'badge bg-success small py-0 px-1';
-            varianceBadge.textContent = 'Balanced';
-            varianceText.className = 'fw-bold text-success kpi-value text-truncate';
-            varianceText.textContent = 'Rs. 0.00';
-            summaryDiff.className = 'fs-6 text-success fw-bold';
-            summaryDiff.textContent = 'Rs. 0.00 (Balanced)';
-            summaryBox.className = 'd-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border bg-success bg-opacity-10 border-success-subtle';
-        } else if (difference > 0) {
-            varianceCard.className = 'kpi-compact-card border-start border-4 border-info h-100 shadow-sm';
-            varianceBadge.className = 'badge bg-info text-dark small py-0 px-1';
-            varianceBadge.textContent = 'Surplus';
-            varianceText.className = 'fw-bold text-info kpi-value text-truncate';
-            varianceText.textContent = '+Rs. ' + difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            summaryDiff.className = 'fs-6 text-info fw-bold';
-            summaryDiff.textContent = '+Rs. ' + difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Surplus)';
-            summaryBox.className = 'd-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border bg-info bg-opacity-10 border-info-subtle';
-        } else {
-            varianceCard.className = 'kpi-compact-card border-start border-4 border-danger h-100 shadow-sm';
-            varianceBadge.className = 'badge bg-danger small py-0 px-1';
-            varianceBadge.textContent = 'Shortage';
-            varianceText.className = 'fw-bold text-danger kpi-value text-truncate';
-            varianceText.textContent = '-Rs. ' + Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            summaryDiff.className = 'fs-6 text-danger fw-bold';
-            summaryDiff.textContent = '-Rs. ' + Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Shortage)';
-            summaryBox.className = 'd-flex justify-content-between p-1 px-2 rounded-2 small mb-2 border bg-danger bg-opacity-10 border-danger-subtle';
-        }
-    }
-
-    // 7. Dynamic Online Payment Row Addition
-    let digitalRowCounter = 0;
-    function addDigitalAccountRow() {
-        const container = document.getElementById('accountPaymentRows');
-        const rowId = 'digital_row_' + digitalRowCounter++;
-
-        let optionsHtml = '<option value="">-- Choose Account --</option>';
-        availableAccounts.forEach(acc => {
-            optionsHtml += `<option value="${acc.id}">${acc.name} (${acc.type})</option>`;
-        });
-
-        const rowHtml = `
-            <div class="row g-1 align-items-center p-1 bg-light rounded-2 border" id="${rowId}">
-                <div class="col-12 col-md-5">
-                    <select name="account_payments[${digitalRowCounter}][account_id]" class="form-select compact-input" style="height: 27px !important; font-size: 0.75rem !important;" required>
-                        ${optionsHtml}
+        const row = document.createElement('div');
+        row.className = 'p-1.5 bg-light rounded-2 border';
+        row.id = 'lub_row_' + id;
+        row.innerHTML = `
+            <div class="row g-1 align-items-center">
+                <div class="col-12 col-sm-5">
+                    <select name="lubricant_sales[${id}][product_id]" class="form-select compact-input fw-semibold" onchange="onLubricantProductChange(${id})">
+                        ${options}
                     </select>
                 </div>
-                <div class="col-7 col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white compact-addon py-0 px-1" style="height: 27px !important; font-size: 0.7rem !important;">Rs.</span>
-                        <input type="number" step="0.01" min="0.01" name="account_payments[${digitalRowCounter}][amount]"
-                               class="form-control compact-input fw-bold digital-account-amount" style="height: 27px !important; font-size: 0.75rem !important;" placeholder="0.00" required oninput="calculateCashBalance()">
-                    </div>
+                <div class="col-4 col-sm-2">
+                    <input type="number" step="1" min="1" name="lubricant_sales[${id}][quantity]" id="lub_qty_${id}" class="form-control compact-input text-center fw-bold" value="1" placeholder="Qty" oninput="calculateLubricantRow(${id})">
                 </div>
-                <div class="col-3 col-md-3">
-                    <input type="text" name="account_payments[${digitalRowCounter}][description]" class="form-control compact-input" style="height: 27px !important; font-size: 0.75rem !important;" placeholder="Ref/Note">
+                <div class="col-4 col-sm-2">
+                    <input type="number" step="0.01" min="0" name="lubricant_sales[${id}][unit_price]" id="lub_price_${id}" class="form-control compact-input text-end fw-semibold" placeholder="Price" oninput="calculateLubricantRow(${id})">
                 </div>
-                <div class="col-2 col-md-1 text-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm p-0 px-1.5" style="height: 27px; line-height: 25px;" onclick="document.getElementById('${rowId}').remove(); calculateCashBalance();">
-                        <i class="bi bi-trash"></i>
+                <div class="col-3 col-sm-2.5" style="flex: 0 0 20%; max-width: 20%;">
+                    <input type="text" readonly name="lubricant_sales[${id}][subtotal]" id="lub_sub_${id}" class="form-control compact-input text-end fw-bold bg-white text-info" value="0.00">
+                </div>
+                <div class="col-1 text-end" style="flex: 0 0 5%; max-width: 5%;">
+                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('lub_row_${id}').remove(); calculateGrandTotals();">
+                        <i class="bi bi-x-circle-fill"></i>
                     </button>
                 </div>
             </div>
         `;
-
-        container.insertAdjacentHTML('beforeend', rowHtml);
+        container.appendChild(row);
     }
 
-    document.getElementById('addAccountPayment').addEventListener('click', addDigitalAccountRow);
-
-    // Quick Add Pump Machine AJAX Handler
-    const quickAddForm = document.getElementById('quickAddPumpForm');
-    if (quickAddForm) {
-        quickAddForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const btn = document.getElementById('quickAddSubmitBtn');
-            const alertBox = document.getElementById('quickAddAlert');
-            alertBox.classList.add('d-none');
-            alertBox.textContent = '';
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-
-            const formData = new FormData(quickAddForm);
-
-            fetch("{{ route('pumps.quick-store') }}", {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                body: formData
-            })
-            .then(res => res.json().then(data => ({ status: res.status, body: data })))
-            .then(result => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Select Machine';
-
-                if (result.status === 200 && result.body.success) {
-                    const pump = result.body.pump;
-                    const select = document.getElementById('pump_id');
-
-                    // Create new option
-                    const opt = document.createElement('option');
-                    opt.value = pump.id;
-                    opt.setAttribute('data-name', pump.name);
-                    opt.setAttribute('data-reading', pump.last_reading);
-                    opt.setAttribute('data-product-id', pump.product_id);
-                    opt.setAttribute('data-product-rate', pump.fuel_rate);
-                    opt.setAttribute('data-product-unit', pump.unit);
-                    opt.setAttribute('data-tank', pump.tank_no);
-                    opt.setAttribute('data-stock', pump.current_stock);
-                    opt.textContent = `${pump.name} (Last: ${pump.last_reading.toFixed(2)})`;
-                    opt.selected = true;
-
-                    select.appendChild(opt);
-                    handlePumpSelection();
-
-                    // Close modal
-                    const modalEl = document.getElementById('quickAddPumpModal');
-                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if (modalInstance) {
-                        modalInstance.hide();
-                    }
-                    quickAddForm.reset();
-                } else {
-                    const msg = result.body.message || (result.body.errors ? Object.values(result.body.errors).flat().join('<br>') : 'Error creating machine.');
-                    alertBox.innerHTML = msg;
-                    alertBox.classList.remove('d-none');
-                }
-            })
-            .catch(err => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Select Machine';
-                alertBox.textContent = 'Server communication error. Please try again.';
-                alertBox.classList.remove('d-none');
-            });
-        });
-    }
-
-    // Initial page load triggers
-    document.addEventListener('DOMContentLoaded', () => {
-        calculateDenominations();
-        if (document.getElementById('pump_id').value) {
-            handlePumpSelection();
-        } else {
-            calculateReadings();
+    function onLubricantProductChange(id) {
+        const row = document.getElementById('lub_row_' + id);
+        const sel = row.querySelector('select');
+        const opt = sel.options[sel.selectedIndex];
+        if (opt && opt.value) {
+            document.getElementById('lub_price_' + id).value = parseFloat(opt.getAttribute('data-price') || 0).toFixed(2);
         }
+        calculateLubricantRow(id);
+    }
+
+    function calculateLubricantRow(id) {
+        const qty = parseFloat(document.getElementById('lub_qty_' + id).value) || 0;
+        const price = parseFloat(document.getElementById('lub_price_' + id).value) || 0;
+        const sub = qty * price;
+        document.getElementById('lub_sub_' + id).value = sub.toFixed(2);
+        calculateGrandTotals();
+    }
+
+    // 3. Add Credit / Udhar Sale Row (Audio 8)
+    function addCreditRow() {
+        const container = document.getElementById('creditSalesContainer');
+        const id = ++creditRowCount;
+
+        let partyOpts = '<option value="">-- Choose Customer Party --</option>';
+        creditParties.forEach(p => {
+            partyOpts += `<option value="${p.id}">${p.name}</option>`;
+        });
+
+        const row = document.createElement('div');
+        row.className = 'p-1.5 bg-light rounded-2 border';
+        row.id = 'credit_row_' + id;
+        row.innerHTML = `
+            <div class="row g-1 align-items-center">
+                <div class="col-12 col-sm-4">
+                    <select name="credit_sales[${id}][party_id]" class="form-select compact-input fw-semibold" required>
+                        ${partyOpts}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-2">
+                    <input type="text" name="credit_sales[${id}][vehicle_no]" class="form-control compact-input font-monospace" placeholder="Vehicle No.">
+                </div>
+                <div class="col-6 col-sm-2">
+                    <input type="number" step="0.01" min="0" name="credit_sales[${id}][liters]" id="credit_ltr_${id}" class="form-control compact-input text-center" placeholder="Liters" oninput="calculateCreditRow(${id})">
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white compact-addon text-danger fw-bold">Rs.</span>
+                        <input type="number" step="0.01" min="1" name="credit_sales[${id}][amount]" id="credit_amt_${id}" class="form-control compact-input fw-bold text-danger" placeholder="Amount" oninput="calculateGrandTotals()">
+                    </div>
+                </div>
+                <div class="col-1 text-end">
+                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('credit_row_${id}').remove(); calculateGrandTotals();">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function calculateCreditRow(id) {
+        // If rate is entered or fuel rate can be inferred
+        calculateGrandTotals();
+    }
+
+    // 4. Add Counter Expense Row (Video Walkthrough)
+    function addExpenseRow() {
+        const container = document.getElementById('counterExpensesContainer');
+        const id = ++expenseRowCount;
+
+        let catOpts = '<option value="">-- Choose Category --</option>';
+        expenseCategories.forEach(c => {
+            catOpts += `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`;
+        });
+
+        const row = document.createElement('div');
+        row.className = 'p-1.5 bg-light rounded-2 border';
+        row.id = 'exp_row_' + id;
+        row.innerHTML = `
+            <div class="row g-1 align-items-center">
+                <div class="col-12 col-sm-4">
+                    <select name="counter_expenses[${id}][expense_category_id]" class="form-select compact-input fw-semibold" onchange="onExpenseCatChange(${id})">
+                        ${catOpts}
+                    </select>
+                    <input type="hidden" name="counter_expenses[${id}][category_name]" id="exp_cat_name_${id}">
+                </div>
+                <div class="col-7 col-sm-4">
+                    <input type="text" name="counter_expenses[${id}][details]" class="form-control compact-input" placeholder="Expense description...">
+                </div>
+                <div class="col-4 col-sm-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white compact-addon text-danger fw-bold">Rs.</span>
+                        <input type="number" step="0.01" min="0" name="counter_expenses[${id}][amount]" id="exp_amt_${id}" class="form-control compact-input fw-bold text-danger" placeholder="0.00" oninput="calculateGrandTotals()">
+                    </div>
+                </div>
+                <div class="col-1 text-end">
+                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('exp_row_${id}').remove(); calculateGrandTotals();">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function onExpenseCatChange(id) {
+        const row = document.getElementById('exp_row_' + id);
+        const sel = row.querySelector('select');
+        const opt = sel.options[sel.selectedIndex];
+        if (opt) {
+            document.getElementById('exp_cat_name_' + id).value = opt.getAttribute('data-name') || '';
+        }
+    }
+
+    // 5. Add Digital Account Row
+    document.getElementById('addAccountPayment').addEventListener('click', () => {
+        const container = document.getElementById('accountPaymentRows');
+        const id = ++digitalRowCount;
+
+        let options = '<option value="">-- Choose Bank / Wallet --</option>';
+        availableAccounts.forEach(acc => {
+            options += `<option value="${acc.id}">${acc.name} (${acc.type.toUpperCase()})</option>`;
+        });
+
+        const row = document.createElement('div');
+        row.className = 'p-1.5 bg-light rounded-2 border';
+        row.id = 'acc_row_' + id;
+        row.innerHTML = `
+            <div class="row g-1 align-items-center">
+                <div class="col-12 col-sm-5">
+                    <select name="account_payments[${id}][account_id]" class="form-select compact-input fw-semibold" required>
+                        ${options}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white compact-addon text-primary fw-bold">Rs.</span>
+                        <input type="number" step="0.01" min="1" name="account_payments[${id}][amount]" class="form-control compact-input fw-bold text-primary digital-amt-input" placeholder="0.00" oninput="calculateGrandTotals()" required>
+                    </div>
+                </div>
+                <div class="col-5 col-sm-2.5" style="flex: 0 0 20%; max-width: 20%;">
+                    <input type="text" name="account_payments[${id}][description]" class="form-control compact-input" placeholder="Tx / Ref #">
+                </div>
+                <div class="col-1 text-end" style="flex: 0 0 5%; max-width: 5%;">
+                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('acc_row_${id}').remove(); calculateGrandTotals();">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+
+    // 6. Denominations Calculation
+    function calculateDenominations() {
+        let totalCounted = 0;
+        const notes = [
+            { id: 'note_5000', mul: 5000 },
+            { id: 'note_1000', mul: 1000 },
+            { id: 'note_500',  mul: 500 },
+            { id: 'note_100',  mul: 100 },
+            { id: 'note_50',   mul: 50 },
+            { id: 'note_20',   mul: 20 },
+            { id: 'note_10',   mul: 10 },
+        ];
+
+        notes.forEach(n => {
+            const el = document.getElementById(n.id);
+            const count = parseInt(el?.value, 10) || 0;
+            const sub = count * n.mul;
+            const target = document.getElementById('total_' + n.id);
+            if (target) target.textContent = sub.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            totalCounted += sub;
+        });
+
+        const coins = parseFloat(document.getElementById('coins')?.value) || 0;
+        const coinsTarget = document.getElementById('total_coins');
+        if (coinsTarget) coinsTarget.textContent = coins.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        totalCounted += coins;
+
+        document.getElementById('display_counted_cash').textContent = 'Rs. ' + totalCounted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        calculateGrandTotals();
+    }
+
+    // 7. Grand Reconciliation Engine
+    function calculateGrandTotals() {
+        // Fuel
+        let totalFuelLtr = 0;
+        let totalTestingLtr = 0;
+        let totalFuelSales = 0;
+
+        document.querySelectorAll('input[id^="subtotal_val_"]').forEach(inp => {
+            totalFuelSales += parseFloat(inp.value) || 0;
+        });
+        document.querySelectorAll('input[id^="end_"]').forEach(inp => {
+            const id = inp.id.replace('end_', '');
+            const start = parseFloat(document.getElementById('start_' + id)?.value) || 0;
+            const end = parseFloat(inp.value) || 0;
+            const test = parseFloat(document.getElementById('testing_' + id)?.value) || 0;
+            const diff = Math.max(0, end - start);
+            const sold = Math.max(0, diff - test);
+            totalFuelLtr += sold;
+            totalTestingLtr += test;
+        });
+
+        document.getElementById('disp_total_fuel_liters').textContent = totalFuelLtr.toFixed(2) + ' Ltr';
+        document.getElementById('disp_total_testing_liters').textContent = totalTestingLtr.toFixed(2) + ' Ltr';
+        document.getElementById('disp_total_fuel_sales').textContent = 'Rs. ' + totalFuelSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpi_liters').textContent = totalFuelLtr.toFixed(2) + ' Ltr';
+        document.getElementById('kpi_testing').textContent = totalTestingLtr.toFixed(2) + ' Ltr';
+
+        // Lubricants
+        let totalLubricants = 0;
+        document.querySelectorAll('input[id^="lub_sub_"]').forEach(inp => {
+            totalLubricants += parseFloat(inp.value) || 0;
+        });
+        document.getElementById('display_lubricant_total').textContent = 'Rs. ' + totalLubricants.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Credit Sales
+        let totalCredit = 0;
+        document.querySelectorAll('input[id^="credit_amt_"]').forEach(inp => {
+            totalCredit += parseFloat(inp.value) || 0;
+        });
+        document.getElementById('display_credit_total').textContent = '-Rs. ' + totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Expenses
+        let totalExpenses = 0;
+        document.querySelectorAll('input[id^="exp_amt_"]').forEach(inp => {
+            totalExpenses += parseFloat(inp.value) || 0;
+        });
+        document.getElementById('display_expenses_total').textContent = '-Rs. ' + totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Digital Collections
+        let totalDigital = 0;
+        document.querySelectorAll('.digital-amt-input').forEach(inp => {
+            totalDigital += parseFloat(inp.value) || 0;
+        });
+        const govtSubsidy = parseFloat(document.getElementById('govt_subsidy_amount')?.value) || 0;
+        const totalDigitalAndSubsidy = totalDigital + govtSubsidy;
+        document.getElementById('display_digital_total').textContent = 'Rs. ' + totalDigitalAndSubsidy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Counted Cash
+        let countedCash = 0;
+        const notes = [5000, 1000, 500, 100, 50, 20, 10];
+        notes.forEach(val => {
+            const c = parseInt(document.getElementById('note_' + val)?.value, 10) || 0;
+            countedCash += c * val;
+        });
+        countedCash += parseFloat(document.getElementById('coins')?.value) || 0;
+
+        // Reconciliation
+        const grossSales = totalFuelSales + totalLubricants;
+        const expectedCash = grossSales - totalCredit - totalExpenses;
+        const actualReceived = countedCash + totalDigitalAndSubsidy;
+        const difference = actualReceived - expectedCash;
+
+        // Update UI
+        document.getElementById('kpi_sales').textContent = 'Rs. ' + grossSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpi_expected').textContent = 'Rs. ' + expectedCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpi_actual').textContent = 'Rs. ' + actualReceived.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        document.getElementById('summary_gross_sales').textContent = 'Rs. ' + grossSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('summary_credit_sales').textContent = '-Rs. ' + totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('summary_expenses').textContent = '-Rs. ' + totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('summary_expected').textContent = 'Rs. ' + expectedCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('summary_actual').textContent = 'Rs. ' + actualReceived.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const varBadge = document.getElementById('kpi_variance_badge');
+        const varCard = document.getElementById('kpi_variance_card');
+        const varVal = document.getElementById('kpi_variance');
+        const varText = document.getElementById('kpi_variance_text');
+        const sumVarBox = document.getElementById('summary_variance_box');
+        const sumVarDiff = document.getElementById('summary_difference');
+
+        if (Math.abs(difference) < 0.01) {
+            varBadge.className = 'badge bg-success small py-0 px-1';
+            varBadge.textContent = 'Balanced';
+            varVal.className = 'fw-bold text-success kpi-value text-truncate';
+            varVal.textContent = 'Rs. 0.00';
+            varText.textContent = 'Drawer Perfectly Reconciled';
+            sumVarBox.className = 'd-flex justify-content-between p-1.5 px-2 rounded-2 small mb-2 border border-success bg-success-subtle text-success';
+            sumVarDiff.textContent = 'Rs. 0.00 (Balanced)';
+        } else if (difference > 0) {
+            varBadge.className = 'badge bg-info text-dark small py-0 px-1';
+            varBadge.textContent = 'Surplus';
+            varVal.className = 'fw-bold text-info kpi-value text-truncate';
+            varVal.textContent = '+Rs. ' + difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            varText.textContent = 'Cash Surplus in Drawer';
+            sumVarBox.className = 'd-flex justify-content-between p-1.5 px-2 rounded-2 small mb-2 border border-info bg-info-subtle text-info';
+            sumVarDiff.textContent = '+Rs. ' + difference.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Surplus)';
+        } else {
+            varBadge.className = 'badge bg-danger text-white small py-0 px-1';
+            varBadge.textContent = 'Shortage';
+            varVal.className = 'fw-bold text-danger kpi-value text-truncate';
+            varVal.textContent = '-Rs. ' + Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            varText.textContent = 'Cash Shortage Detected';
+            sumVarBox.className = 'd-flex justify-content-between p-1.5 px-2 rounded-2 small mb-2 border border-danger bg-danger-subtle text-danger';
+            sumVarDiff.textContent = '-Rs. ' + Math.abs(difference).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (Shortage)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Calculate all pre-loaded nozzles
+        @foreach($pumps as $pump)
+            calculateNozzleRow({{ $pump->id }});
+        @endforeach
+        calculateDenominations();
     });
 </script>
 @endpush
-
-<!-- Modal: Quick Add Pump Machine -->
-<div class="modal fade" id="quickAddPumpModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <form id="quickAddPumpForm">
-                @csrf
-                <div class="modal-header bg-primary text-white py-2 px-3">
-                    <h6 class="modal-title fw-bold mb-0">
-                        <i class="bi bi-fuel-pump-diesel me-1.5"></i> Add New Pump Machine / Dispenser
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-3">
-                    <div id="quickAddAlert" class="alert alert-danger py-2 px-3 small d-none mb-2.5"></div>
-
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold text-dark mb-1">Dispenser Name <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Pump Machine 5 (Super Petrol)" required>
-                    </div>
-
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark mb-1">Code / ID</label>
-                            <input type="text" name="code" class="form-control form-control-sm text-uppercase" placeholder="e.g. PUMP-05">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark mb-1">Meter Type <span class="text-danger">*</span></label>
-                            <select name="meter_type" class="form-select form-select-sm" required>
-                                <option value="electronic" selected>Electronic Digital</option>
-                                <option value="mechanical">Mechanical Roller</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold text-dark mb-1">Dispensed Fuel Product <span class="text-danger">*</span></label>
-                        <select name="product_id" class="form-select form-select-sm" required>
-                            <option value="">-- Select Fuel --</option>
-                            @foreach($fuelProducts as $fp)
-                                <option value="{{ $fp->id }}">
-                                    {{ $fp->name }} (Rs. {{ number_format($fp->sale_price, 2) }}/{{ $fp->unit_label }}) - Stock: {{ number_format($fp->current_stock, 2) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark mb-1">Storage Tank</label>
-                            <input type="text" name="tank_no" class="form-control form-control-sm" placeholder="e.g. Tank #1">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-dark mb-1">Nozzle Config</label>
-                            <input type="text" name="nozzle_number" class="form-control form-control-sm" placeholder="e.g. Nozzle 1 & 2">
-                        </div>
-                    </div>
-
-                    <div class="mb-2 p-2 bg-light rounded border">
-                        <label class="form-label small fw-bold text-primary mb-1">
-                            <i class="bi bi-speedometer2 me-1"></i>Initial / Starting Meter Reading <span class="text-danger">*</span>
-                        </label>
-                        <input type="number" step="0.01" min="0" name="initial_reading" class="form-control form-control-sm fw-bold" placeholder="0.00" value="0.00" required>
-                        <small class="text-muted" style="font-size: 0.65rem;">Opening reading on this dispenser.</small>
-                    </div>
-
-                    <input type="hidden" name="status" value="active">
-                </div>
-                <div class="modal-footer bg-light py-2 px-3">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" id="quickAddSubmitBtn" class="btn btn-primary btn-sm px-3 fw-semibold">
-                        <i class="bi bi-check-circle me-1"></i>Save & Select Machine
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection

@@ -9,6 +9,13 @@ use App\Models\Transaction;
 use App\Models\ExpenseCategory;
 use App\Models\Account;
 use App\Models\Party;
+use App\Models\Tank;
+use App\Models\Purchase;
+use App\Models\Product;
+use App\Models\ShiftClosingNozzle;
+use App\Models\ShiftClosingExpense;
+use App\Models\ShiftClosingLubricant;
+use App\Models\ShiftClosingCredit;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -1292,5 +1299,161 @@ class ReportController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Owner WhatsApp Daily Summary Report (Audio 4)
+     */
+    public function dailyWhatsappSummary(Request $request)
+    {
+        $date = $request->input('date', Carbon::today()->toDateString());
+        $carbonDate = Carbon::parse($date);
+
+        // 1. Storage Tanks Live Status
+        $tanks = Tank::with('product')->active()->orderBy('tank_number')->get();
+
+        // 2. Shifts on this date
+        $shifts = ShiftClosing::whereDate('date', $date)
+            ->with(['nozzles.pump', 'nozzles.product', 'expenses', 'lubricants.product', 'credits.party', 'cashier'])
+            ->get();
+
+        $totalFuelLiters = $shifts->sum('total_liters');
+        $totalTestingLiters = $shifts->sum('testing_liters');
+        $totalFuelSales = $shifts->sum('total_sale');
+        $totalCreditSales = $shifts->sum('total_credit_sales');
+        $totalLubricantSales = $shifts->sum('total_lubricant_sales');
+        $totalExpenses = $shifts->sum('expenses_amount');
+        $totalGrossSales = $totalFuelSales + $totalLubricantSales;
+
+        $totalCountedCash = $shifts->sum('total_counted_cash');
+        $totalDigital = $shifts->sum('bank_amount') + $shifts->sum('jazzcash_amount');
+        $totalSubsidy = $shifts->sum('govt_subsidy_amount');
+
+        // 3. Tanker/Bowser Purchases today
+        $purchases = Purchase::whereDate('purchase_date', $date)->with(['supplier', 'product', 'tank'])->get();
+        $totalPurchasedLiters = $purchases->sum('quantity');
+
+        // 4. Vault & Bank Balances
+        Account::syncCashAccountBalance();
+        $cashInHand = (float) Account::where('type', 'cash')->sum('current_balance');
+        $bankFunds = (float) Account::where('type', 'bank')->sum('current_balance');
+
+        // 5. Configured Owner Phone
+        $ownerPhone = session('owner_whatsapp_phone', '03003647318');
+
+        // Build WhatsApp Formatted Message
+        $msg = "⛽ *CALTEX RAO FILLING STATION*\n";
+        $msg .= "📋 *DAILY STATION EXECUTIVE REPORT*\n";
+        $msg .= "📅 Date: " . $carbonDate->format('d M, Y (l)') . "\n";
+        $msg .= "------------------------------------\n\n";
+
+        $msg .= "📊 *STORAGE TANKS FUEL STATUS:*\n";
+        foreach ($tanks as $t) {
+            $prodName = $t->product?->name ?? $t->name;
+            $dipMm = $t->current_dip_reading ?? 0;
+            $msg .= "• {$prodName}: *" . number_format($t->current_stock, 1) . " L* / " . number_format($t->capacity) . " L (Dip: {$dipMm} mm | Space: " . number_format($t->available_capacity, 1) . " L)\n";
+        }
+
+        $msg .= "\n⛽ *FUEL SALES & DISPENSING:*\n";
+        $msg .= "• Total Liters Dispensed: *" . number_format($totalFuelLiters, 2) . " Ltr*\n";
+        if ($totalTestingLiters > 0) {
+            $msg .= "• Test Paimana (Measure): *" . number_format($totalTestingLiters, 2) . " Ltr* (Poured back into tank)\n";
+        }
+        $msg .= "• Net Fuel Sales: *Rs. " . number_format($totalFuelSales, 2) . "*\n";
+        if ($totalLubricantSales > 0) {
+            $msg .= "• Lubricants / Engine Oil: *Rs. " . number_format($totalLubricantSales, 2) . "*\n";
+        }
+        $msg .= "• Gross Sales Revenue: *Rs. " . number_format($totalGrossSales, 2) . "*\n";
+
+        if ($totalCreditSales > 0) {
+            $msg .= "\n📝 *CREDIT / UDHAR SALES (Party Khata):*\n";
+            $msg .= "• Total Credit Given: *Rs. " . number_format($totalCreditSales, 2) . "*\n";
+            foreach ($shifts as $s) {
+                foreach ($s->credits as $cr) {
+                    $msg .= "  - " . ($cr->party?->name ?? 'Party') . ": Rs. " . number_format($cr->amount, 2) . " (" . number_format($cr->liters, 1) . "L " . ($cr->vehicle_no ? "• {$cr->vehicle_no}" : "") . ")\n";
+                }
+            }
+        }
+
+        if ($totalExpenses > 0) {
+            $msg .= "\n📉 *SHIFT EXPENSES (Petty Cash):*\n";
+            $msg .= "• Total Expenses: *Rs. " . number_format($totalExpenses, 2) . "*\n";
+            foreach ($shifts as $s) {
+                foreach ($s->expenses as $exp) {
+                    $msg .= "  - " . ($exp->category_name ?: $exp->details ?: 'Misc') . ": Rs. " . number_format($exp->amount, 2) . "\n";
+                }
+            }
+        }
+
+        $msg .= "\n💵 *COLLECTIONS & CASH POSITION:*\n";
+        $msg .= "• Physical Counted Cash: *Rs. " . number_format($totalCountedCash, 2) . "*\n";
+        if ($totalDigital > 0) {
+            $msg .= "• Digital / POS Swipes: *Rs. " . number_format($totalDigital, 2) . "*\n";
+        }
+        if ($totalSubsidy > 0) {
+            $msg .= "• Govt Fuel Subsidy: *Rs. " . number_format($totalSubsidy, 2) . "*\n";
+        }
+        $msg .= "• Live Cash in Hand: *Rs. " . number_format($cashInHand, 2) . "*\n";
+        $msg .= "• Bank Balances: *Rs. " . number_format($bankFunds, 2) . "*\n";
+
+        if ($purchases->isNotEmpty()) {
+            $msg .= "\n🚚 *BOWSER FUEL DELIVERIES INTAKE:*\n";
+            foreach ($purchases as $p) {
+                $msg .= "• " . ($p->product?->name ?? 'Fuel') . ": *" . number_format($p->quantity, 1) . " L* from " . ($p->supplier?->name ?? 'OMC') . " (" . ($p->tank?->name ?? 'Tank') . ")\n";
+            }
+        }
+
+        $msg .= "\n------------------------------------\n";
+        $msg .= "Generated automatically by Caltex Petrol ERP System";
+
+        // Click to chat URL
+        $cleanPhone = preg_replace('/[^0-9]/', '', $ownerPhone);
+        if (str_starts_with($cleanPhone, '0')) {
+            $cleanPhone = '92' . substr($cleanPhone, 1);
+        }
+        $whatsappUrl = "https://wa.me/{$cleanPhone}?text=" . rawurlencode($msg);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status'       => 'success',
+                'message_text' => $msg,
+                'whatsapp_url' => $whatsappUrl,
+                'owner_phone'  => $ownerPhone,
+            ]);
+        }
+
+        return view('reports.daily_whatsapp', compact(
+            'date',
+            'carbonDate',
+            'tanks',
+            'shifts',
+            'purchases',
+            'totalFuelLiters',
+            'totalTestingLiters',
+            'totalFuelSales',
+            'totalCreditSales',
+            'totalLubricantSales',
+            'totalGrossSales',
+            'totalExpenses',
+            'totalCountedCash',
+            'totalDigital',
+            'totalSubsidy',
+            'cashInHand',
+            'bankFunds',
+            'ownerPhone',
+            'msg',
+            'whatsappUrl'
+        ));
+    }
+
+    public function saveWhatsappSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'owner_whatsapp_phone' => ['required', 'string', 'max:30'],
+        ]);
+
+        session(['owner_whatsapp_phone' => $validated['owner_whatsapp_phone']]);
+
+        return back()->with('success', "Owner's WhatsApp number updated to {$validated['owner_whatsapp_phone']}");
     }
 }

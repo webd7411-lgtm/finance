@@ -295,7 +295,7 @@
                                         <div class="p-2 rounded-2 border bg-white">
                                             <div class="text-muted text-uppercase" style="font-size: 0.65rem;">Dip Stick</div>
                                             <div class="fw-bold text-dark font-monospace" style="font-size: 0.8rem;">
-                                                {{ $tank->current_dip_reading ? number_format($tank->current_dip_reading, 1) . ' cm' : 'N/A' }}
+                                                {{ $tank->current_dip_reading ? number_format($tank->current_dip_reading, 1) . ' mm' : 'N/A' }}
                                             </div>
                                         </div>
                                     </div>
@@ -380,7 +380,7 @@
                 <div class="modal-body p-3.5">
                     <div class="alert alert-info py-2 px-3 small mb-3">
                         <i class="bi bi-info-circle-fill me-1"></i>
-                        Record physical dip stick height (cm) to compare actual measured fuel in tank against the software book stock.
+                        Record physical dip stick height (mm) to compare actual measured fuel in tank against the software book stock.
                     </div>
 
                     <div class="mb-3">
@@ -389,12 +389,16 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
                             <label class="form-label small fw-semibold text-secondary">Reading Date <span class="text-danger">*</span></label>
                             <input type="date" name="reading_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-secondary">Current Book Stock</label>
+                        <div class="col-4">
+                            <label class="form-label small fw-semibold text-secondary">Time <span class="text-muted">(Optional)</span></label>
+                            <input type="time" name="reading_time" class="form-control form-control-sm" value="{{ now()->format('H:i') }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-semibold text-secondary">Book Stock</label>
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control form-control-sm bg-light font-monospace" id="modalBookStock" readonly>
                                 <span class="input-group-text bg-light">Ltr</span>
@@ -404,10 +408,10 @@
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label class="form-label small fw-semibold text-secondary">Dip Stick Height (cm) <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-semibold text-secondary">Dip Stick Height (mm) <span class="text-danger">*</span></label>
                             <div class="input-group input-group-sm">
-                                <input type="number" step="0.01" min="0" name="dip_cm" id="modalDipCm" class="form-control form-control-sm font-monospace" placeholder="e.g. 142.5" required>
-                                <span class="input-group-text">cm</span>
+                                <input type="number" step="0.01" min="0" name="dip_cm" id="modalDipCm" class="form-control form-control-sm font-monospace" placeholder="e.g. 1425" required>
+                                <span class="input-group-text">mm</span>
                             </div>
                         </div>
                         <div class="col-6">

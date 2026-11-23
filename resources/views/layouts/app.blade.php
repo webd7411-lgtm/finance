@@ -468,6 +468,11 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('rentals.*') ? 'active' : '' }}" href="{{ route('rentals.index') }}">
+                                        <i class="bi bi-shop text-success"></i> Station Rentals & Leases
+                                    </a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('purchases.*') ? 'active' : '' }}" href="{{ route('purchases.index') }}">
                                         <i class="bi bi-truck text-warning"></i> Stock & Fuel Purchases
                                     </a>
@@ -600,6 +605,11 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.daily-whatsapp') ? 'active' : '' }}" href="{{ route('reports.daily-whatsapp') }}">
+                                        <i class="bi bi-whatsapp text-success"></i> Owner WhatsApp Summary
+                                    </a>
+                                </li>
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}" href="{{ route('reports.total-sale-summary') }}">
                                         <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
@@ -782,6 +792,9 @@
                 <a href="{{ route('products.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('products.*') ? 'active' : '' }}">
                     <i class="bi bi-fuel-pump text-danger"></i> Products & Fuel Rates
                 </a>
+                <a href="{{ route('rentals.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('rentals.*') ? 'active' : '' }}">
+                    <i class="bi bi-shop text-success"></i> Station Rentals & Leases
+                </a>
                 <a href="{{ route('purchases.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
                     <i class="bi bi-truck text-warning"></i> Stock & Fuel Purchases
                 </a>
@@ -812,6 +825,9 @@
                 </a>
                 <a href="{{ route('ledgers.bank-book') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('ledgers.bank-book') ? 'active' : '' }}">
                     <i class="bi bi-wallet2 text-info"></i> Bank & Wallet Register
+                </a>
+                <a href="{{ route('reports.daily-whatsapp') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.daily-whatsapp') ? 'active' : '' }}">
+                    <i class="bi bi-whatsapp text-success"></i> Owner WhatsApp Summary
                 </a>
                 <a href="{{ route('reports.total-sale-summary') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.total-sale-summary') ? 'active' : '' }}">
                     <i class="bi bi-graph-up-arrow text-success"></i> Total Sale Summary
