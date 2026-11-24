@@ -468,16 +468,29 @@
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
 
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search machine, tank, or nozzle..." value="{{ request('search') }}">
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Search machine, nozzle, tank..." value="{{ request('search') }}">
                     </div>
                 </div>
 
                 <div class="col-6 col-md-3">
+                    <select name="dispenser_unit" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="all">-- All Dispensers / Units --</option>
+                        @if(isset($dispenserUnits))
+                            @foreach($dispenserUnits as $du)
+                                <option value="{{ $du }}" {{ request('dispenser_unit') == $du ? 'selected' : '' }}>
+                                    {{ $du }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2">
                     <select name="product_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <option value="all">-- All Fuel Products --</option>
+                        <option value="all">-- All Products --</option>
                         @foreach($fuelProducts as $fp)
                             <option value="{{ $fp->id }}" {{ request('product_id') == $fp->id ? 'selected' : '' }}>
                                 {{ $fp->name }}
@@ -486,7 +499,7 @@
                     </select>
                 </div>
 
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-2">
                     <select name="tank_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="all">-- All Storage Tanks --</option>
                         @foreach($tanks as $t)
@@ -497,11 +510,11 @@
                     </select>
                 </div>
 
-                <div class="col-12 col-md-2 d-flex gap-1 justify-content-end">
+                <div class="col-6 col-md-2 d-flex gap-1 justify-content-end">
                     <button type="submit" class="btn btn-dark btn-sm px-3 fw-semibold">
                         <i class="bi bi-funnel me-1"></i>Filter
                     </button>
-                    @if(request()->hasAny(['search', 'product_id', 'tank_id', 'status']))
+                    @if(request()->hasAny(['search', 'dispenser_unit', 'product_id', 'tank_id', 'status']))
                         <a href="{{ route('pumps.index') }}" class="btn btn-outline-secondary btn-sm px-2.5" title="Reset Filters">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
@@ -624,6 +637,18 @@
                                             {{ $pump->name }}
                                         </a>
                                     </h6>
+                                    @if($pump->dispenser_unit)
+                                        <div class="small text-secondary mt-1 d-flex align-items-center gap-1.5" style="font-size: 0.71rem;">
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-1.5 py-0.5">
+                                                <i class="bi bi-cpu me-1"></i>{{ $pump->dispenser_unit }}
+                                            </span>
+                                            @if($pump->nozzle_number)
+                                                <span class="badge bg-light text-secondary border px-1.5 py-0.5">
+                                                    Nozzle #{{ $pump->nozzle_number }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <!-- Clean Fuel Tag & Live Rate (Spaced cleanly without wrapping!) -->
@@ -810,7 +835,12 @@
                                             {{ $pump->name }}
                                         </a>
                                     </div>
-                                    <small class="text-primary fw-semibold" style="font-size: 0.69rem;">
+                                    @if($pump->dispenser_unit)
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-1.5 py-0.5 mt-0.5" style="font-size: 0.65rem;">
+                                            <i class="bi bi-cpu me-1"></i>{{ $pump->dispenser_unit }}
+                                        </span>
+                                    @endif
+                                    <small class="text-primary fw-semibold d-block" style="font-size: 0.69rem;">
                                         Machine {{ ($pumps->currentPage() - 1) * $pumps->perPage() + $loop->iteration }} of {{ $pumps->total() }} Total
                                     </small>
                                     <small class="text-muted" style="font-size: 0.69rem;"> • {{ $pump->meter_type }} Totalizer</small>

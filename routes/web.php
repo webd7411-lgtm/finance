@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::post('day-closings/{dayClosing}/reopen', [DayClosingController::class, 'reopen'])->name('day-closings.reopen');
 
     // Station Commercial Rentals & Incomes (Car Wash, Tyre Shop, Tuck Shop, ATM) (Audio 5)
+    Route::post('rentals/facility-types/quick-store', [RentalController::class, 'storeFacilityType'])->name('rentals.facility-types.quick-store');
     Route::resource('rentals', RentalController::class)->except(['create', 'show', 'edit']);
     Route::post('rentals/{rental}/collect', [RentalController::class, 'collectRent'])->name('rentals.collect');
     Route::delete('rentals/collections/{collection}', [RentalController::class, 'destroyCollection'])->name('rentals.collections.destroy');

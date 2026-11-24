@@ -98,17 +98,7 @@
                         </td>
                         <td>
                             <span class="badge bg-light text-dark border">
-                                @if($rental->facility_type === 'car_wash')
-                                    🚿 Car Wash
-                                @elseif($rental->facility_type === 'tyre_shop')
-                                    🛞 Tyre Shop
-                                @elseif($rental->facility_type === 'tuck_shop')
-                                    🏪 Mart / Tuck Shop
-                                @elseif($rental->facility_type === 'atm')
-                                    🏧 ATM Space
-                                @else
-                                    🏢 Commercial Space
-                                @endif
+                                {{ $rental->facility_type_label }}
                             </span>
                         </td>
                         <td>
@@ -234,14 +224,24 @@
                                                 <input type="text" name="name" class="form-control form-control-sm" value="{{ $rental->name }}" required>
                                             </div>
                                             <div class="col-12 col-sm-6">
-                                                <label class="form-label small fw-semibold">Facility Type <span class="text-danger">*</span></label>
-                                                <select name="facility_type" class="form-select form-select-sm" required>
-                                                    <option value="car_wash" {{ $rental->facility_type === 'car_wash' ? 'selected' : '' }}>🚿 Car Wash Station</option>
-                                                    <option value="tyre_shop" {{ $rental->facility_type === 'tyre_shop' ? 'selected' : '' }}>🛞 Tyre Shop & Puncture</option>
-                                                    <option value="tuck_shop" {{ $rental->facility_type === 'tuck_shop' ? 'selected' : '' }}>🏪 Mart / Tuck Shop</option>
-                                                    <option value="atm" {{ $rental->facility_type === 'atm' ? 'selected' : '' }}>🏧 ATM Booth Space</option>
-                                                    <option value="other" {{ $rental->facility_type === 'other' ? 'selected' : '' }}>🏢 Other Leased Space</option>
-                                                </select>
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <label class="form-label small fw-semibold mb-0">Facility Type <span class="text-danger">*</span></label>
+                                                    <button type="button" class="btn btn-link p-0 text-primary fw-semibold text-decoration-none quick-add-type-trigger" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#quickAddFacilityTypeModal" data-target-select="#edit_facility_type_{{ $rental->id }}">
+                                                        <i class="bi bi-plus-circle-fill me-0.5"></i> + Quick Add
+                                                    </button>
+                                                </div>
+                                                <div class="input-group input-group-sm">
+                                                    <select name="facility_type" id="edit_facility_type_{{ $rental->id }}" class="form-select form-select-sm facility-type-dropdown" required>
+                                                        @foreach($facilityTypes as $type)
+                                                            <option value="{{ $type->slug }}" {{ $rental->facility_type === $type->slug ? 'selected' : '' }}>
+                                                                {{ $type->display_name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="button" class="btn btn-outline-primary quick-add-type-trigger" data-bs-toggle="modal" data-bs-target="#quickAddFacilityTypeModal" data-target-select="#edit_facility_type_{{ $rental->id }}" title="Quick Add Facility Type">
+                                                        <i class="bi bi-plus-lg"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label class="form-label small fw-semibold">Monthly Rent (Rs.) <span class="text-danger">*</span></label>
@@ -369,14 +369,24 @@
                             <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Car Wash Service Ramp #1" required>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-semibold">Facility Type <span class="text-danger">*</span></label>
-                            <select name="facility_type" class="form-select form-select-sm" required>
-                                <option value="car_wash">🚿 Car Wash Station</option>
-                                <option value="tyre_shop">🛞 Tyre Shop & Puncture</option>
-                                <option value="tuck_shop">🏪 Mart / Tuck Shop</option>
-                                <option value="atm">🏧 ATM Booth Space</option>
-                                <option value="other">🏢 Other Leased Space</option>
-                            </select>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold mb-0">Facility Type <span class="text-danger">*</span></label>
+                                <button type="button" class="btn btn-link p-0 text-primary fw-semibold text-decoration-none quick-add-type-trigger" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#quickAddFacilityTypeModal" data-target-select="#create_facility_type">
+                                    <i class="bi bi-plus-circle-fill me-0.5"></i> + Quick Add
+                                </button>
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <select name="facility_type" id="create_facility_type" class="form-select form-select-sm facility-type-dropdown" required>
+                                    @foreach($facilityTypes as $type)
+                                        <option value="{{ $type->slug }}" {{ old('facility_type', 'car_wash') === $type->slug ? 'selected' : '' }}>
+                                            {{ $type->display_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="button" class="btn btn-outline-primary quick-add-type-trigger" data-bs-toggle="modal" data-bs-target="#quickAddFacilityTypeModal" data-target-select="#create_facility_type" title="Quick Add Facility Type">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold">Monthly Rent (Rs.) <span class="text-danger">*</span></label>
@@ -410,4 +420,203 @@
         </div>
     </div>
 </div>
+
+<!-- Modal: Quick Add Facility Type / Lease Entity -->
+<div class="modal fade" id="quickAddFacilityTypeModal" tabindex="-1" aria-labelledby="quickAddFacilityTypeModalLabel" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-2.5 px-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-2 d-flex align-items-center justify-content-center bg-primary text-white" style="width: 28px; height: 28px;">
+                        <i class="bi bi-building-add" style="font-size: 0.9rem;"></i>
+                    </div>
+                    <h6 class="modal-title fw-bold text-white m-0" id="quickAddFacilityTypeModalLabel" style="font-size: 0.92rem;">Quick Add Facility Entity</h6>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickAddFacilityTypeForm" onsubmit="handleQuickFacilityTypeSubmit(event)">
+                <div class="modal-body p-3">
+                    <div id="quickFacilityTypeAlert" class="alert alert-danger py-2 px-3 small mb-3" style="display: none; font-size: 0.78rem;"></div>
+
+                    <div class="mb-3">
+                        <label for="quick_facility_name" class="form-label small fw-semibold">
+                            Facility / Lease Entity Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control form-control-sm fw-semibold" id="quick_facility_name" name="name" required
+                               placeholder="e.g. Electric Vehicle Charger, Restaurant, Warehouse">
+                        <div class="text-muted small mt-1" style="font-size: 0.72rem;">Enter the name of the commercial or leased entity.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Icon / Symbol</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-light" id="preview_icon" style="font-size: 1.1rem; width: 44px; justify-content: center;">🏢</span>
+                            <input type="text" class="form-control form-control-sm" id="quick_facility_icon" name="icon" value="🏢" maxlength="10" placeholder="e.g. ⚡, 🍔, 🚗">
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
+                            <span class="text-muted small me-1" style="font-size: 0.7rem;">Quick pick:</span>
+                            @foreach(['🏢', '🚿', '🛞', '🏪', '🏧', '⚡', '☕', '🍔', '🔧', '📦', '🚗', '⛽', '🍕', '🩺'] as $emoji)
+                                <button type="button" class="btn btn-sm btn-light border py-0 px-1.5 text-center select-quick-emoji" style="font-size: 0.85rem; line-height: 1.4;" data-emoji="{{ $emoji }}">
+                                    {{ $emoji }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="quick_facility_desc" class="form-label small fw-semibold">Description / Notes <span class="text-muted fw-normal">(Optional)</span></label>
+                        <input type="text" class="form-control form-control-sm" id="quick_facility_desc" name="description" placeholder="Short description or usage purpose">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold px-3" id="quickFacilitySubmitBtn">
+                        <span class="spinner-border spinner-border-sm me-1" id="quickFacilitySpinner" style="display: none;" role="status"></span>
+                        <i class="bi bi-check2-circle me-1" id="quickFacilitySubmitIcon"></i> Save &amp; Select
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+    let activeTargetSelectSelector = '#create_facility_type';
+
+    // Set active select target on quick add button click
+    document.addEventListener('click', function(e) {
+        const trigger = e.target.closest('.quick-add-type-trigger');
+        if (trigger) {
+            const target = trigger.getAttribute('data-target-select');
+            if (target) {
+                activeTargetSelectSelector = target;
+            }
+        }
+    });
+
+    // Quick emoji selector
+    document.querySelectorAll('.select-quick-emoji').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const emoji = this.getAttribute('data-emoji');
+            const iconInput = document.getElementById('quick_facility_icon');
+            const previewIcon = document.getElementById('preview_icon');
+            if (iconInput) iconInput.value = emoji;
+            if (previewIcon) previewIcon.textContent = emoji;
+        });
+    });
+
+    const iconInput = document.getElementById('quick_facility_icon');
+    if (iconInput) {
+        iconInput.addEventListener('input', function() {
+            const previewIcon = document.getElementById('preview_icon');
+            if (previewIcon) {
+                previewIcon.textContent = this.value.trim() || '🏢';
+            }
+        });
+    }
+
+    // Handle nested modals in Bootstrap 5
+    const quickAddModalEl = document.getElementById('quickAddFacilityTypeModal');
+    if (quickAddModalEl) {
+        quickAddModalEl.addEventListener('show.bs.modal', function () {
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 1) {
+                    backdrops[backdrops.length - 1].style.zIndex = '1065';
+                }
+            }, 10);
+        });
+
+        quickAddModalEl.addEventListener('hidden.bs.modal', function () {
+            // Keep body scrollable/locked properly when returning to previous modal
+            if (document.querySelectorAll('.modal.show').length > 0) {
+                document.body.classList.add('modal-open');
+            }
+        });
+    }
+
+    function handleQuickFacilityTypeSubmit(e) {
+        e.preventDefault();
+        const alertBox = document.getElementById('quickFacilityTypeAlert');
+        const submitBtn = document.getElementById('quickFacilitySubmitBtn');
+        const spinner = document.getElementById('quickFacilitySpinner');
+        const submitIcon = document.getElementById('quickFacilitySubmitIcon');
+        const nameInput = document.getElementById('quick_facility_name');
+        const iconInput = document.getElementById('quick_facility_icon');
+        const descInput = document.getElementById('quick_facility_desc');
+
+        alertBox.style.display = 'none';
+        submitBtn.disabled = true;
+        spinner.style.display = 'inline-block';
+        if (submitIcon) submitIcon.style.display = 'none';
+
+        fetch("{{ route('rentals.facility-types.quick-store') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                name: nameInput.value,
+                icon: iconInput.value,
+                description: descInput.value
+            })
+        })
+        .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Error adding facility type.'));
+            }
+            return data;
+        })
+        .then((data) => {
+            if (data.success && data.facility_type) {
+                const ft = data.facility_type;
+
+                // 1. Append option to all facility type dropdowns on the page
+                const allDropdowns = document.querySelectorAll('.facility-type-dropdown');
+                allDropdowns.forEach(selectEl => {
+                    let existingOpt = Array.from(selectEl.options).find(opt => opt.value === ft.slug);
+                    if (!existingOpt) {
+                        const opt = document.createElement('option');
+                        opt.value = ft.slug;
+                        opt.textContent = ft.display_name;
+                        selectEl.appendChild(opt);
+                    }
+                });
+
+                // 2. Select the new facility type in the target dropdown
+                if (activeTargetSelectSelector) {
+                    const targetSelect = document.querySelector(activeTargetSelectSelector);
+                    if (targetSelect) {
+                        targetSelect.value = ft.slug;
+                        targetSelect.dispatchEvent(new Event('change'));
+                    }
+                }
+
+                // 3. Close the modal
+                const modalInstance = bootstrap.Modal.getInstance(quickAddModalEl) || new bootstrap.Modal(quickAddModalEl);
+                modalInstance.hide();
+
+                // 4. Reset quick add form
+                document.getElementById('quickAddFacilityTypeForm').reset();
+                const previewIcon = document.getElementById('preview_icon');
+                if (previewIcon) previewIcon.textContent = '🏢';
+                if (iconInput) iconInput.value = '🏢';
+            }
+        })
+        .catch((err) => {
+            alertBox.style.display = 'block';
+            alertBox.textContent = err.message || 'An error occurred while creating facility type.';
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            spinner.style.display = 'none';
+            if (submitIcon) submitIcon.style.display = 'inline-block';
+        });
+    }
+</script>
+@endpush

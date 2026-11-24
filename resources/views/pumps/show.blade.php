@@ -276,6 +276,54 @@
         </div>
     </div>
 
+    <!-- Dispenser Machine Multi-Nozzle Grouping Panel -->
+    @if(isset($siblingNozzles) && $siblingNozzles->count() > 1)
+        <div class="card-custom p-3 mb-2.5">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+                        <i class="bi bi-cpu me-1"></i> Dispenser Machine
+                    </span>
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">
+                        {{ $pump->dispenser_unit ?: $pump->name }} ({{ $siblingNozzles->count() }} Configured Nozzles)
+                    </h6>
+                </div>
+                <div>
+                    <a href="{{ route('pumps.create', ['dispenser_unit' => $pump->dispenser_unit ?: $pump->name]) }}" class="btn btn-outline-primary btn-sm py-1 px-2.5 rounded-2 fw-semibold" style="font-size: 0.76rem;">
+                        <i class="bi bi-plus-circle me-1"></i> Add Nozzle to this Machine
+                    </a>
+                </div>
+            </div>
+            <div class="row g-2">
+                @foreach($siblingNozzles as $sib)
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <div class="p-2.5 rounded-2 border {{ $sib->id === $pump->id ? 'bg-primary bg-opacity-10 border-primary shadow-xs' : 'bg-light border-light-subtle' }}">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge {{ $sib->id === $pump->id ? 'bg-primary text-white' : 'bg-secondary bg-opacity-10 text-secondary' }}" style="font-size: 0.68rem;">
+                                    Nozzle #{{ $sib->nozzle_number ?: $loop->iteration }}
+                                </span>
+                                @if($sib->id === $pump->id)
+                                    <span class="badge bg-primary text-white" style="font-size: 0.6rem;">Currently Viewing</span>
+                                @else
+                                    <a href="{{ route('pumps.show', $sib->id) }}" class="small fw-semibold text-primary text-decoration-none" style="font-size: 0.72rem;">
+                                        View <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                @endif
+                            </div>
+                            <div class="fw-bold text-dark text-truncate" style="font-size: 0.82rem;" title="{{ $sib->name }}">
+                                {{ $sib->name }}
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1 text-secondary small" style="font-size: 0.7rem;">
+                                <span>{{ $sib->product?->name ?? 'Fuel' }}</span>
+                                <span class="font-monospace fw-bold text-dark">{{ number_format($sib->last_reading, 2) }} L</span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <!-- Machine Hardware Specs & Live Bezel Showcase Row -->
     <div class="row g-2.5 mb-2.5">
         <!-- Left: Live Digital Bezel & Quick Controls -->

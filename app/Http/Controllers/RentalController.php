@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\StationRental;
 use App\Models\RentalCollection;
+use App\Models\RentalFacilityType;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class RentalController extends Controller
@@ -32,8 +34,11 @@ class RentalController extends Controller
             ->take(20)
             ->get();
 
+        $facilityTypes = RentalFacilityType::getAllTypes();
+
         return view('rentals.index', compact(
             'rentals',
+            'facilityTypes',
             'accounts',
             'currentMonth',
             'currentMonthName',
@@ -44,11 +49,65 @@ class RentalController extends Controller
         ));
     }
 
+    public function storeFacilityType(Request $request)
+    {
+        $validated = $request->validate([
+            'name'        => ['required', 'string', 'max:100'],
+            'icon'        => ['nullable', 'string', 'max:20'],
+            'slug'        => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $name = trim($validated['name']);
+        $icon = trim($validated['icon'] ?? '🏢');
+        if ($icon === '') {
+            $icon = '🏢';
+        }
+
+        $slug = !empty($validated['slug']) ? Str::slug($validated['slug'], '_') : Str::slug($name, '_');
+        if (empty($slug)) {
+            $slug = 'facility_' . time();
+        }
+
+        // Ensure slug uniqueness
+        $baseSlug = $slug;
+        $counter = 1;
+        while (RentalFacilityType::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '_' . $counter++;
+        }
+
+        $facilityType = RentalFacilityType::create([
+            'name'        => $name,
+            'slug'        => $slug,
+            'icon'        => $icon,
+            'description' => $validated['description'] ?? null,
+            'is_default'  => false,
+        ]);
+
+        ActivityLog::log(
+            'Created',
+            'Facility Type',
+            "Added new lease facility entity '{$facilityType->name}' ({$facilityType->slug})"
+        );
+
+        return response()->json([
+            'success'       => true,
+            'message'       => "Facility entity '{$facilityType->name}' added successfully.",
+            'facility_type' => [
+                'id'           => $facilityType->id,
+                'name'         => $facilityType->name,
+                'slug'         => $facilityType->slug,
+                'icon'         => $facilityType->icon,
+                'display_name' => $facilityType->display_name,
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
-            'facility_type' => ['required', 'string', 'in:car_wash,tyre_shop,tuck_shop,atm,other'],
+            'facility_type' => ['required', 'string', 'max:100'],
             'tenant_name'   => ['required', 'string', 'max:255'],
             'tenant_phone'  => ['nullable', 'string', 'max:50'],
             'monthly_rent'  => ['required', 'numeric', 'min:0'],
@@ -80,7 +139,7 @@ class RentalController extends Controller
     {
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
-            'facility_type' => ['required', 'string', 'in:car_wash,tyre_shop,tuck_shop,atm,other'],
+            'facility_type' => ['required', 'string', 'max:100'],
             'tenant_name'   => ['required', 'string', 'max:255'],
             'tenant_phone'  => ['nullable', 'string', 'max:50'],
             'monthly_rent'  => ['required', 'numeric', 'min:0'],

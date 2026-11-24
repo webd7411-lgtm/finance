@@ -152,10 +152,10 @@
                     </div>
 
                     <div class="row g-2.5">
-                        <!-- Machine Name -->
-                        <div class="col-12 col-md-4">
+                        <!-- Machine / Nozzle Name -->
+                        <div class="col-12 col-md-3">
                             <label class="field-label">
-                                <span>Pump Machine / Dispenser Name <span class="text-danger">*</span></span>
+                                <span>Nozzle / Machine Name <span class="text-danger">*</span></span>
                                 <span class="field-helper-right">Required</span>
                             </label>
                             <input type="text" name="name" class="form-control compact-input @error('name') is-invalid @enderror"
@@ -165,10 +165,31 @@
                             @enderror
                         </div>
 
-                        <!-- Station Site / Location -->
+                        <!-- Dispenser Unit Group -->
                         <div class="col-12 col-md-3">
                             <label class="field-label">
-                                <span>Station Site / Location <span class="text-danger">*</span></span>
+                                <span>Dispenser Machine Unit</span>
+                                <span class="field-helper-right">e.g. Dispenser 01</span>
+                            </label>
+                            <input type="text" name="dispenser_unit" class="form-control compact-input @error('dispenser_unit') is-invalid @enderror"
+                                   value="{{ old('dispenser_unit', $pump->dispenser_unit) }}" list="existingDispenserUnitsList"
+                                   placeholder="e.g. Dispenser 01">
+                            <datalist id="existingDispenserUnitsList">
+                                @if(isset($existingDispenserUnits))
+                                    @foreach($existingDispenserUnits as $du)
+                                        <option value="{{ $du }}"></option>
+                                    @endforeach
+                                @endif
+                            </datalist>
+                            @error('dispenser_unit')
+                                <div class="invalid-feedback small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Station Site / Location -->
+                        <div class="col-12 col-md-2">
+                            <label class="field-label">
+                                <span>Station Site <span class="text-danger">*</span></span>
                             </label>
                             <select name="location_id" id="location_id" class="form-select compact-input @error('location_id') is-invalid @enderror">
                                 @foreach($locations as $loc)
@@ -196,15 +217,15 @@
                         </div>
 
                         <!-- Operational Status -->
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-2">
                             <label class="field-label">
-                                <span>Operational Status <span class="text-danger">*</span></span>
+                                <span>Status <span class="text-danger">*</span></span>
                                 <span class="field-helper-right">Shift Availability</span>
                             </label>
                             <select name="status" class="form-select compact-input @error('status') is-invalid @enderror" required>
-                                <option value="active" {{ old('status', $pump->status) === 'active' ? 'selected' : '' }}>Active (Available for Shifts)</option>
-                                <option value="maintenance" {{ old('status', $pump->status) === 'maintenance' ? 'selected' : '' }}>Under Maintenance</option>
-                                <option value="inactive" {{ old('status', $pump->status) === 'inactive' ? 'selected' : '' }}>Inactive / Decommissioned</option>
+                                <option value="active" {{ old('status', $pump->status) === 'active' ? 'selected' : '' }}>Active (Available)</option>
+                                <option value="maintenance" {{ old('status', $pump->status) === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
+                                <option value="inactive" {{ old('status', $pump->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
                             </select>
                             @error('status')
                                 <div class="invalid-feedback small">{{ $message }}</div>
