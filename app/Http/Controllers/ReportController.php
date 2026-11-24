@@ -146,36 +146,70 @@ class ReportController extends Controller
             });
 
         // 4. Shift Operating Expenses (Counter Expenses from Drawer)
-        $shiftExpensesList = ShiftClosing::whereDate('date', '>=', $fromDate)
+        // Build from BOTH: itemized shift_closing_expenses rows AND legacy expenses_amount field
+        $shiftExpensesRaw = ShiftClosing::whereDate('date', '>=', $fromDate)
             ->whereDate('date', '<=', $toDate)
-            ->where('expenses_amount', '>', 0)
-            ->with(['cashier'])
-            ->get()
-            ->map(function ($se) {
-                $shiftLabel = $se->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
-                $shiftDate = $se->date instanceof Carbon ? $se->date : Carbon::parse($se->date);
-                $expDetails = $se->expenses_details ?: ('Shift operational expenses (' . $shiftLabel . ')');
+            ->where(function ($q) {
+                $q->where('expenses_amount', '>', 0)
+                  ->orWhereHas('expenses');
+            })
+            ->with(['cashier', 'expenses.expenseCategory'])
+            ->get();
 
-                return (object) [
-                    'id' => 'expense-shift-' . $se->id,
-                    'date' => $shiftDate,
-                    'bill_no' => $shiftLabel . ' Expense',
-                    'party' => null,
-                    'party_name' => 'Shift Operating Expense',
-                    'party_type' => 'Expense',
+        $shiftExpensesList = collect();
+        foreach ($shiftExpensesRaw as $se) {
+            $shiftLabel = $se->shift_type === 'morning' ? 'Morning Shift' : 'Evening Shift';
+            $shiftDate  = $se->date instanceof Carbon ? $se->date : Carbon::parse($se->date);
+
+            if ($se->expenses->isNotEmpty()) {
+                // New itemized rows — one entry per expense line
+                foreach ($se->expenses as $expRow) {
+                    $catName = $expRow->category_name ?: ($expRow->expenseCategory->name ?? 'Counter Expense');
+                    $desc    = $expRow->details ?: ($catName . ' (' . $shiftLabel . ')');
+                    $shiftExpensesList->push((object) [
+                        'id'          => 'expense-shift-' . $se->id . '-item-' . $expRow->id,
+                        'date'        => $shiftDate,
+                        'bill_no'     => $shiftLabel . ' Expense',
+                        'party'       => null,
+                        'party_name'  => 'Shift Operating Expense',
+                        'party_type'  => 'Expense',
+                        'party_phone' => null,
+                        'account'     => (object) ['name' => 'Cash Drawer (' . $shiftLabel . ')'],
+                        'account_name'  => 'Cash Drawer (' . $shiftLabel . ')',
+                        'category'    => $expRow->expenseCategory ?? (object) ['name' => $catName],
+                        'category_name' => $catName,
+                        'description' => $desc,
+                        'amount'      => (float) $expRow->amount,
+                        'type'        => 'payment_out',
+                        'shift_name'  => $shiftLabel,
+                        'source'      => 'shift_expense',
+                        'created_at'  => $se->created_at,
+                    ]);
+                }
+            } elseif ($se->expenses_amount > 0) {
+                // Legacy single-line expense
+                $expDetails = $se->expenses_details ?: ('Shift operational expenses (' . $shiftLabel . ')');
+                $shiftExpensesList->push((object) [
+                    'id'          => 'expense-shift-' . $se->id,
+                    'date'        => $shiftDate,
+                    'bill_no'     => $shiftLabel . ' Expense',
+                    'party'       => null,
+                    'party_name'  => 'Shift Operating Expense',
+                    'party_type'  => 'Expense',
                     'party_phone' => null,
-                    'account' => (object) ['name' => 'Cash Drawer (' . $shiftLabel . ')'],
-                    'account_name' => 'Cash Drawer (' . $shiftLabel . ')',
-                    'category' => (object) ['name' => 'Shift Expense'],
+                    'account'     => (object) ['name' => 'Cash Drawer (' . $shiftLabel . ')'],
+                    'account_name'  => 'Cash Drawer (' . $shiftLabel . ')',
+                    'category'    => (object) ['name' => 'Shift Expense'],
                     'category_name' => 'Shift Expense',
                     'description' => $expDetails,
-                    'amount' => (float) $se->expenses_amount,
-                    'type' => 'payment_out',
-                    'shift_name' => $shiftLabel,
-                    'source' => 'shift_expense',
-                    'created_at' => $se->created_at,
-                ];
-            });
+                    'amount'      => (float) $se->expenses_amount,
+                    'type'        => 'payment_out',
+                    'shift_name'  => $shiftLabel,
+                    'source'      => 'shift_expense',
+                    'created_at'  => $se->created_at,
+                ]);
+            }
+        }
 
         // Combined Payments Out List (Sorted Chronologically Descending)
         $paymentsOut = $directVoucherPayments
@@ -452,7 +486,8 @@ class ReportController extends Controller
 
             $shiftPayments = $shiftPaymentsQuery->get();
 
-            // 2. Standalone Shift Counter Deductions (legacy or direct deductions on ShiftClosing)
+            // 2. Standalone Shift Counter Deductions
+            // Include: shifts with itemized expenses OR legacy expenses_amount field
             $allowStandalone = (empty($categoryId) || $categoryId === 'uncategorized')
                 && (empty($partyId) || $partyId === 'no_party');
 
@@ -461,14 +496,19 @@ class ReportController extends Controller
                 $standaloneShiftQuery = ShiftClosing::whereNull('deleted_at')
                     ->whereDate('date', '>=', $fromDate)
                     ->whereDate('date', '<=', $toDate)
-                    ->where('expenses_amount', '>', 0)
-                    ->with(['cashier']);
+                    ->where(function ($q) {
+                        $q->where('expenses_amount', '>', 0)
+                          ->orWhereHas('expenses');
+                    })
+                    ->with(['cashier', 'expenses.expenseCategory']);
 
                 if (!empty($search)) {
                     $standaloneShiftQuery->where(function ($q) use ($search) {
                         $q->where('remarks', 'like', "%{$search}%")
                           ->orWhere('expenses_details', 'like', "%{$search}%")
-                          ->orWhereHas('cashier', fn($uq) => $uq->where('name', 'like', "%{$search}%"));
+                          ->orWhereHas('cashier', fn($uq) => $uq->where('name', 'like', "%{$search}%"))
+                          ->orWhereHas('expenses', fn($eq) => $eq->where('details', 'like', "%{$search}%")
+                              ->orWhereHas('expenseCategory', fn($cq) => $cq->where('name', 'like', "%{$search}%")));
                     });
                 }
 
@@ -479,42 +519,67 @@ class ReportController extends Controller
 
             foreach ($shiftPayments as $sp) {
                 $shiftItems->push((object) [
-                    'id' => $sp->id,
-                    'type' => 'shift_payment',
-                    'date' => $sp->shiftClosing->date,
-                    'shift_type' => $sp->shiftClosing->shift_type,
-                    'shift_badge' => $sp->shiftClosing->shift_badge,
-                    'shift_closing_id' => $sp->shift_closing_id,
-                    'cashier' => $sp->shiftClosing->cashier,
-                    'party' => $sp->party,
-                    'party_id' => $sp->party_id,
-                    'category' => $sp->expenseCategory,
-                    'category_id' => $sp->expense_category_id,
-                    'amount' => (float) $sp->amount,
-                    'details' => $sp->details,
-                    'remarks' => $sp->shiftClosing->remarks,
-                    'shift_total_sale' => (float) $sp->shiftClosing->total_sale,
+                    'id'              => $sp->id,
+                    'type'            => 'shift_payment',
+                    'date'            => $sp->shiftClosing->date,
+                    'shift_type'      => $sp->shiftClosing->shift_type,
+                    'shift_badge'     => $sp->shiftClosing->shift_badge,
+                    'shift_closing_id'=> $sp->shift_closing_id,
+                    'cashier'         => $sp->shiftClosing->cashier,
+                    'party'           => $sp->party,
+                    'party_id'        => $sp->party_id,
+                    'category'        => $sp->expenseCategory,
+                    'category_id'     => $sp->expense_category_id,
+                    'amount'          => (float) $sp->amount,
+                    'details'         => $sp->details,
+                    'remarks'         => $sp->shiftClosing->remarks,
+                    'shift_total_sale'=> (float) $sp->shiftClosing->total_sale,
                 ]);
             }
 
             foreach ($standaloneShifts as $st) {
-                $shiftItems->push((object) [
-                    'id' => $st->id,
-                    'type' => 'shift_deduction',
-                    'date' => $st->date,
-                    'shift_type' => $st->shift_type,
-                    'shift_badge' => $st->shift_badge,
-                    'shift_closing_id' => $st->id,
-                    'cashier' => $st->cashier,
-                    'party' => null,
-                    'party_id' => null,
-                    'category' => null,
-                    'category_id' => null,
-                    'amount' => (float) $st->expenses_amount,
-                    'details' => $st->expenses_details ?? 'Shift counter deduction',
-                    'remarks' => $st->remarks,
-                    'shift_total_sale' => (float) $st->total_sale,
-                ]);
+                if ($st->expenses->isNotEmpty()) {
+                    // Itemized rows — one per expense line
+                    foreach ($st->expenses as $expRow) {
+                        $catName = $expRow->category_name ?: ($expRow->expenseCategory->name ?? 'Counter Expense');
+                        $shiftItems->push((object) [
+                            'id'               => 'exp-' . $st->id . '-' . $expRow->id,
+                            'type'             => 'shift_deduction',
+                            'date'             => $st->date,
+                            'shift_type'       => $st->shift_type,
+                            'shift_badge'      => $st->shift_badge,
+                            'shift_closing_id' => $st->id,
+                            'cashier'          => $st->cashier,
+                            'party'            => null,
+                            'party_id'         => null,
+                            'category'         => $expRow->expenseCategory ?? (object)['id' => null, 'name' => $catName],
+                            'category_id'      => $expRow->expense_category_id,
+                            'amount'           => (float) $expRow->amount,
+                            'details'          => $expRow->details ?: $catName,
+                            'remarks'          => $st->remarks,
+                            'shift_total_sale' => (float) $st->total_sale,
+                        ]);
+                    }
+                } elseif ($st->expenses_amount > 0) {
+                    // Legacy single deduction
+                    $shiftItems->push((object) [
+                        'id'               => $st->id,
+                        'type'             => 'shift_deduction',
+                        'date'             => $st->date,
+                        'shift_type'       => $st->shift_type,
+                        'shift_badge'      => $st->shift_badge,
+                        'shift_closing_id' => $st->id,
+                        'cashier'          => $st->cashier,
+                        'party'            => null,
+                        'party_id'         => null,
+                        'category'         => null,
+                        'category_id'      => null,
+                        'amount'           => (float) $st->expenses_amount,
+                        'details'          => $st->expenses_details ?? 'Shift counter deduction',
+                        'remarks'          => $st->remarks,
+                        'shift_total_sale' => (float) $st->total_sale,
+                    ]);
+                }
             }
 
             $shiftExpenses = $shiftItems->sortByDesc(function ($item) {

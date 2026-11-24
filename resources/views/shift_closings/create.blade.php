@@ -148,6 +148,18 @@
         -webkit-appearance: none;
         margin: 0;
     }
+
+    /* Hide spinner arrows on all amount and number inputs */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button,
+    .no-spin::-webkit-inner-spin-button,
+    .no-spin::-webkit-outer-spin-button {
+        -webkit-appearance: none !important;
+        margin: 0 !important;
+    }
+    input[type=number], .no-spin {
+        -moz-appearance: textfield !important;
+    }
 </style>
 @endpush
 
@@ -614,8 +626,8 @@
                                 <div class="input-group">
                                     <span class="input-group-text bg-white compact-addon fw-bold text-success">Rs.</span>
                                     <input type="number" step="0.01" min="0" name="govt_subsidy_amount" id="govt_subsidy_amount"
-                                           class="form-control compact-input fw-bold text-success"
-                                           value="{{ old('govt_subsidy_amount', '0.00') }}" placeholder="0.00" oninput="calculateCashBalance()">
+                                           class="form-control compact-input fw-bold text-success no-spin"
+                                           value="{{ old('govt_subsidy_amount', '0.00') }}" placeholder="0.00" oninput="calculateGrandTotals()">
                                 </div>
                             </div>
                             <div class="col-12 col-sm-4">
@@ -967,17 +979,18 @@
     }
 
     // 4. Add Counter Expense Row (Video Walkthrough)
-    function addExpenseRow() {
+    function addExpenseRow(selectedCatId = '', detailsVal = '', amountVal = '') {
         const container = document.getElementById('counterExpensesContainer');
         const id = ++expenseRowCount;
 
         let catOpts = '<option value="">-- Choose Category --</option>';
         expenseCategories.forEach(c => {
-            catOpts += `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`;
+            const isSel = (selectedCatId && selectedCatId == c.id) ? 'selected' : '';
+            catOpts += `<option value="${c.id}" data-name="${c.name}" ${isSel}>${c.name}</option>`;
         });
 
         const row = document.createElement('div');
-        row.className = 'p-1.5 bg-light rounded-2 border';
+        row.className = 'p-1.5 bg-light rounded-2 border shadow-xs mb-1';
         row.id = 'exp_row_' + id;
         row.innerHTML = `
             <div class="row g-1 align-items-center">
@@ -988,22 +1001,41 @@
                     <input type="hidden" name="counter_expenses[${id}][category_name]" id="exp_cat_name_${id}">
                 </div>
                 <div class="col-7 col-sm-4">
-                    <input type="text" name="counter_expenses[${id}][details]" class="form-control compact-input" placeholder="Expense description...">
+                    <input type="text" name="counter_expenses[${id}][details]" class="form-control compact-input" placeholder="Expense description (optional)..." value="${detailsVal ? detailsVal.replace(/"/g, '&quot;') : ''}">
                 </div>
                 <div class="col-4 col-sm-3">
                     <div class="input-group">
                         <span class="input-group-text bg-white compact-addon text-danger fw-bold">Rs.</span>
-                        <input type="number" step="0.01" min="0" name="counter_expenses[${id}][amount]" id="exp_amt_${id}" class="form-control compact-input fw-bold text-danger" placeholder="0.00" oninput="calculateGrandTotals()">
+                        <input type="number" step="any" min="0" name="counter_expenses[${id}][amount]" id="exp_amt_${id}" class="form-control compact-input fw-bold text-danger no-spin text-end font-monospace" placeholder="e.g. 5000" value="${amountVal || ''}" oninput="calculateGrandTotals()" onfocus="this.select()">
                     </div>
                 </div>
                 <div class="col-1 text-end">
-                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('exp_row_${id}').remove(); calculateGrandTotals();">
+                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('exp_row_${id}').remove(); calculateGrandTotals();" title="Remove Expense">
                         <i class="bi bi-x-circle-fill"></i>
                     </button>
                 </div>
             </div>
+            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                <span class="text-secondary fw-semibold" style="font-size: 0.65rem;">Quick Amounts:</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 500)">Rs. 500</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 1000)">Rs. 1,000</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 2000)">Rs. 2,000</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 5000)">Rs. 5,000</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 10000)">Rs. 10,000</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 15000)">Rs. 15,000</button>
+            </div>
         `;
         container.appendChild(row);
+        onExpenseCatChange(id);
+        calculateGrandTotals();
+    }
+
+    function setExpenseAmount(id, amt) {
+        const inp = document.getElementById('exp_amt_' + id);
+        if (inp) {
+            inp.value = amt;
+            calculateGrandTotals();
+        }
     }
 
     function onExpenseCatChange(id) {
@@ -1122,23 +1154,26 @@
         // Credit Sales
         let totalCredit = 0;
         document.querySelectorAll('input[id^="credit_amt_"]').forEach(inp => {
-            totalCredit += parseFloat(inp.value) || 0;
+            const raw = (inp.value || '').toString().replace(/,/g, '').trim();
+            totalCredit += parseFloat(raw) || 0;
         });
         document.getElementById('display_credit_total').textContent = '-Rs. ' + totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         // Expenses
         let totalExpenses = 0;
         document.querySelectorAll('input[id^="exp_amt_"]').forEach(inp => {
-            totalExpenses += parseFloat(inp.value) || 0;
+            const raw = (inp.value || '').toString().replace(/,/g, '').trim();
+            totalExpenses += parseFloat(raw) || 0;
         });
         document.getElementById('display_expenses_total').textContent = '-Rs. ' + totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         // Digital Collections
         let totalDigital = 0;
         document.querySelectorAll('.digital-amt-input').forEach(inp => {
-            totalDigital += parseFloat(inp.value) || 0;
+            const raw = (inp.value || '').toString().replace(/,/g, '').trim();
+            totalDigital += parseFloat(raw) || 0;
         });
-        const govtSubsidy = parseFloat(document.getElementById('govt_subsidy_amount')?.value) || 0;
+        const govtSubsidy = parseFloat((document.getElementById('govt_subsidy_amount')?.value || '').toString().replace(/,/g, '').trim()) || 0;
         const totalDigitalAndSubsidy = totalDigital + govtSubsidy;
         document.getElementById('display_digital_total').textContent = 'Rs. ' + totalDigitalAndSubsidy.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -1208,7 +1243,31 @@
             calculateNozzleRow({{ $pump->id }});
         @endforeach
         calculateDenominations();
+
+        // Restore old expenses on validation failure, or auto-add one blank expense row on initial load
+        @if(old('counter_expenses'))
+            const oldExpenses = @json(old('counter_expenses'));
+            const expKeys = Object.keys(oldExpenses);
+            if (expKeys.length > 0) {
+                document.getElementById('counterExpensesContainer').innerHTML = '';
+                expKeys.forEach(k => {
+                    const e = oldExpenses[k];
+                    addExpenseRow(e.expense_category_id || '', e.details || '', e.amount || '');
+                });
+            } else {
+                addExpenseRow();
+            }
+        @else
+            addExpenseRow();
+        @endif
     });
+
+    // Prevent mouse wheel from accidentally changing number inputs when scrolling
+    document.addEventListener('wheel', function(e) {
+        if (document.activeElement && document.activeElement.type === 'number') {
+            document.activeElement.blur();
+        }
+    }, { passive: true });
 </script>
 @endpush
 @endsection

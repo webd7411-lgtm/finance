@@ -609,10 +609,14 @@ class ShiftClosingController extends Controller
             // 2. Process Itemized Counter Expenses (Video Walkthrough requirement)
             if (!empty($expenseRows)) {
                 foreach ($expenseRows as $expRow) {
+                    $resolvedCatName = $expRow['category_name'];
+                    if (empty($resolvedCatName) && !empty($expRow['expense_category_id'])) {
+                        $resolvedCatName = ExpenseCategory::find($expRow['expense_category_id'])?->name;
+                    }
                     ShiftClosingExpense::create([
                         'shift_closing_id'    => $closing->id,
                         'expense_category_id' => $expRow['expense_category_id'],
-                        'category_name'       => $expRow['category_name'],
+                        'category_name'       => $resolvedCatName ?: ($expRow['details'] ?: 'Counter Expense'),
                         'details'             => $expRow['details'],
                         'amount'              => $expRow['amount'],
                     ]);
