@@ -990,32 +990,32 @@
         });
 
         const row = document.createElement('div');
-        row.className = 'p-1.5 bg-light rounded-2 border shadow-xs mb-1';
+        row.className = 'p-2 bg-light rounded-2 border shadow-xs mb-1.5 expense-row-card';
         row.id = 'exp_row_' + id;
         row.innerHTML = `
-            <div class="row g-1 align-items-center">
-                <div class="col-12 col-sm-4">
+            <div class="row g-1.5 align-items-center">
+                <div class="col-12 col-md-4">
                     <select name="counter_expenses[${id}][expense_category_id]" class="form-select compact-input fw-semibold" onchange="onExpenseCatChange(${id})">
                         ${catOpts}
                     </select>
                     <input type="hidden" name="counter_expenses[${id}][category_name]" id="exp_cat_name_${id}">
                 </div>
-                <div class="col-7 col-sm-4">
+                <div class="col-12 col-sm-6 col-md-4">
                     <input type="text" name="counter_expenses[${id}][details]" class="form-control compact-input" placeholder="Expense description (optional)..." value="${detailsVal ? detailsVal.replace(/"/g, '&quot;') : ''}">
                 </div>
-                <div class="col-4 col-sm-3">
+                <div class="col-10 col-sm-5 col-md-3">
                     <div class="input-group">
                         <span class="input-group-text bg-white compact-addon text-danger fw-bold">Rs.</span>
-                        <input type="number" step="any" min="0" name="counter_expenses[${id}][amount]" id="exp_amt_${id}" class="form-control compact-input fw-bold text-danger no-spin text-end font-monospace" placeholder="e.g. 5000" value="${amountVal || ''}" oninput="calculateGrandTotals()" onfocus="this.select()">
+                        <input type="text" inputmode="decimal" name="counter_expenses[${id}][amount]" id="exp_amt_${id}" class="form-control compact-input fw-bold text-danger text-end font-monospace" placeholder="Amount (e.g. 5000)" value="${amountVal || ''}" oninput="calculateGrandTotals()">
                     </div>
                 </div>
-                <div class="col-1 text-end">
+                <div class="col-2 col-sm-1 col-md-1 text-end">
                     <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('exp_row_${id}').remove(); calculateGrandTotals();" title="Remove Expense">
-                        <i class="bi bi-x-circle-fill"></i>
+                        <i class="bi bi-x-circle-fill fs-5"></i>
                     </button>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+            <div class="d-flex align-items-center gap-1 mt-1.5 flex-wrap">
                 <span class="text-secondary fw-semibold" style="font-size: 0.65rem;">Quick Amounts:</span>
                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 500)">Rs. 500</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1.5 rounded-pill" style="font-size: 0.67rem;" onclick="setExpenseAmount(${id}, 1000)">Rs. 1,000</button>
@@ -1035,6 +1035,7 @@
         if (inp) {
             inp.value = amt;
             calculateGrandTotals();
+            inp.focus();
         }
     }
 
@@ -1262,12 +1263,12 @@
         @endif
     });
 
-    // Prevent mouse wheel from accidentally changing number inputs when scrolling
+    // Prevent mouse wheel from accidentally changing number inputs, WITHOUT blurring or losing cursor focus
     document.addEventListener('wheel', function(e) {
-        if (document.activeElement && document.activeElement.type === 'number') {
-            document.activeElement.blur();
+        if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'number') {
+            e.preventDefault();
         }
-    }, { passive: true });
+    }, { passive: false });
 </script>
 @endpush
 @endsection
