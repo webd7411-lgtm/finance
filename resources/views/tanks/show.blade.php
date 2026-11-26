@@ -29,12 +29,22 @@
             </div>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-outline-success btn-sm px-3 shadow-sm" onclick="openDipModal({{ $tank->id }}, '{{ addslashes($tank->name) }}', {{ $tank->current_dip_reading ?? 0 }}, {{ $tank->current_stock }})">
+        @php
+            $dipUnit = $tankConfig['dip_unit'] ?? 'mm';
+            $wLim = $thresholds['warning_liters'] ?? 25;
+            $cLim = $thresholds['critical_liters'] ?? 50;
+            $unitCost = (float) ($tank->product?->purchase_price ?? 0);
+            $hasChart = $tank->dipCharts->isNotEmpty();
+        @endphp
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm px-3 shadow-sm" onclick="openDipModal({{ $tank->id }}, '{{ addslashes($tank->name) }}', {{ $tank->current_dip_reading ?? 0 }}, {{ $tank->current_stock }}, {{ $unitCost }}, {{ $wLim }}, {{ $cLim }}, {{ $hasChart ? 'true' : 'false' }})">
                 <i class="bi bi-rulers me-1"></i> Record Dip Reading
             </button>
             <a href="{{ route('purchases.create', ['tank_id' => $tank->id, 'product_id' => $tank->product_id]) }}" class="btn btn-outline-primary btn-sm px-3 shadow-sm">
                 <i class="bi bi-truck me-1"></i> Intake Fuel Delivery
+            </a>
+            <a href="{{ route('reports.tank-reconciliation', ['tank_id' => $tank->id]) }}" class="btn btn-outline-info btn-sm px-3 shadow-sm">
+                <i class="bi bi-clipboard-data me-1"></i> Audit Report
             </a>
             <a href="{{ route('tanks.edit', $tank->id) }}" class="btn btn-secondary btn-sm px-3 shadow-sm">
                 <i class="bi bi-pencil-square me-1"></i> Edit Specs
@@ -47,6 +57,17 @@
         <div class="alert alert-success alert-dismissible fade show small py-2 px-3 mb-3 shadow-sm" role="alert">
             <i class="bi bi-check-circle-fill me-1"></i> {{ session('success') }}
             <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(!empty($trendInfo['has_trend']))
+        <div class="alert alert-danger border-0 shadow-sm small py-2.5 px-3 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                <strong>Consecutive Shortage Trend Alert:</strong>
+                This tank has recorded <strong>{{ $trendInfo['streak'] }} consecutive negative dip readings</strong> without recovery or reconciliation. Inspect dispenser meter calibration, suction/return lines, or tank seals.
+            </div>
+            <span class="badge bg-danger text-white">Action Recommended</span>
         </div>
     @endif
 
@@ -171,13 +192,44 @@
                         <tr>
                             <td class="text-secondary">Current Dip Reading:</td>
                             <td class="fw-bold font-monospace text-dark text-end">
-                                {{ $tank->current_dip_reading ? number_format($tank->current_dip_reading, 1) . ' mm' : 'Not recorded' }}
+                                {{ $tank->current_dip_reading ? number_format($tank->current_dip_reading, 1) . ' ' . $dipUnit : 'Not recorded' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Last Physical Measured:</td>
+                            <td class="fw-bold font-monospace text-dark text-end">
+                                @if($tank->last_measured_liters !== null)
+                                    {{ number_format($tank->last_measured_liters, 1) }} Ltr
+                                    @if($tank->last_dip_date)
+                                        <small class="text-muted fw-normal">({{ $tank->last_dip_date->format('d M') }})</small>
+                                    @endif
+                                @else
+                                    Not recorded
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Latest Dip Variance:</td>
+                            <td class="text-end">{!! $tank->variance_status_badge !!}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Active Tolerance Rule:</td>
+                            <td class="font-monospace text-secondary text-end">
+                                &plusmn;{{ number_format($wLim, 1) }} L Warn / &plusmn;{{ number_format($cLim, 1) }} L Crit
+                                <span class="badge bg-light text-secondary border ms-1">{{ $thresholds['source'] === 'tank_custom' ? 'Custom' : 'Station Default' }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">This Month Reconciled Adj:</td>
+                            <td class="font-monospace fw-bold text-end {{ $monthAdjustedLiters < 0 ? 'text-danger' : 'text-success' }}">
+                                {{ $monthAdjustedLiters > 0 ? '+' : '' }}{{ number_format($monthAdjustedLiters, 1) }} L
+                                <small class="text-muted fw-normal">(Rs. {{ number_format($monthAdjustedImpact, 0) }})</small>
                             </td>
                         </tr>
                         <tr>
                             <td class="text-secondary">Max Calibration Dip:</td>
                             <td class="font-monospace text-muted text-end">
-                                {{ $tank->max_dip_reading ? number_format($tank->max_dip_reading, 1) . ' mm' : 'N/A' }}
+                                {{ $tank->max_dip_reading ? number_format($tank->max_dip_reading, 1) . ' ' . $dipUnit : 'N/A' }}
                             </td>
                         </tr>
                     </tbody>
@@ -287,6 +339,16 @@
                     <i class="bi bi-rulers text-success"></i>
                     <span>Physical Dip Stick Audit Log</span>
                     <span class="badge bg-light text-secondary border rounded-pill ms-1" style="font-size: 0.68rem;">{{ $tank->dipReadings->count() }}</span>
+                    @if($unreconciledCount > 0)
+                        <span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.65rem;">{{ $unreconciledCount }} Pending</span>
+                    @endif
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold text-dark d-flex align-items-center gap-1.5" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-pane" type="button" role="tab" aria-controls="chart-pane" aria-selected="false">
+                    <i class="bi bi-table text-primary"></i>
+                    <span>Dip Calibration Chart</span>
+                    <span class="badge bg-light text-secondary border rounded-pill ms-1" style="font-size: 0.68rem;">{{ $tank->dipCharts->count() }} pts</span>
                 </button>
             </li>
         </ul>
@@ -521,12 +583,12 @@
 
             <!-- TAB 4: Physical Dip Stick Audit & Book Variance -->
             <div class="tab-pane fade" id="dip-pane" role="tabpanel" aria-labelledby="dip-tab" tabindex="0">
-                <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                     <p class="text-muted small mb-0">
                         <i class="bi bi-info-circle me-1"></i>
-                        Manual dip stick calibration measurements compared directly with the ERP book balance.
+                        Daily physical dip measurements vs book stock. Minor variances within tolerance (&plusmn;{{ number_format($wLim, 1) }} L) are normal; Owner/Incharge can reconcile book stock when needed.
                     </p>
-                    <button type="button" class="btn btn-success btn-sm py-1 px-3" onclick="openDipModal({{ $tank->id }}, '{{ addslashes($tank->name) }}', {{ $tank->current_dip_reading ?? 0 }}, {{ $tank->current_stock }})">
+                    <button type="button" class="btn btn-success btn-sm py-1 px-3" onclick="openDipModal({{ $tank->id }}, '{{ addslashes($tank->name) }}', {{ $tank->current_dip_reading ?? 0 }}, {{ $tank->current_stock }}, {{ $unitCost }}, {{ $wLim }}, {{ $cLim }}, {{ $hasChart ? 'true' : 'false' }})">
                         <i class="bi bi-plus-circle me-1"></i> Record New Dip Reading
                     </button>
                 </div>
@@ -535,8 +597,8 @@
                     <div class="text-center py-5 bg-light rounded-3 border">
                         <i class="bi bi-rulers text-muted fs-2 mb-2 d-block"></i>
                         <h6 class="fw-bold text-dark mb-1">No Physical Dip Stick Readings Recorded</h6>
-                        <p class="text-muted small mb-2">Measure physical fuel dip height (mm) using dip stick to detect evaporation or storage leakage.</p>
-                        <button type="button" class="btn btn-success btn-sm px-3" onclick="openDipModal({{ $tank->id }}, '{{ addslashes($tank->name) }}', {{ $tank->current_dip_reading ?? 0 }}, {{ $tank->current_stock }})">
+                        <p class="text-muted small mb-2">Measure physical fuel dip height ({{ $dipUnit }}) using dip stick to monitor thermal fluctuations, evaporation, or leakage.</p>
+                        <button type="button" class="btn btn-success btn-sm px-3" onclick="openDipModal({{ $tank->id }}, '{{ addslashes($tank->name) }}', {{ $tank->current_dip_reading ?? 0 }}, {{ $tank->current_stock }}, {{ $unitCost }}, {{ $wLim }}, {{ $cLim }}, {{ $hasChart ? 'true' : 'false' }})">
                             <i class="bi bi-rulers me-1"></i> Take Initial Dip Reading
                         </button>
                     </div>
@@ -545,38 +607,91 @@
                         <table class="table table-sm table-hover align-middle small mb-0 border">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Date</th>
-                                    <th class="text-center">Dip Stick Height</th>
-                                    <th class="text-end">Physical Measured Volume</th>
-                                    <th class="text-end">Software Book Stock</th>
-                                    <th class="text-end">Variance (Surplus / Loss)</th>
-                                    <th>Recorded By</th>
-                                    <th>Notes</th>
+                                    <th>Date &amp; Context</th>
+                                    <th class="text-center">Dip ({{ $dipUnit }})</th>
+                                    <th class="text-end">Physical (L)</th>
+                                    <th class="text-end">Book (L)</th>
+                                    <th class="text-end">Period &Delta;</th>
+                                    <th class="text-end">Book Variance</th>
+                                    <th class="text-center">Tolerance Status</th>
+                                    <th>Reason / Notes</th>
+                                    <th class="text-center">Reconciliation</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($tank->dipReadings as $dip)
                                     <tr>
                                         <td>
-                                            {{ $dip->reading_date->format('d M, Y') }}
-                                            @if($dip->reading_time)
-                                                <br><small class="text-muted">{{ \Carbon\Carbon::parse($dip->reading_time)->format('g:i A') }}</small>
+                                            <div class="fw-semibold text-dark">{{ $dip->reading_date->format('d M, Y') }}</div>
+                                            <div class="text-muted" style="font-size: 0.7rem;">
+                                                @if($dip->reading_time)
+                                                    {{ \Carbon\Carbon::parse($dip->reading_time)->format('g:i A') }} &bull;
+                                                @endif
+                                                {{ $dip->context_label }}
+                                            </div>
+                                        </td>
+                                        <td class="text-center font-monospace fw-bold">
+                                            {{ number_format($dip->dip_cm, 2) }} {{ $dipUnit }}
+                                            @if($dip->is_chart_calculated)
+                                                <div><span class="badge bg-success-subtle text-success" style="font-size: 0.62rem;">Chart</span></div>
                                             @endif
                                         </td>
-                                        <td class="text-center font-monospace fw-bold">{{ number_format($dip->dip_cm, 2) }} mm</td>
                                         <td class="text-end font-monospace fw-bold text-dark">{{ number_format($dip->measured_liters, 2) }} L</td>
                                         <td class="text-end font-monospace text-secondary">{{ number_format($dip->book_stock_liters, 2) }} L</td>
-                                        <td class="text-end font-monospace fw-bold">
-                                            @if($dip->variance_liters == 0)
-                                                <span class="text-success">Exact Match (0 L)</span>
-                                            @elseif($dip->variance_liters > 0)
-                                                <span class="text-info">+{{ number_format($dip->variance_liters, 2) }} L (Gain)</span>
+                                        <td class="text-end font-monospace {{ ($dip->period_variance_liters ?? 0) < 0 ? 'text-danger' : 'text-info' }}">
+                                            @if($dip->period_variance_liters !== null)
+                                                {{ $dip->period_variance_liters > 0 ? '+' : '' }}{{ number_format($dip->period_variance_liters, 1) }} L
                                             @else
-                                                <span class="text-danger">{{ number_format($dip->variance_liters, 2) }} L (Loss)</span>
+                                                -
                                             @endif
                                         </td>
-                                        <td>{{ $dip->recorder?->name ?? 'System' }}</td>
-                                        <td class="text-muted small">{{ $dip->notes ?: '-' }}</td>
+                                        <td class="text-end font-monospace fw-bold">
+                                            @if($dip->variance_liters == 0)
+                                                <span class="text-success">0.00 L</span>
+                                            @elseif($dip->variance_liters > 0)
+                                                <span class="text-info">+{{ number_format($dip->variance_liters, 2) }} L</span>
+                                            @else
+                                                <span class="text-danger">{{ number_format($dip->variance_liters, 2) }} L</span>
+                                            @endif
+                                            @if($dip->financial_impact_amount !== null && abs($dip->variance_liters) > 0.01)
+                                                <div class="text-muted fw-normal" style="font-size: 0.68rem;">
+                                                    Rs. {{ number_format($dip->financial_impact_amount, 0) }}
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">{!! $dip->status_badge !!}</td>
+                                        <td class="text-muted small">
+                                            @if($dip->reason_label)
+                                                <div class="fw-semibold text-dark">{{ $dip->reason_label }}</div>
+                                            @endif
+                                            @if($dip->temperature_c !== null || $dip->water_dip_mm !== null)
+                                                <div style="font-size: 0.68rem;">
+                                                    @if($dip->temperature_c !== null) Temp: {{ $dip->temperature_c }}°C @endif
+                                                    @if($dip->water_dip_mm !== null) | Water: {{ $dip->water_dip_mm }} {{ $dipUnit }} @endif
+                                                </div>
+                                            @endif
+                                            <div>{{ $dip->notes ?: '-' }}</div>
+                                            <small class="text-secondary">By: {{ $dip->recorder?->name ?? 'System' }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            @if($dip->is_reconciled)
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                    <i class="bi bi-check2-all me-1"></i>Reconciled
+                                                </span>
+                                                @if($dip->adjusted_liters !== null && abs($dip->adjusted_liters) > 0.01)
+                                                    <div class="text-muted font-monospace" style="font-size: 0.68rem;">
+                                                        {{ $dip->adjusted_liters > 0 ? '+' : '' }}{{ number_format($dip->adjusted_liters, 1) }} L
+                                                    </div>
+                                                @endif
+                                            @elseif(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                                <button type="button" class="btn btn-outline-primary btn-sm py-0.5 px-2"
+                                                        onclick="openReconcileModal({{ $tank->id }}, {{ $dip->id }}, {{ $tank->current_stock }}, {{ $dip->measured_liters }}, '{{ addslashes($dip->reason_category ?? '') }}')">
+                                                    <i class="bi bi-sliders me-1"></i>Reconcile
+                                                </button>
+                                            @else
+                                                <span class="badge bg-light text-muted border">Pending Audit</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -585,81 +700,131 @@
                 @endif
             </div>
 
+            <!-- TAB 5: Tank Dip Calibration Chart (mm -> Liters) -->
+            <div class="tab-pane fade" id="chart-pane" role="tabpanel" aria-labelledby="chart-tab" tabindex="0">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-7">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-dark m-0">Calibration Strapping Points ({{ $dipUnit }} &rarr; Liters)</h6>
+                            <span class="badge bg-light text-secondary border">{{ $tank->dipCharts->count() }} Points</span>
+                        </div>
+
+                        @if($tank->dipCharts->isEmpty())
+                            <div class="text-center py-4 bg-light rounded-3 border">
+                                <i class="bi bi-table text-muted fs-2 mb-2 d-block"></i>
+                                <h6 class="fw-bold text-dark mb-1">No Dip Calibration Chart Configured</h6>
+                                <p class="text-muted small mb-0">Add calibration points on the right (paste CSV/lines like <code>100, 1200</code>) so entering dip height automatically computes Liters using linear interpolation.</p>
+                            </div>
+                        @else
+                            <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                                <table class="table table-sm table-bordered table-hover align-middle small mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>Dip Height ({{ $dipUnit }})</th>
+                                            <th class="text-end">Volume (Liters)</th>
+                                            @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                                <th class="text-center" style="width: 70px;">Remove</th>
+                                            @endif
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($tank->dipCharts as $pt)
+                                            <tr>
+                                                <td class="font-monospace fw-bold">{{ number_format($pt->dip_mm, 2) }} {{ $dipUnit }}</td>
+                                                <td class="text-end font-monospace">{{ number_format($pt->liters, 2) }} L</td>
+                                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                                    <td class="text-center">
+                                                        <form action="{{ route('tanks.dip-chart.delete', [$tank->id, $pt->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove calibration point?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1.5"><i class="bi bi-trash"></i></button>
+                                                        </form>
+                                                    </td>
+                                                @endif
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="col-12 col-lg-5">
+                        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                            <div class="p-3 rounded-3 border bg-light">
+                                <h6 class="fw-bold text-dark mb-2"><i class="bi bi-upload text-primary me-1"></i> Import / Update Dip Chart</h6>
+                                <p class="text-muted small mb-2">Enter one calibration point per line as <code>dip_{{ $dipUnit }}, liters</code> (comma, tab, or space separated).</p>
+                                <form action="{{ route('tanks.dip-chart.save', $tank->id) }}" method="POST">
+                                    @csrf
+                                    <div class="mb-2">
+                                        <textarea name="bulk_csv" class="form-control form-control-sm font-monospace" rows="7" placeholder="0, 0&#10;500, 4200&#10;1000, 10800&#10;1500, 17900&#10;2000, 23600&#10;2200, 25000" required></textarea>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" name="replace_existing" value="1" id="replaceChartCheck" checked>
+                                        <label class="form-check-label small" for="replaceChartCheck">
+                                            Replace existing chart points (uncheck to merge/append)
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">
+                                        <i class="bi bi-save me-1"></i> Save Calibration Chart
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
 </div>
 
-<!-- Modal: Record Daily Physical Dip Reading -->
-<div class="modal fade" id="dipReadingModal" tabindex="-1" aria-labelledby="dipReadingModalLabel" aria-hidden="true">
+@if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+<!-- Modal: Reconcile Book Stock to Physical Dip -->
+<div class="modal fade" id="reconcileDipModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-dark text-white py-2.5 px-3">
-                <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="dipReadingModalLabel">
-                    <i class="bi bi-rulers text-warning"></i>
-                    <span>Record Physical Dip Reading</span>
-                </h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white py-2.5 px-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-sliders me-1"></i> Reconcile Book Stock to Physical Dip</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-
-            <form id="dipReadingForm" method="POST" action="">
+            <form id="reconcileDipForm" method="POST" action="">
                 @csrf
                 <div class="modal-body p-3.5">
-                    <div class="alert alert-info py-2 px-3 small mb-3">
-                        <i class="bi bi-info-circle-fill me-1"></i>
-                        Record physical dip stick height (mm) to compare actual physical fuel in tank against the software book stock.
+                    <div class="p-2.5 rounded-3 bg-light border mb-3 small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary">Current Book Stock:</span>
+                            <strong id="recBookStock" class="font-monospace">0 L</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary">Target Physical Dip:</span>
+                            <strong id="recPhysicalStock" class="font-monospace">0 L</strong>
+                        </div>
+                        <div class="d-flex justify-content-between pt-1 border-top">
+                            <span class="fw-bold">Stock Adjustment:</span>
+                            <strong id="recAdjustment" class="font-monospace">0 L</strong>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Target Storage Tank</label>
-                        <input type="text" class="form-control form-control-sm bg-light" id="modalTankName" readonly>
+                        <label class="form-label small fw-semibold text-secondary">Reconciliation Reason</label>
+                        <select name="reason_category" id="recReasonCategory" class="form-select form-select-sm" required>
+                            @foreach($reasonCategories as $rKey => $rLabel)
+                                <option value="{{ $rKey }}">{{ $rLabel }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-secondary">Reading Date <span class="text-danger">*</span></label>
-                            <input type="date" name="reading_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required>
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-secondary">Time <span class="text-muted">(Optional)</span></label>
-                            <input type="time" name="reading_time" class="form-control form-control-sm" value="{{ now()->format('H:i') }}">
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label small fw-semibold text-secondary">Book Stock</label>
-                            <div class="input-group input-group-sm">
-                                <input type="text" class="form-control form-control-sm bg-light font-monospace" id="modalBookStock" readonly>
-                                <span class="input-group-text bg-light">Ltr</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-secondary">Dip Stick Height (mm) <span class="text-danger">*</span></label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" step="0.01" min="0" name="dip_cm" id="modalDipCm" class="form-control form-control-sm font-monospace" placeholder="e.g. 1425" required>
-                                <span class="input-group-text">mm</span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-semibold text-secondary">Measured Volume (Ltr) <span class="text-danger">*</span></label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" step="0.01" min="0" name="measured_liters" id="modalMeasuredLiters" class="form-control form-control-sm font-monospace" placeholder="e.g. 18500" required>
-                                <span class="input-group-text">Ltr</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold text-secondary">Notes / Calibration Remarks <span class="text-muted">(Optional)</span></label>
-                        <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="e.g. Morning physical dip verification before first shift..."></textarea>
+                    <div class="mb-1">
+                        <label class="form-label small fw-semibold text-secondary">Approval Remarks <span class="text-muted">(Optional)</span></label>
+                        <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="e.g. Month-end evaporation / thermal variance reconciliation approved..."></textarea>
                     </div>
                 </div>
-
                 <div class="modal-footer py-2 px-3 bg-light">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success btn-sm px-3">
-                        <i class="bi bi-check2-circle me-1"></i> Save Dip Measurement
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Approve &amp; Reconcile Stock
                     </button>
                 </div>
             </form>
@@ -667,18 +832,34 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
-function openDipModal(tankId, tankName, currentDip, bookStock) {
-    const form = document.getElementById('dipReadingForm');
-    form.action = "{{ url('tanks') }}/" + tankId + "/record-dip";
+function openReconcileModal(tankId, dipId, bookStock, physicalStock, defaultReason) {
+    const form = document.getElementById('reconcileDipForm');
+    form.action = `{{ url('tanks') }}/${tankId}/dip-readings/${dipId}/reconcile`;
 
-    document.getElementById('modalTankName').value = tankName;
-    document.getElementById('modalBookStock').value = Number(bookStock).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    document.getElementById('modalDipCm').value = currentDip > 0 ? currentDip : '';
-    document.getElementById('modalMeasuredLiters').value = bookStock > 0 ? bookStock : '';
+    const diff = Number(physicalStock) - Number(bookStock);
+    const sign = diff > 0 ? '+' : '';
+    document.getElementById('recBookStock').textContent = Number(bookStock).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' L';
+    document.getElementById('recPhysicalStock').textContent = Number(physicalStock).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' L';
 
-    const modal = new bootstrap.Modal(document.getElementById('dipReadingModal'));
+    const adjEl = document.getElementById('recAdjustment');
+    adjEl.textContent = `${sign}${diff.toFixed(1)} L (${diff >= 0 ? 'Gain' : 'Shrinkage Loss'})`;
+    adjEl.className = 'font-monospace ' + (diff < 0 ? 'text-danger' : 'text-success');
+
+    const sel = document.getElementById('recReasonCategory');
+    if (defaultReason && sel) {
+        sel.value = defaultReason;
+    } else if (sel) {
+        sel.value = diff < 0 ? 'evaporation_loss' : 'temperature_variation';
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('reconcileDipModal'));
     modal.show();
 }
 </script>
+@endpush
+@endif
+
+@include('tanks.partials.dip_modal')
 @endsection

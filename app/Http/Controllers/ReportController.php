@@ -16,6 +16,10 @@ use App\Models\ShiftClosingNozzle;
 use App\Models\ShiftClosingExpense;
 use App\Models\ShiftClosingLubricant;
 use App\Models\ShiftClosingCredit;
+use App\Models\StationSetting;
+use App\Models\TankDipReading;
+use App\Models\TankStockAdjustment;
+use App\Services\TankReconciliationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -1412,11 +1416,27 @@ class ReportController extends Controller
         $msg .= "📅 Date: " . $carbonDate->format('d M, Y (l)') . "\n";
         $msg .= "------------------------------------\n\n";
 
+        $tankConfig = StationSetting::getTankConfig();
+        $dipUnit = $tankConfig['dip_unit'] ?? 'mm';
+
         $msg .= "📊 *STORAGE TANKS FUEL STATUS:*\n";
         foreach ($tanks as $t) {
             $prodName = $t->product?->name ?? $t->name;
             $dipMm = $t->current_dip_reading ?? 0;
-            $msg .= "• {$prodName}: *" . number_format($t->current_stock, 1) . " L* / " . number_format($t->capacity) . " L (Dip: {$dipMm} mm | Space: " . number_format($t->available_capacity, 1) . " L)\n";
+            $varStr = '';
+            if ($t->last_variance_liters !== null) {
+                $v = (float) $t->last_variance_liters;
+                $vSign = $v > 0 ? '+' : '';
+                $vTag = match ($t->last_variance_status) {
+                    'balanced'         => 'Balanced',
+                    'within_tolerance' => 'Normal',
+                    'warning'          => 'Warning',
+                    'critical'         => 'ALERT',
+                    default            => 'Dip',
+                };
+                $varStr = " | Var: {$vSign}" . number_format($v, 1) . " L ({$vTag})";
+            }
+            $msg .= "• {$prodName}: *" . number_format($t->current_stock, 1) . " L* / " . number_format($t->capacity) . " L (Dip: {$dipMm} {$dipUnit}{$varStr} | Space: " . number_format($t->available_capacity, 1) . " L)\n";
         }
 
         // 12:00 AM Midnight Rate Revisions & Tank Revaluation (Rate Difference Gain/Loss)
@@ -1533,5 +1553,112 @@ class ReportController extends Controller
         session(['owner_whatsapp_phone' => $validated['owner_whatsapp_phone']]);
 
         return back()->with('success', "Owner's WhatsApp number updated to {$validated['owner_whatsapp_phone']}");
+    }
+
+    /**
+     * Wet-Stock & Tank Dip Variance Reconciliation Report
+     */
+    public function tankReconciliationReport(Request $request, TankReconciliationService $reconciliationService)
+    {
+        $fromDate = $request->input('from_date', Carbon::today()->startOfMonth()->toDateString());
+        $toDate = $request->input('to_date', Carbon::today()->toDateString());
+        $tankId = $request->input('tank_id');
+        $statusFilter = $request->input('variance_status');
+        $reconcileFilter = $request->input('reconcile_status');
+
+        if ($fromDate > $toDate) {
+            [$fromDate, $toDate] = [$toDate, $fromDate];
+        }
+
+        $tankConfig = StationSetting::getTankConfig();
+        $tanks = Tank::with('product')->active()->orderBy('tank_number')->get();
+
+        $dipQuery = TankDipReading::with(['tank.product', 'recorder', 'reconciler', 'purchase'])
+            ->whereDate('reading_date', '>=', $fromDate)
+            ->whereDate('reading_date', '<=', $toDate)
+            ->latest('reading_date')
+            ->latest('id');
+
+        if (!empty($tankId)) {
+            $dipQuery->where('tank_id', $tankId);
+        }
+        if (!empty($statusFilter)) {
+            $dipQuery->where('variance_status', $statusFilter);
+        }
+        if ($reconcileFilter === 'reconciled') {
+            $dipQuery->where('is_reconciled', true);
+        } elseif ($reconcileFilter === 'unreconciled') {
+            $dipQuery->where('is_reconciled', false);
+        }
+
+        $dipReadings = $dipQuery->get();
+
+        $adjQuery = TankStockAdjustment::with(['tank.product', 'creator'])
+            ->whereDate('adjustment_date', '>=', $fromDate)
+            ->whereDate('adjustment_date', '<=', $toDate)
+            ->latest('adjustment_date')
+            ->latest('id');
+
+        if (!empty($tankId)) {
+            $adjQuery->where('tank_id', $tankId);
+        }
+
+        $adjustments = $adjQuery->get();
+
+        // Tank health summary cards
+        $tankSummaries = $tanks->map(function ($tank) use ($reconciliationService, $tankConfig) {
+            $thresholds = $reconciliationService->calculateToleranceThresholds($tank, (float) $tank->current_stock, $tankConfig);
+            $trend = $reconciliationService->detectConsecutiveShortageTrend($tank, $tankConfig);
+            $unitCost = (float) ($tank->product?->purchase_price ?? 0);
+            $latestVar = $tank->last_variance_liters !== null ? (float) $tank->last_variance_liters : null;
+
+            return (object) [
+                'tank'             => $tank,
+                'thresholds'       => $thresholds,
+                'trend'            => $trend,
+                'financial_impact' => $latestVar !== null ? round($latestVar * $unitCost, 2) : 0.0,
+            ];
+        });
+
+        // Overall KPI metrics
+        $totalDips = $dipReadings->count();
+        $normalCount = $dipReadings->whereIn('variance_status', ['balanced', 'within_tolerance'])->count();
+        $alertCount = $dipReadings->whereIn('variance_status', ['warning', 'critical'])->count();
+        $totalReconciledLiters = round((float) $adjustments->sum('adjustment_liters'), 2);
+        $totalReconciledImpact = round((float) $adjustments->sum('financial_impact'), 2);
+        $currentNetUnreconciledLiters = round((float) $tanks->whereNotNull('last_variance_liters')->sum('last_variance_liters'), 2);
+        $currentNetUnreconciledImpact = round((float) $tankSummaries->sum('financial_impact'), 2);
+
+        // Chart.js daily variance trend data (ascending by reading_date)
+        $chartDips = $dipReadings->whereNotIn('reading_context', ['pre_delivery', 'initial'])
+            ->sortBy([['reading_date', 'asc'], ['id', 'asc']])
+            ->values();
+
+        $chartLabels = $chartDips->map(fn ($d) => $d->reading_date->format('d M') . ' (' . ($d->tank?->tank_number ?? 'TK') . ')')->all();
+        $chartVariances = $chartDips->map(fn ($d) => (float) $d->variance_liters)->all();
+        $chartPeriodChanges = $chartDips->map(fn ($d) => (float) ($d->period_variance_liters ?? $d->variance_liters))->all();
+
+        return view('reports.tank_reconciliation', compact(
+            'fromDate',
+            'toDate',
+            'tankId',
+            'statusFilter',
+            'reconcileFilter',
+            'tankConfig',
+            'tanks',
+            'dipReadings',
+            'adjustments',
+            'tankSummaries',
+            'totalDips',
+            'normalCount',
+            'alertCount',
+            'totalReconciledLiters',
+            'totalReconciledImpact',
+            'currentNetUnreconciledLiters',
+            'currentNetUnreconciledImpact',
+            'chartLabels',
+            'chartVariances',
+            'chartPeriodChanges'
+        ));
     }
 }

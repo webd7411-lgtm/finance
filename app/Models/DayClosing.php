@@ -93,16 +93,12 @@ class DayClosing extends Model
 
         $totalOpeningAllAccounts = $cashOpening + $bankOpening + $jazzcashOpening;
 
-        // Shifts for the date
+        // Shifts for the date (supports 24_hours, morning, evening, night, and multiple shifts)
         $shifts = \App\Models\ShiftClosing::whereDate('date', $dateStr)->get();
-        $morningShift = $shifts->where('shift_type', 'morning')->first();
-        $eveningShift = $shifts->where('shift_type', 'evening')->first();
 
         $shiftCashIn = (float) $shifts->sum('total_counted_cash');
-        $morningBankIn = $morningShift ? (float)$morningShift->bank_amount : 0.00;
-        $eveningBankIn = $eveningShift ? (float)$eveningShift->bank_amount : 0.00;
-        $morningJazzIn = $morningShift ? (float)$morningShift->jazzcash_amount : 0.00;
-        $eveningJazzIn = $eveningShift ? (float)$eveningShift->jazzcash_amount : 0.00;
+        $shiftBankIn = (float) $shifts->sum('bank_amount');
+        $shiftJazzIn = (float) $shifts->sum('jazzcash_amount');
 
         // Direct transactions for the date
         $directCashIn = (float) \App\Models\Transaction::whereDate('date', $dateStr)
@@ -126,8 +122,8 @@ class DayClosing extends Model
             ->sum('amount');
 
         $cashIn = $shiftCashIn + $directCashIn;
-        $bankIn = $morningBankIn + $eveningBankIn + $directBankIn;
-        $jazzcashIn = $morningJazzIn + $eveningJazzIn + $directJazzIn;
+        $bankIn = $shiftBankIn + $directBankIn;
+        $jazzcashIn = $shiftJazzIn + $directJazzIn;
         $totalInAllAccounts = $cashIn + $bankIn + $jazzcashIn;
 
         // Direct payments out for the date
@@ -163,30 +159,35 @@ class DayClosing extends Model
 
         $totalDifference = (float) $shifts->sum('difference');
 
-        return static::updateOrCreate(
-            ['date' => $dateStr],
-            [
-                'opening_cash' => $cashOpening,
-                'bank_opening' => $bankOpening,
-                'jazzcash_opening' => $jazzcashOpening,
-                'total_opening_all_accounts' => $totalOpeningAllAccounts,
-                'total_cash_in' => $cashIn,
-                'bank_in' => $bankIn,
-                'jazzcash_in' => $jazzcashIn,
-                'total_in_all_accounts' => $totalInAllAccounts,
-                'total_payments_out' => $cashOut,
-                'bank_out' => $bankOut,
-                'jazzcash_out' => $jazzcashOut,
-                'total_out_all_accounts' => $totalOutAllAccounts,
-                'closing_cash' => $cashClosing,
-                'bank_closing' => $bankClosing,
-                'jazzcash_closing' => $jazzcashClosing,
-                'total_closing_all_accounts' => $totalClosingAllAccounts,
-                'total_difference' => $totalDifference,
-                'status' => 'closed',
-                'closed_by' => auth()->id() ?? 1,
-            ]
-        );
+        $payload = [
+            'opening_cash' => $cashOpening,
+            'bank_opening' => $bankOpening,
+            'jazzcash_opening' => $jazzcashOpening,
+            'total_opening_all_accounts' => $totalOpeningAllAccounts,
+            'total_cash_in' => $cashIn,
+            'bank_in' => $bankIn,
+            'jazzcash_in' => $jazzcashIn,
+            'total_in_all_accounts' => $totalInAllAccounts,
+            'total_payments_out' => $cashOut,
+            'bank_out' => $bankOut,
+            'jazzcash_out' => $jazzcashOut,
+            'total_out_all_accounts' => $totalOutAllAccounts,
+            'closing_cash' => $cashClosing,
+            'bank_closing' => $bankClosing,
+            'jazzcash_closing' => $jazzcashClosing,
+            'total_closing_all_accounts' => $totalClosingAllAccounts,
+            'total_difference' => $totalDifference,
+            'status' => 'closed',
+            'closed_by' => auth()->id() ?? 1,
+        ];
+
+        $existing = static::whereDate('date', $dateStr)->first();
+        if ($existing) {
+            $existing->update($payload);
+            return $existing->fresh();
+        }
+
+        return static::create(array_merge(['date' => $dateStr], $payload));
     }
 
     public function getStatusBadgeAttribute(): string

@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\ActivityLog;
+use App\Models\DayClosing;
 use App\Models\Party;
+use App\Models\Product;
 use App\Models\ShiftClosing;
 use App\Models\ShiftClosingPartyPayment;
-use App\Models\Transaction;
-use App\Models\DayClosing;
-use App\Models\ActivityLog;
-use App\Models\Product;
+use App\Models\StationSetting;
 use App\Models\Tank;
-use Illuminate\Http\Request;
+use App\Models\TankStockAdjustment;
+use App\Models\Transaction;
+use App\Services\TankReconciliationService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(TankReconciliationService $reconciliationService)
     {
         $today = Carbon::today()->toDateString();
 
@@ -28,7 +31,7 @@ class DashboardController extends Controller
         // Today's Day Closing Record
         $todayClosing = DayClosing::whereDate('date', $today)->first();
 
-        // Today's Collections (Shift Counted Cash + Shift Digital Collections + Direct Payment In)
+        // Today's Collections
         $shiftCashIn = (float) $todayShifts->sum('total_counted_cash');
         $shiftBankIn = (float) $todayShifts->sum('bank_amount');
         $shiftJazzIn = (float) $todayShifts->sum('jazzcash_amount');
@@ -38,7 +41,7 @@ class DashboardController extends Controller
             ->sum('amount');
         $todayInflow = $shiftCashIn + $shiftBankIn + $shiftJazzIn + $directIn;
 
-        // Today's Outflows (Shift Expenses + Shift Returns + Shift Party Payments + Direct Payment Out)
+        // Today's Outflows
         $shiftExpenses = (float) $todayShifts->sum('expenses_amount');
         $shiftReturns = (float) $todayShifts->sum('returns_amount');
         $shiftPartyPayments = (float) ShiftClosingPartyPayment::whereHas('shiftClosing', fn ($query) => $query->whereDate('date', $today))
@@ -52,15 +55,12 @@ class DashboardController extends Controller
         // Today's Shift Discrepancy / Variance
         $todayVariance = (float) $todayShifts->sum('difference');
 
-        // Monthly Daily Sales Average (All completed calendar days of the month)
+        // Monthly Daily Sales Average
         $currentMonthShifts = ShiftClosing::whereMonth('date', Carbon::today()->month)
             ->whereYear('date', Carbon::today()->year)
             ->get();
 
         $monthlyShiftsCount = $currentMonthShifts->count();
-
-        // While today is in progress, average is calculated over completed calendar days (e.g. on 21st date -> 20 days).
-        // When today completes and tomorrow starts, it automatically includes the completed day.
         $todayDayNumber = (int) Carbon::today()->day;
         $monthlyDaysCount = max(1, $todayDayNumber - 1);
 
@@ -71,7 +71,6 @@ class DashboardController extends Controller
         $monthlyAvgDaySale = $monthlyDaysCount > 0
             ? ($monthlyNetShiftSaleTotal / $monthlyDaysCount)
             : 0;
-
         $monthlyAvgShiftSale = $monthlyAvgDaySale;
 
         // Vault & Accounts Summary
@@ -108,33 +107,100 @@ class DashboardController extends Controller
             $txOut = Transaction::whereDate('date', $d)->whereNull('shift_closing_id')->where('type', 'payment_out')->sum('amount');
 
             $chartLabels[] = $dLabel;
-            $chartInflows[] = (float)$scCash + (float)$scBank + (float)$scJazz + (float)$txIn;
-            $chartOutflows[] = (float)$scOut + (float)$scReturns + (float)$shiftPartyOut + (float)$txOut;
+            $chartInflows[] = (float) $scCash + (float) $scBank + (float) $scJazz + (float) $txIn;
+            $chartOutflows[] = (float) $scOut + (float) $scReturns + (float) $shiftPartyOut + (float) $txOut;
         }
 
-        // Account Balances for Doughnut Chart (reflecting live cash in vault)
         $accountLabels = [];
         $accountBalances = [];
         foreach ($accounts as $acc) {
             $accountLabels[] = $acc->name;
-            if ($acc->type === 'cash') {
-                $accountBalances[] = (float) $cashInVault;
-            } else {
-                $accountBalances[] = (float) $acc->current_balance;
-            }
+            $accountBalances[] = $acc->type === 'cash' ? (float) $cashInVault : (float) $acc->current_balance;
         }
 
-        // Recent Transactions (Last 6)
         $recentTransactions = Transaction::with(['party', 'account', 'creator'])->latest('id')->take(6)->get();
-
-        // Recent Shifts (Last 4)
         $recentShifts = ShiftClosing::with('cashier')->latest('date')->latest('id')->take(4)->get();
-
-        // Recent Activity Logs (Last 5)
         $recentLogs = ActivityLog::with('user')->latest('id')->take(5)->get();
 
-        // Audio 9: Live Fuel & Lubricant Stock Status for Dashboard
-        $allTanks = Tank::with('product')->active()->orderBy('tank_number')->get();
+        // Live Storage Tanks, Wet-Stock Variance & Lubricants
+        $tankConfig = StationSetting::getTankConfig();
+        $allTanks = Tank::with(['product', 'latestDipReading'])
+            ->withCount('dipCharts')
+            ->active()
+            ->orderBy('tank_number')
+            ->get();
+
+        $tankCards = [];
+        $netVarianceLiters = 0.0;
+        $netVarianceValue = 0.0;
+        $alertTanksCount = 0;
+        $dippedTanksCount = 0;
+
+        foreach ($allTanks as $tank) {
+            $bookStock = (float) $tank->current_stock;
+            $latestDip = $tank->latestDipReading;
+            $hasDip = $tank->last_dip_date !== null || $latestDip !== null;
+
+            $measured = $tank->last_measured_liters !== null
+                ? (float) $tank->last_measured_liters
+                : ($latestDip ? (float) $latestDip->measured_liters : null);
+
+            $variance = $tank->last_variance_liters !== null
+                ? (float) $tank->last_variance_liters
+                : ($latestDip ? (float) $latestDip->variance_liters : null);
+
+            $status = $tank->last_variance_status
+                ?? ($latestDip?->variance_status);
+
+            if ($hasDip && $variance !== null && $status === null) {
+                $status = $reconciliationService->evaluateVariance($tank, $variance, $bookStock, $tankConfig)['status'];
+            }
+
+            $thresholds = $reconciliationService->calculateToleranceThresholds($tank, $bookStock, $tankConfig);
+            $trend = $reconciliationService->detectConsecutiveShortageTrend($tank, $tankConfig);
+            $unitCost = (float) ($tank->product?->purchase_price ?? 0);
+            $financialImpact = $variance !== null ? round($variance * $unitCost, 2) : 0.0;
+
+            if ($hasDip) {
+                $dippedTanksCount++;
+                $netVarianceLiters += (float) $variance;
+                $netVarianceValue += $financialImpact;
+            }
+
+            if (in_array($status, ['warning', 'critical'], true) || $trend['has_trend']) {
+                $alertTanksCount++;
+            }
+
+            $tankCards[] = [
+                'tank'             => $tank,
+                'book_stock'       => $bookStock,
+                'has_dip'          => $hasDip,
+                'measured_liters'  => $measured,
+                'variance_liters'  => $variance,
+                'variance_status'  => $status,
+                'latest_dip'       => $latestDip,
+                'last_dip_date'    => $tank->last_dip_date ?? $latestDip?->reading_date,
+                'last_dip_time'    => $tank->last_dip_time ?? $latestDip?->reading_time,
+                'thresholds'       => $thresholds,
+                'trend'            => $trend,
+                'financial_impact' => $financialImpact,
+                'has_chart'        => $tank->dip_charts_count > 0,
+            ];
+        }
+
+        $monthAdjustmentsQuery = TankStockAdjustment::whereMonth('adjustment_date', Carbon::today()->month)
+            ->whereYear('adjustment_date', Carbon::today()->year);
+
+        $wetStockSummary = [
+            'net_variance_liters'     => round($netVarianceLiters, 2),
+            'net_variance_value'      => round($netVarianceValue, 2),
+            'month_reconciled_liters' => round((float) (clone $monthAdjustmentsQuery)->sum('adjustment_liters'), 2),
+            'month_reconciled_value'  => round((float) (clone $monthAdjustmentsQuery)->sum('financial_impact'), 2),
+            'alert_tanks_count'       => $alertTanksCount,
+            'dipped_tanks_count'      => $dippedTanksCount,
+            'total_active_tanks'      => $allTanks->count(),
+        ];
+
         $petrolProduct = Product::where('code', 'PET-92')->first();
         $dieselProduct = Product::where('code', 'HSD-01')->first();
         $octaneProduct = Product::where('code', 'HOBC-97')->first();
@@ -148,11 +214,13 @@ class DashboardController extends Controller
             ->get();
         $totalLubricantUnits = $lubricantProducts->sum('current_stock');
 
-        // Today's Sales & Liters
         $todayFuelLiters = ShiftClosing::whereDate('date', $today)->sum('total_liters');
         $todayFuelSales = ShiftClosing::whereDate('date', $today)->sum('total_sale');
         $todayLubricantSales = ShiftClosing::whereDate('date', $today)->sum('total_lubricant_sales');
         $todayCreditSales = ShiftClosing::whereDate('date', $today)->sum('total_credit_sales');
+
+        $readingContexts = StationSetting::READING_CONTEXTS;
+        $reasonCategories = StationSetting::REASON_CATEGORIES;
 
         return view('dashboard', compact(
             'today',
@@ -183,6 +251,11 @@ class DashboardController extends Controller
             'recentShifts',
             'recentLogs',
             'allTanks',
+            'tankConfig',
+            'tankCards',
+            'wetStockSummary',
+            'readingContexts',
+            'reasonCategories',
             'petrolProduct',
             'dieselProduct',
             'octaneProduct',

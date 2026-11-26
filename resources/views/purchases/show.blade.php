@@ -133,6 +133,27 @@
                                     <td>{{ $purchase->notes }}</td>
                                 </tr>
                             @endif
+                            @if($purchase->hasDipVerification())
+                                <tr>
+                                    <th class="table-light">Bowser Dip Verification:</th>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-3 font-monospace small">
+                                            <span>Pre-Dip: <strong>{{ number_format($purchase->pre_delivery_liters, 1) }} L</strong> @if($purchase->pre_delivery_dip_mm)({{ $purchase->pre_delivery_dip_mm }})@endif</span>
+                                            <span>Post-Dip: <strong>{{ number_format($purchase->post_delivery_liters, 1) }} L</strong> @if($purchase->post_delivery_dip_mm)({{ $purchase->post_delivery_dip_mm }})@endif</span>
+                                            @if($purchase->sales_during_unloading > 0)
+                                                <span>Sold During Drop: <strong>{{ number_format($purchase->sales_during_unloading, 1) }} L</strong></span>
+                                            @endif
+                                            <span>Actual Received: <strong class="text-primary">{{ number_format($purchase->actual_received_liters, 1) }} L</strong></span>
+                                            <span>
+                                                Tanker Variance:
+                                                <strong class="{{ $purchase->delivery_variance_liters < -0.5 ? 'text-danger' : ($purchase->delivery_variance_liters > 0.5 ? 'text-info' : 'text-success') }}">
+                                                    {{ $purchase->delivery_variance_liters > 0 ? '+' : '' }}{{ number_format($purchase->delivery_variance_liters, 1) }} L
+                                                </strong>
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>

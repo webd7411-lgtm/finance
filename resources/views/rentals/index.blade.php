@@ -173,7 +173,7 @@
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label class="form-label small fw-semibold">Amount Received (Rs.) <span class="text-danger">*</span></label>
-                                                <input type="number" step="0.01" min="1" name="amount" class="form-control form-control-sm fw-bold text-success" value="{{ $rental->monthly_rent }}" required>
+                                                <input type="text" inputmode="decimal" name="amount" class="form-control form-control-sm fw-bold text-success amount-format" value="{{ (float) $rental->monthly_rent > 0 ? $rental->monthly_rent : '' }}" placeholder="e.g. 50,000" autocomplete="off" onfocus="this.select()" required>
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label class="form-label small fw-semibold">Deposit Account <span class="text-danger">*</span></label>
@@ -245,7 +245,7 @@
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label class="form-label small fw-semibold">Monthly Rent (Rs.) <span class="text-danger">*</span></label>
-                                                <input type="number" step="0.01" min="0" name="monthly_rent" class="form-control form-control-sm fw-bold" value="{{ $rental->monthly_rent }}" required>
+                                                <input type="text" inputmode="decimal" name="monthly_rent" class="form-control form-control-sm fw-bold amount-format" value="{{ $rental->monthly_rent }}" placeholder="e.g. 35,000" autocomplete="off" onfocus="this.select()" required>
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <label class="form-label small fw-semibold">Tenant Name <span class="text-danger">*</span></label>
@@ -390,7 +390,7 @@
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold">Monthly Rent (Rs.) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="0" name="monthly_rent" class="form-control form-control-sm fw-bold text-success" placeholder="e.g. 35000" required>
+                            <input type="text" inputmode="decimal" name="monthly_rent" class="form-control form-control-sm fw-bold text-success amount-format" value="{{ old('monthly_rent') }}" placeholder="e.g. 35,000" autocomplete="off" required>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-semibold">Tenant / Operator Name <span class="text-danger">*</span></label>

@@ -269,6 +269,60 @@
                     </div>
 
                     <!-- Notes & Chamber Dip Details -->
+                    @if(($tankConfig['bowser_dip_mode'] ?? 'optional') !== 'disabled')
+                        @php $isDipRequired = ($tankConfig['bowser_dip_mode'] ?? 'optional') === 'required'; @endphp
+                        <div class="p-3 rounded-3 border bg-light mb-4" id="bowserDipVerificationBox">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 pb-1 border-bottom">
+                                <div>
+                                    <h6 class="fw-bold text-dark m-0 small text-uppercase">
+                                        <i class="bi bi-rulers text-primary me-1"></i>
+                                        Bowser Delivery Tank Dip Verification
+                                        @if($isDipRequired)
+                                            <span class="badge bg-danger ms-1">Required for Bulk Fuel</span>
+                                        @else
+                                            <span class="badge bg-secondary-subtle text-secondary border ms-1">Optional</span>
+                                        @endif
+                                    </h6>
+                                    <small class="text-muted" style="font-size: 0.72rem;">Verify actual fuel received in underground tank against the OMC tanker invoice quantity.</small>
+                                </div>
+                                <div id="bowserVariancePreview" class="badge bg-light text-dark border font-monospace py-1.5 px-2.5 d-none"></div>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small fw-semibold text-secondary">Pre-Dip ({{ $tankConfig['dip_unit'] ?? 'mm' }})</label>
+                                    <input type="number" step="0.01" min="0" name="pre_delivery_dip_mm" id="pre_delivery_dip_mm"
+                                           class="form-control form-control-sm font-monospace" value="{{ old('pre_delivery_dip_mm') }}"
+                                           placeholder="Before drop" oninput="lookupPurchaseDip('pre')">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary">Pre-Delivery Volume (Ltr)</label>
+                                    <input type="number" step="0.01" min="0" name="pre_delivery_liters" id="pre_delivery_liters"
+                                           class="form-control form-control-sm font-monospace" value="{{ old('pre_delivery_liters') }}"
+                                           placeholder="Before drop Ltr" oninput="calculateBowserVariance()">
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small fw-semibold text-secondary">Post-Dip ({{ $tankConfig['dip_unit'] ?? 'mm' }})</label>
+                                    <input type="number" step="0.01" min="0" name="post_delivery_dip_mm" id="post_delivery_dip_mm"
+                                           class="form-control form-control-sm font-monospace" value="{{ old('post_delivery_dip_mm') }}"
+                                           placeholder="After drop" oninput="lookupPurchaseDip('post')">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary">Post-Delivery Volume (Ltr)</label>
+                                    <input type="number" step="0.01" min="0" name="post_delivery_liters" id="post_delivery_liters"
+                                           class="form-control form-control-sm font-monospace" value="{{ old('post_delivery_liters') }}"
+                                           placeholder="After drop Ltr" oninput="calculateBowserVariance()">
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <label class="form-label small fw-semibold text-secondary">Sold During Drop (L)</label>
+                                    <input type="number" step="0.01" min="0" name="sales_during_unloading" id="sales_during_unloading"
+                                           class="form-control form-control-sm font-monospace" value="{{ old('sales_during_unloading', '0') }}"
+                                           oninput="calculateBowserVariance()">
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="mb-4">
                         <label for="notes" class="form-label small fw-semibold text-secondary">
                             Delivery Notes, Chamber Dip / Temperature Measurements <span class="text-muted">(Optional)</span>
@@ -431,6 +485,56 @@
 
         document.getElementById('totalBillDisplay').textContent = 'Rs. ' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         document.getElementById('unpaidDueDisplay').textContent = 'Rs. ' + unpaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        calculateBowserVariance();
+    }
+
+    let purchaseDipTimers = { pre: null, post: null };
+    function lookupPurchaseDip(prefix) {
+        const tankId = document.getElementById('tank_id')?.value;
+        const mmEl = document.getElementById(prefix === 'pre' ? 'pre_delivery_dip_mm' : 'post_delivery_dip_mm');
+        const ltrEl = document.getElementById(prefix === 'pre' ? 'pre_delivery_liters' : 'post_delivery_liters');
+        if (!tankId || !mmEl || !ltrEl || mmEl.value.trim() === '') return;
+
+        clearTimeout(purchaseDipTimers[prefix]);
+        purchaseDipTimers[prefix] = setTimeout(() => {
+            fetch(`{{ url('tanks') }}/${tankId}/lookup-dip?dip_mm=${encodeURIComponent(mmEl.value)}`, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && data.has_chart && data.liters !== null) {
+                    ltrEl.value = Number(data.liters).toFixed(2);
+                    calculateBowserVariance();
+                }
+            })
+            .catch(() => {});
+        }, 250);
+    }
+
+    function calculateBowserVariance() {
+        const preview = document.getElementById('bowserVariancePreview');
+        const preEl = document.getElementById('pre_delivery_liters');
+        const postEl = document.getElementById('post_delivery_liters');
+        const soldEl = document.getElementById('sales_during_unloading');
+        const qtyEl = document.getElementById('quantity');
+        if (!preview || !preEl || !postEl || !qtyEl) return;
+
+        if (preEl.value.trim() === '' || postEl.value.trim() === '') {
+            preview.classList.add('d-none');
+            return;
+        }
+
+        const pre = parseFloat(preEl.value) || 0;
+        const post = parseFloat(postEl.value) || 0;
+        const sold = parseFloat(soldEl?.value) || 0;
+        const invQty = parseFloat(qtyEl.value) || 0;
+
+        const actual = (post - pre) + sold;
+        const diff = actual - invQty;
+        const sign = diff > 0 ? '+' : '';
+        preview.classList.remove('d-none');
+        preview.className = 'badge font-monospace py-1.5 px-2.5 border ' + (diff < -0.5 ? 'bg-danger-subtle text-danger border-danger-subtle' : (diff > 0.5 ? 'bg-info-subtle text-info-emphasis border-info-subtle' : 'bg-success-subtle text-success border-success-subtle'));
+        preview.textContent = `Tank Received: ${actual.toFixed(1)} L | Bowser Var: ${sign}${diff.toFixed(1)} L`;
     }
 
     document.addEventListener('DOMContentLoaded', () => {

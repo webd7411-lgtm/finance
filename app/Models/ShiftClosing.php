@@ -172,9 +172,11 @@ class ShiftClosing extends Model
     public function getShiftBadgeAttribute(): string
     {
         return match($this->shift_type) {
-            'morning' => '<span class="badge bg-warning-subtle text-warning border border-warning"><i class="bi bi-sun me-1"></i>Morning Shift</span>',
-            'evening' => '<span class="badge bg-primary-subtle text-primary border border-primary"><i class="bi bi-moon-stars me-1"></i>Evening Shift</span>',
-            default   => '<span class="badge bg-secondary">' . ucfirst($this->shift_type) . '</span>',
+            '24_hours' => '<span class="badge bg-info-subtle text-info border border-info"><i class="bi bi-arrow-repeat me-1"></i>24-Hours Cycle</span>',
+            'morning'  => '<span class="badge bg-warning-subtle text-warning border border-warning"><i class="bi bi-sun me-1"></i>Morning Shift</span>',
+            'evening'  => '<span class="badge bg-primary-subtle text-primary border border-primary"><i class="bi bi-moon-stars me-1"></i>Evening Shift</span>',
+            'night'    => '<span class="badge bg-dark-subtle text-dark border border-dark"><i class="bi bi-moon me-1"></i>Night Shift</span>',
+            default    => '<span class="badge bg-secondary">' . ucfirst(str_replace('_', ' ', $this->shift_type)) . '</span>',
         };
     }
 

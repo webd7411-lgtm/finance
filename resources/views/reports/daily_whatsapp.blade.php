@@ -128,16 +128,17 @@
 
                     @foreach($tanks as $tank)
                         <div class="mb-2 pb-2 border-bottom border-light">
-                            <div class="d-flex justify-content-between small">
+                            <div class="d-flex justify-content-between align-items-center small gap-1">
                                 <span class="fw-bold text-dark">{{ $tank->name }}</span>
-                                <span class="text-success fw-bold">{{ number_format($tank->current_stock, 1) }} L</span>
+                                <span class="text-success fw-bold font-monospace">{{ number_format($tank->current_stock, 1) }} L</span>
                             </div>
                             <div class="progress mt-1" style="height: 6px;">
                                 @php $pct = $tank->capacity > 0 ? min(100, round(($tank->current_stock / $tank->capacity) * 100)) : 0; @endphp
                                 <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $pct }}%"></div>
                             </div>
-                            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
-                                <span>Dip: {{ $tank->current_dip_reading ?? 0 }} mm</span>
+                            <div class="d-flex justify-content-between align-items-center text-muted mt-1" style="font-size: 0.72rem;">
+                                <span>Dip: {{ $tank->current_dip_reading ?? 0 }}</span>
+                                <span>{!! $tank->variance_status_badge !!}</span>
                                 <span>Ullage: {{ number_format($tank->available_capacity, 1) }} L</span>
                             </div>
                         </div>

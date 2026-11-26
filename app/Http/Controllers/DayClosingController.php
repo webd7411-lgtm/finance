@@ -17,16 +17,13 @@ class DayClosingController extends Controller
         $today = Carbon::today()->toDateString();
         $selectedDate = $request->input('date', $today);
 
-        // Fetch shift closings for the selected date
-        $morningShift = ShiftClosing::whereDate('date', $selectedDate)
-                                    ->where('shift_type', 'morning')
-                                    ->with(['cashier', 'partyPayments.party'])
-                                    ->first();
+        // Fetch shift closings for the selected date (supports 24_hours, morning, evening, night)
+        $shifts = ShiftClosing::whereDate('date', $selectedDate)
+                              ->with(['cashier', 'partyPayments.party'])
+                              ->get();
 
-        $eveningShift = ShiftClosing::whereDate('date', $selectedDate)
-                                    ->where('shift_type', 'evening')
-                                    ->with(['cashier', 'partyPayments.party'])
-                                    ->first();
+        $morningShift = $shifts->firstWhere('shift_type', 'morning');
+        $eveningShift = $shifts->firstWhere('shift_type', 'evening');
 
         // ----------------------------------------------------
         // 1. ALL-ACCOUNTS OPENING BALANCES (Fully Automated & Dynamic)
@@ -66,10 +63,10 @@ class DayClosingController extends Controller
         // ----------------------------------------------------
         // 2. ALL-ACCOUNTS INFLOWS (+)
         // ----------------------------------------------------
-        // Shift Counted Cash (Morning + Evening)
+        // Shift Counted Cash (All shifts on selected date)
         $morningCountedCash = $morningShift ? (float)$morningShift->total_counted_cash : 0.00;
         $eveningCountedCash = $eveningShift ? (float)$eveningShift->total_counted_cash : 0.00;
-        $shiftCashIn = $morningCountedCash + $eveningCountedCash;
+        $shiftCashIn = (float) $shifts->sum('total_counted_cash');
 
         // Direct Cash In
         $directCashIn = (float) Transaction::whereDate('date', $selectedDate)
@@ -83,24 +80,26 @@ class DayClosingController extends Controller
         $cashIn = $shiftCashIn + $directCashIn;
         $totalCashIn = $cashIn;
 
-        // Shift Digital Collections
+        // Shift Digital Collections (All shifts on selected date)
         $morningBankIn = $morningShift ? (float)$morningShift->bank_amount : 0.00;
         $eveningBankIn = $eveningShift ? (float)$eveningShift->bank_amount : 0.00;
+        $shiftBankIn = (float) $shifts->sum('bank_amount');
         $directBankIn = (float) Transaction::whereDate('date', $selectedDate)
                                            ->whereNull('shift_closing_id')
                                            ->where('type', 'payment_in')
                                            ->whereHas('account', fn($q) => $q->where('type', 'bank'))
                                            ->sum('amount');
-        $bankIn = $morningBankIn + $eveningBankIn + $directBankIn;
+        $bankIn = $shiftBankIn + $directBankIn;
 
         $morningJazzIn = $morningShift ? (float)$morningShift->jazzcash_amount : 0.00;
         $eveningJazzIn = $eveningShift ? (float)$eveningShift->jazzcash_amount : 0.00;
+        $shiftJazzIn = (float) $shifts->sum('jazzcash_amount');
         $directJazzIn = (float) Transaction::whereDate('date', $selectedDate)
                                            ->whereNull('shift_closing_id')
                                            ->where('type', 'payment_in')
                                            ->whereHas('account', fn($q) => $q->where('type', 'jazzcash'))
                                            ->sum('amount');
-        $jazzcashIn = $morningJazzIn + $eveningJazzIn + $directJazzIn;
+        $jazzcashIn = $shiftJazzIn + $directJazzIn;
 
         $morningDigitalIn = $morningBankIn + $morningJazzIn;
         $eveningDigitalIn = $eveningBankIn + $eveningJazzIn;
@@ -111,8 +110,7 @@ class DayClosingController extends Controller
         // ----------------------------------------------------
         // 3. ALL-ACCOUNTS OUTFLOWS (-)
         // ----------------------------------------------------
-        $shiftExpenses = ($morningShift ? (float)$morningShift->expenses_amount : 0) +
-                         ($eveningShift ? (float)$eveningShift->expenses_amount : 0);
+        $shiftExpenses = (float) $shifts->sum('expenses_amount');
 
         $shiftPartyPayments = (float) ShiftClosingPartyPayment::whereHas('shiftClosing', fn ($query) => $query->whereDate('date', $selectedDate))
             ->sum('amount');
@@ -157,8 +155,7 @@ class DayClosingController extends Controller
         $calculatedClosingCash = $cashClosing; // For DayClosing table
 
         // Cumulative Differences from shifts
-        $totalDifference = ($morningShift ? (float)$morningShift->difference : 0) +
-                           ($eveningShift ? (float)$eveningShift->difference : 0);
+        $totalDifference = (float) $shifts->sum('difference');
 
         // ----------------------------------------------------
         // BANK & DIGITAL ACCOUNTS POSITION (Today's Activity)
@@ -377,12 +374,9 @@ class DayClosingController extends Controller
 
         $totalOpeningAllAccounts = $openingCash + $bankOpening + $jazzcashOpening;
 
-        // Shift Counted Cash (Morning + Evening)
-        $morningShift = ShiftClosing::whereDate('date', $selectedDate)->where('shift_type', 'morning')->first();
-        $eveningShift = ShiftClosing::whereDate('date', $selectedDate)->where('shift_type', 'evening')->first();
-        $morningCountedCash = $morningShift ? (float)$morningShift->total_counted_cash : 0.00;
-        $eveningCountedCash = $eveningShift ? (float)$eveningShift->total_counted_cash : 0.00;
-        $shiftCashIn = $morningCountedCash + $eveningCountedCash;
+        // Shift Counted Cash & Digital Inflows (All shifts on selected date)
+        $shifts = ShiftClosing::whereDate('date', $selectedDate)->get();
+        $shiftCashIn = (float) $shifts->sum('total_counted_cash');
 
         $directCashIn = (float) Transaction::whereDate('date', $selectedDate)
                                            ->whereNull('shift_closing_id')
@@ -395,23 +389,21 @@ class DayClosingController extends Controller
         $totalCashIn = $shiftCashIn + $directCashIn;
 
         // Bank & JazzCash Inflows
-        $morningBankIn = $morningShift ? (float)$morningShift->bank_amount : 0.00;
-        $eveningBankIn = $eveningShift ? (float)$eveningShift->bank_amount : 0.00;
+        $shiftBankIn = (float) $shifts->sum('bank_amount');
         $directBankIn = (float) Transaction::whereDate('date', $selectedDate)
                                            ->whereNull('shift_closing_id')
                                            ->where('type', 'payment_in')
                                            ->whereHas('account', fn($q) => $q->where('type', 'bank'))
                                            ->sum('amount');
-        $bankIn = $morningBankIn + $eveningBankIn + $directBankIn;
+        $bankIn = $shiftBankIn + $directBankIn;
 
-        $morningJazzIn = $morningShift ? (float)$morningShift->jazzcash_amount : 0.00;
-        $eveningJazzIn = $eveningShift ? (float)$eveningShift->jazzcash_amount : 0.00;
+        $shiftJazzIn = (float) $shifts->sum('jazzcash_amount');
         $directJazzIn = (float) Transaction::whereDate('date', $selectedDate)
                                            ->whereNull('shift_closing_id')
                                            ->where('type', 'payment_in')
                                            ->whereHas('account', fn($q) => $q->where('type', 'jazzcash'))
                                            ->sum('amount');
-        $jazzcashIn = $morningJazzIn + $eveningJazzIn + $directJazzIn;
+        $jazzcashIn = $shiftJazzIn + $directJazzIn;
         $totalInAllAccounts = $totalCashIn + $bankIn + $jazzcashIn;
 
         // Outflows
@@ -443,8 +435,7 @@ class DayClosingController extends Controller
         $jazzcashClosing = $jazzcashOpening + $jazzcashIn - $jazzcashOut;
         $totalClosingAllAccounts = $closingCash + $bankClosing + $jazzcashClosing;
 
-        $totalDiff = ($morningShift ? (float)$morningShift->difference : 0) +
-                     ($eveningShift ? (float)$eveningShift->difference : 0);
+        $totalDiff = (float) $shifts->sum('difference');
 
         $validated['opening_cash'] = $openingCash;
         $validated['bank_opening'] = $bankOpening;

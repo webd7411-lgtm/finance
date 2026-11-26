@@ -26,15 +26,29 @@ class Purchase extends Model
         'paid_amount',
         'payment_account_id',
         'notes',
+        'pre_delivery_dip_mm',
+        'pre_delivery_liters',
+        'post_delivery_dip_mm',
+        'post_delivery_liters',
+        'sales_during_unloading',
+        'actual_received_liters',
+        'delivery_variance_liters',
         'created_by',
     ];
 
     protected $casts = [
-        'purchase_date' => 'date',
-        'quantity' => 'decimal:2',
-        'unit_price' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
+        'purchase_date'            => 'date',
+        'quantity'                 => 'decimal:2',
+        'unit_price'               => 'decimal:2',
+        'total_amount'             => 'decimal:2',
+        'paid_amount'              => 'decimal:2',
+        'pre_delivery_dip_mm'      => 'decimal:2',
+        'pre_delivery_liters'      => 'decimal:2',
+        'post_delivery_dip_mm'     => 'decimal:2',
+        'post_delivery_liters'     => 'decimal:2',
+        'sales_during_unloading'   => 'decimal:2',
+        'actual_received_liters'   => 'decimal:2',
+        'delivery_variance_liters' => 'decimal:2',
     ];
 
     public function location()
@@ -77,6 +91,11 @@ class Purchase extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function dipReadings()
+    {
+        return $this->hasMany(TankDipReading::class, 'purchase_id');
+    }
+
     public function getUnpaidBalanceAttribute(): float
     {
         return (float) max(0, $this->total_amount - $this->paid_amount);
@@ -91,5 +110,10 @@ class Purchase extends Model
         } else {
             return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Unpaid (Credit Khata)</span>';
         }
+    }
+
+    public function hasDipVerification(): bool
+    {
+        return $this->pre_delivery_liters !== null && $this->post_delivery_liters !== null;
     }
 }

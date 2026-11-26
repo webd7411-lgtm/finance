@@ -120,11 +120,16 @@ class ShiftClosingController extends Controller
         $subsidyAccount = Account::where('name', 'like', '%Subsidy%')->first()
             ?? Account::where('type', 'bank')->first();
 
-        // Recent Fuel Rate Revisions (for notification banner)
+        // Recent Fuel Rate Revisions (for notification banner & pre-filling old/new rates)
         $recentRateRevisions = \App\Models\FuelRateRevision::with('product')
             ->whereDate('effective_date', '>=', now()->subDays(2)->toDateString())
             ->latest('effective_date')
+            ->latest('id')
             ->get();
+
+        $latestRevisionByProduct = $recentRateRevisions
+            ->unique('product_id')
+            ->keyBy('product_id');
 
         $selectedPumpId = $request->input('pump_id');
 
@@ -138,6 +143,7 @@ class ShiftClosingController extends Controller
             'accounts',
             'expenseCategories',
             'recentRateRevisions',
+            'latestRevisionByProduct',
             'selectedPumpId'
         ));
     }
@@ -160,6 +166,16 @@ class ShiftClosingController extends Controller
         $nozzleRows = collect($request->input('nozzles', []))
             ->map(function ($row) use ($stripCommas) {
                 $hasRateChange = !empty($row['has_rate_change']) && in_array($row['has_rate_change'], [1, '1', true, 'true', 'on'], true);
+                $rawMid = $stripCommas($row['midnight_reading'] ?? null);
+                $rawNewLiters = $stripCommas($row['new_rate_liters'] ?? null);
+                $splitMode = $row['split_mode'] ?? null;
+
+                if ($splitMode !== 'reading' && $splitMode !== 'liters') {
+                    $splitMode = ($rawNewLiters === null || $rawNewLiters === '') && ($rawMid !== null && $rawMid !== '')
+                        ? 'reading'
+                        : 'liters';
+                }
+
                 return [
                     'pump_id'           => (int) ($row['pump_id'] ?? 0),
                     'tank_id'           => !empty($row['tank_id']) ? (int) $row['tank_id'] : null,
@@ -167,15 +183,16 @@ class ShiftClosingController extends Controller
                     'nozzle_name'       => $row['nozzle_name'] ?? null,
                     'start_reading'     => (float) $stripCommas($row['start_reading'] ?? 0),
                     'end_reading'       => (float) $stripCommas($row['end_reading'] ?? 0),
-                    'testing_liters'    => (float) $stripCommas($row['testing_liters'] ?? 0),
-                    'fuel_rate'         => (float) $stripCommas($row['fuel_rate'] ?? 0),
+                    'testing_liters'    => max(0.0, (float) $stripCommas($row['testing_liters'] ?? 0)),
+                    'fuel_rate'         => max(0.0, (float) $stripCommas($row['fuel_rate'] ?? 0)),
                     'subtotal'          => (float) $stripCommas($row['subtotal'] ?? 0),
                     'has_rate_change'   => $hasRateChange,
-                    'midnight_reading'  => $hasRateChange ? (float) $stripCommas($row['midnight_reading'] ?? 0) : null,
-                    'old_fuel_rate'     => $hasRateChange ? (float) $stripCommas($row['old_fuel_rate'] ?? 0) : null,
-                    'new_fuel_rate'     => $hasRateChange ? (float) $stripCommas($row['new_fuel_rate'] ?? 0) : null,
+                    'split_mode'        => $splitMode,
+                    'midnight_reading'  => ($hasRateChange && $rawMid !== null && $rawMid !== '') ? (float) $rawMid : null,
+                    'old_fuel_rate'     => $hasRateChange ? max(0.0, (float) $stripCommas($row['old_fuel_rate'] ?? 0)) : null,
+                    'new_fuel_rate'     => $hasRateChange ? max(0.0, (float) $stripCommas($row['new_fuel_rate'] ?? 0)) : null,
                     'old_rate_liters'   => $hasRateChange ? (float) $stripCommas($row['old_rate_liters'] ?? 0) : null,
-                    'new_rate_liters'   => $hasRateChange ? (float) $stripCommas($row['new_rate_liters'] ?? 0) : null,
+                    'new_rate_liters'   => ($hasRateChange && $rawNewLiters !== null && $rawNewLiters !== '') ? (float) $rawNewLiters : ($hasRateChange && $splitMode === 'liters' ? 0.0 : null),
                     'old_rate_subtotal' => $hasRateChange ? (float) $stripCommas($row['old_rate_subtotal'] ?? 0) : null,
                     'new_rate_subtotal' => $hasRateChange ? (float) $stripCommas($row['new_rate_subtotal'] ?? 0) : null,
                 ];
@@ -301,37 +318,33 @@ class ShiftClosingController extends Controller
         $coins = (float) ($validated['coins'] ?? 0);
 
         // Calculate Fuel Sales across Nozzles
-        $calculatedFuelLiters = 0;
-        $calculatedTestingLiters = 0;
-        $calculatedFuelSale = 0;
+        $calculatedFuelLiters = 0.0;
+        $calculatedTestingLiters = 0.0;
+        $calculatedFuelSale = 0.0;
+        $calculatedRateDifference = 0.0;
+        $calculatedNozzles = [];
 
         if (!empty($nozzleRows)) {
             foreach ($nozzleRows as $nRow) {
-                $start = (float) $nRow['start_reading'];
-                $end = (float) $nRow['end_reading'];
-                $test = (float) $nRow['testing_liters'];
+                $pump = Pump::find($nRow['pump_id']);
+                $nozzleLabel = $nRow['nozzle_name'] ?: ($pump?->name ?? 'Nozzle #' . $nRow['pump_id']);
+                $calc = $this->calculateNozzleRowData($nRow, $nozzleLabel);
 
-                if (!empty($nRow['has_rate_change']) && !empty($nRow['midnight_reading'])) {
-                    $mid = (float) $nRow['midnight_reading'];
-                    $oldRate = (float) ($nRow['old_fuel_rate'] ?? 0);
-                    $newRate = (float) ($nRow['new_fuel_rate'] ?? 0);
-                    $oldLtr = max(0, $mid - $start);
-                    $newLtr = max(0, ($end - $mid) - $test);
-                    $oldSub = round($oldLtr * $oldRate, 2);
-                    $newSub = round($newLtr * $newRate, 2);
-                    $soldLtr = $oldLtr + $newLtr;
-                    $sub = $oldSub + $newSub;
-                } else {
-                    $meterDiff = max(0, $end - $start);
-                    $soldLtr = max(0, $meterDiff - $test);
-                    $rate = (float) $nRow['fuel_rate'];
-                    $sub = round($soldLtr * $rate, 2);
-                }
+                $calculatedNozzles[] = [
+                    'raw'  => $nRow,
+                    'pump' => $pump,
+                    'calc' => $calc,
+                ];
 
-                $calculatedFuelLiters += $soldLtr;
-                $calculatedTestingLiters += $test;
-                $calculatedFuelSale += $sub;
+                $calculatedFuelLiters += $calc['sold_liters'];
+                $calculatedTestingLiters += $calc['testing_liters'];
+                $calculatedFuelSale += $calc['subtotal'];
+                $calculatedRateDifference += $calc['rate_diff_amount'];
             }
+            $calculatedFuelLiters = round($calculatedFuelLiters, 2);
+            $calculatedTestingLiters = round($calculatedTestingLiters, 2);
+            $calculatedFuelSale = round($calculatedFuelSale, 2);
+            $calculatedRateDifference = round($calculatedRateDifference, 2);
         } else {
             // Single-pump fallback
             $startReading = (float) ($validated['start_reading'] ?? 0);
@@ -398,6 +411,7 @@ class ShiftClosingController extends Controller
             $validated,
             $cashierId,
             $nozzleRows,
+            $calculatedNozzles,
             $expenseRows,
             $lubricantRows,
             $creditRows,
@@ -405,6 +419,7 @@ class ShiftClosingController extends Controller
             $calculatedFuelLiters,
             $calculatedTestingLiters,
             $calculatedFuelSale,
+            $calculatedRateDifference,
             $calculatedLubricantSale,
             $calculatedCreditSale,
             $calculatedExpenses,
@@ -420,11 +435,11 @@ class ShiftClosingController extends Controller
             $difference
         ) {
             // Primary single pump link for backwards compatibility
-            $primaryPumpId = !empty($nozzleRows) ? $nozzleRows[0]['pump_id'] : ($validated['pump_id'] ?? null);
-            $primaryPump = $primaryPumpId ? Pump::find($primaryPumpId) : null;
+            $primaryPumpId = !empty($calculatedNozzles) ? $calculatedNozzles[0]['raw']['pump_id'] : ($validated['pump_id'] ?? null);
+            $primaryPump = !empty($calculatedNozzles) ? $calculatedNozzles[0]['pump'] : ($primaryPumpId ? Pump::find($primaryPumpId) : null);
             $primaryTankId = $primaryPump?->tank_id;
             $primaryProductId = $primaryPump?->product_id ?? ($validated['product_id'] ?? null);
-            $hasShiftRateChange = collect($nozzleRows)->contains(fn($r) => !empty($r['has_rate_change']));
+            $hasShiftRateChange = collect($calculatedNozzles)->contains(fn($item) => !empty($item['calc']['has_rate_change']));
 
             $closing = ShiftClosing::create([
                 'date'                    => $validated['date'],
@@ -435,12 +450,13 @@ class ShiftClosingController extends Controller
                 'pump_id'                 => $primaryPumpId,
                 'pump_machine'            => $primaryPump?->name ?? 'Multi-Dispenser Shift',
                 'product_id'              => $primaryProductId,
-                'start_reading'           => !empty($nozzleRows) ? $nozzleRows[0]['start_reading'] : ($validated['start_reading'] ?? 0),
-                'end_reading'             => !empty($nozzleRows) ? $nozzleRows[0]['end_reading'] : ($validated['end_reading'] ?? 0),
+                'start_reading'           => !empty($calculatedNozzles) ? $calculatedNozzles[0]['calc']['start_reading'] : ($validated['start_reading'] ?? 0),
+                'end_reading'             => !empty($calculatedNozzles) ? $calculatedNozzles[0]['calc']['end_reading'] : ($validated['end_reading'] ?? 0),
                 'total_liters'            => $calculatedFuelLiters,
                 'testing_liters'          => $calculatedTestingLiters,
-                'fuel_rate'               => !empty($nozzleRows) ? $nozzleRows[0]['fuel_rate'] : ($validated['fuel_rate'] ?? 0),
+                'fuel_rate'               => !empty($calculatedNozzles) ? $calculatedNozzles[0]['calc']['fuel_rate'] : ($validated['fuel_rate'] ?? 0),
                 'has_rate_change'         => $hasShiftRateChange,
+                'rate_difference_amount'  => $calculatedRateDifference,
                 'total_sale'              => $calculatedFuelSale,
                 'total_credit_sales'      => $calculatedCreditSale,
                 'total_lubricant_sales'   => $calculatedLubricantSale,
@@ -469,41 +485,21 @@ class ShiftClosingController extends Controller
             ]);
 
             // 1. Process Nozzles (Multi-Dispenser reading, tank stock, pump totalizer)
-            if (!empty($nozzleRows)) {
-                foreach ($nozzleRows as $nRow) {
-                    $pump = Pump::find($nRow['pump_id']);
+            if (!empty($calculatedNozzles)) {
+                foreach ($calculatedNozzles as $item) {
+                    $nRow = $item['raw'];
+                    $pump = $item['pump'];
+                    $calc = $item['calc'];
                     $tankId = $nRow['tank_id'] ?: $pump?->tank_id;
                     $prodId = $nRow['product_id'] ?: $pump?->product_id;
 
-                    $start = (float) $nRow['start_reading'];
-                    $end = (float) $nRow['end_reading'];
-                    $test = (float) $nRow['testing_liters'];
-                    $hasRc = !empty($nRow['has_rate_change']) && !empty($nRow['midnight_reading']);
-
-                    if ($hasRc) {
-                        $mid = (float) $nRow['midnight_reading'];
-                        $oldRate = (float) ($nRow['old_fuel_rate'] ?? 0);
-                        $newRate = (float) ($nRow['new_fuel_rate'] ?? 0);
-                        $oldLtr = max(0, $mid - $start);
-                        $newLtr = max(0, ($end - $mid) - $test);
-                        $oldSub = round($oldLtr * $oldRate, 2);
-                        $newSub = round($newLtr * $newRate, 2);
-                        $soldLtr = $oldLtr + $newLtr;
-                        $sub = $oldSub + $newSub;
-                        $rate = $newRate; // effective closing rate
-                    } else {
-                        $meterDiff = max(0, $end - $start);
-                        $soldLtr = max(0, $meterDiff - $test);
-                        $rate = (float) $nRow['fuel_rate'];
-                        $sub = round($soldLtr * $rate, 2);
-                        $mid = null;
-                        $oldRate = null;
-                        $newRate = null;
-                        $oldLtr = null;
-                        $newLtr = null;
-                        $oldSub = null;
-                        $newSub = null;
-                    }
+                    $start = $calc['start_reading'];
+                    $end = $calc['end_reading'];
+                    $meterDiff = $calc['meter_liters'];
+                    $test = $calc['testing_liters'];
+                    $soldLtr = $calc['sold_liters'];
+                    $rate = $calc['fuel_rate'];
+                    $sub = $calc['subtotal'];
 
                     ShiftClosingNozzle::create([
                         'shift_closing_id'  => $closing->id,
@@ -513,19 +509,19 @@ class ShiftClosingController extends Controller
                         'nozzle_name'       => $pump->name,
                         'start_reading'     => $start,
                         'end_reading'       => $end,
-                        'meter_liters'      => max(0, $end - $start),
+                        'meter_liters'      => $meterDiff,
                         'testing_liters'    => $test,
                         'sold_liters'       => $soldLtr,
                         'fuel_rate'         => $rate,
                         'subtotal'          => $sub,
-                        'has_rate_change'   => $hasRc,
-                        'midnight_reading'  => $mid,
-                        'old_fuel_rate'     => $oldRate,
-                        'new_fuel_rate'     => $newRate,
-                        'old_rate_liters'   => $oldLtr,
-                        'new_rate_liters'   => $newLtr,
-                        'old_rate_subtotal' => $oldSub,
-                        'new_rate_subtotal' => $newSub,
+                        'has_rate_change'   => $calc['has_rate_change'],
+                        'midnight_reading'  => $calc['midnight_reading'],
+                        'old_fuel_rate'     => $calc['old_fuel_rate'],
+                        'new_fuel_rate'     => $calc['new_fuel_rate'],
+                        'old_rate_liters'   => $calc['old_rate_liters'],
+                        'new_rate_liters'   => $calc['new_rate_liters'],
+                        'old_rate_subtotal' => $calc['old_rate_subtotal'],
+                        'new_rate_subtotal' => $calc['new_rate_subtotal'],
                     ]);
 
                     // Update pump last reading
@@ -920,5 +916,119 @@ class ShiftClosingController extends Controller
         );
 
         return redirect()->route('shift-closings.index')->with('success', "Shift closing sheet #{$closingId} deleted and safely archived in Deleted Sheets audit.");
+    }
+
+    /**
+     * Compute sold liters, dual-rate split (Pre-12 AM vs Post-12 AM), and subtotal for a nozzle row.
+     */
+    private function calculateNozzleRowData(array $nRow, string $nozzleLabel = 'Nozzle'): array
+    {
+        $start = (float) ($nRow['start_reading'] ?? 0);
+        $end = (float) ($nRow['end_reading'] ?? 0);
+        $test = max(0.0, (float) ($nRow['testing_liters'] ?? 0));
+
+        if ($end < $start) {
+            throw ValidationException::withMessages([
+                'nozzles' => 'End reading (' . number_format($end, 2) . ') cannot be less than start reading (' . number_format($start, 2) . ") for {$nozzleLabel}.",
+            ]);
+        }
+
+        $meterDiff = round(max(0.0, $end - $start), 2);
+        if ($test > $meterDiff + 0.001) {
+            throw ValidationException::withMessages([
+                'nozzles' => 'Testing liters (' . number_format($test, 2) . ' Ltr) cannot exceed gross meter reading (' . number_format($meterDiff, 2) . " Ltr) for {$nozzleLabel}.",
+            ]);
+        }
+
+        $netSold = round(max(0.0, $meterDiff - $test), 2);
+        $hasRc = !empty($nRow['has_rate_change']);
+
+        if (!$hasRc) {
+            $rate = max(0.0, (float) ($nRow['fuel_rate'] ?? 0));
+            $sub = round($netSold * $rate, 2);
+
+            return [
+                'start_reading'     => $start,
+                'end_reading'       => $end,
+                'meter_liters'      => $meterDiff,
+                'testing_liters'    => $test,
+                'sold_liters'       => $netSold,
+                'fuel_rate'         => $rate,
+                'subtotal'          => $sub,
+                'has_rate_change'   => false,
+                'midnight_reading'  => null,
+                'old_fuel_rate'     => null,
+                'new_fuel_rate'     => null,
+                'old_rate_liters'   => null,
+                'new_rate_liters'   => null,
+                'old_rate_subtotal' => null,
+                'new_rate_subtotal' => null,
+                'rate_diff_amount'  => 0.0,
+            ];
+        }
+
+        $oldRate = max(0.0, (float) ($nRow['old_fuel_rate'] ?? 0));
+        $newRate = max(0.0, (float) ($nRow['new_fuel_rate'] ?? 0));
+        $splitMode = $nRow['split_mode'] ?? 'liters';
+
+        if ($splitMode === 'reading' && $nRow['midnight_reading'] !== null) {
+            $mid = (float) $nRow['midnight_reading'];
+            if ($mid < $start || $mid > $end) {
+                throw ValidationException::withMessages([
+                    'nozzles' => 'Midnight reading (' . number_format($mid, 2) . ') must be between start reading (' . number_format($start, 2) . ') and end reading (' . number_format($end, 2) . ") for {$nozzleLabel}.",
+                ]);
+            }
+
+            $preMeter = max(0.0, $mid - $start);
+            $postMeter = max(0.0, $end - $mid);
+            $deductFromPost = min($test, $postMeter);
+            $remainingTest = $test - $deductFromPost;
+
+            $newLtr = round(max(0.0, $postMeter - $deductFromPost), 2);
+            $oldLtr = round(max(0.0, $preMeter - $remainingTest), 2);
+        } else {
+            $enteredNewLtr = (float) ($nRow['new_rate_liters'] ?? 0);
+            if ($enteredNewLtr < 0) {
+                throw ValidationException::withMessages([
+                    'nozzles' => "Post-12 AM sold liters cannot be negative for {$nozzleLabel}.",
+                ]);
+            }
+            if ($enteredNewLtr > $netSold + 0.001) {
+                throw ValidationException::withMessages([
+                    'nozzles' => 'Post-12 AM sold liters (' . number_format($enteredNewLtr, 2) . ' Ltr) cannot exceed total net sold liters (' . number_format($netSold, 2) . " Ltr) for {$nozzleLabel}.",
+                ]);
+            }
+
+            $newLtr = round(min($enteredNewLtr, $netSold), 2);
+            $oldLtr = round(max(0.0, $netSold - $newLtr), 2);
+            $mid = ($nRow['midnight_reading'] !== null && $nRow['midnight_reading'] !== '')
+                ? (float) $nRow['midnight_reading']
+                : round($start + $oldLtr, 2);
+        }
+
+        $oldSub = round($oldLtr * $oldRate, 2);
+        $newSub = round($newLtr * $newRate, 2);
+        $soldLtr = round($oldLtr + $newLtr, 2);
+        $sub = round($oldSub + $newSub, 2);
+        $rateDiffAmount = round($sub - ($soldLtr * $oldRate), 2);
+
+        return [
+            'start_reading'     => $start,
+            'end_reading'       => $end,
+            'meter_liters'      => $meterDiff,
+            'testing_liters'    => $test,
+            'sold_liters'       => $soldLtr,
+            'fuel_rate'         => $newRate,
+            'subtotal'          => $sub,
+            'has_rate_change'   => true,
+            'midnight_reading'  => $mid,
+            'old_fuel_rate'     => $oldRate,
+            'new_fuel_rate'     => $newRate,
+            'old_rate_liters'   => $oldLtr,
+            'new_rate_liters'   => $newLtr,
+            'old_rate_subtotal' => $oldSub,
+            'new_rate_subtotal' => $newSub,
+            'rate_diff_amount'  => $rateDiffAmount,
+        ];
     }
 }

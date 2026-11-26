@@ -582,12 +582,22 @@ class PumpController extends Controller
                 'remarks'          => $validated['remarks'] . ($returnedToTank ? ' (Test volume returned to storage tank)' : ' (Test volume consumed/discharged)'),
             ]);
 
-            // If test volume was NOT returned to the tank, decrement product stock
-            if (!$returnedToTank && $volumeTested > 0 && $pump->product_id) {
-                $product = Product::find($pump->product_id);
-                if ($product) {
-                    $product->current_stock = max(0, $product->current_stock - $volumeTested);
-                    $product->save();
+            // If test volume was NOT returned to the tank, decrement both tank and product stock
+            if (!$returnedToTank && $volumeTested > 0) {
+                if ($pump->tank_id) {
+                    $tank = Tank::lockForUpdate()->find($pump->tank_id);
+                    if ($tank) {
+                        $tank->current_stock = max(0, $tank->current_stock - $volumeTested);
+                        $tank->save();
+                    }
+                }
+
+                if ($pump->product_id) {
+                    $product = Product::lockForUpdate()->find($pump->product_id);
+                    if ($product) {
+                        $product->current_stock = max(0, $product->current_stock - $volumeTested);
+                        $product->save();
+                    }
                 }
             }
 

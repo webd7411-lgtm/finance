@@ -82,14 +82,22 @@
 @endpush
 
 @section('content')
-<!-- Audio 9: Live Fuel Storage Tanks & Lubricants Stock Overview Ribbon -->
-<div class="d-flex align-items-center justify-content-between mb-1.5">
+<!-- Live Fuel Storage Tanks, Dip Variance & Lubricant Inventory Ribbon -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1.5">
     <div class="d-flex align-items-center gap-2">
         <span class="text-uppercase text-dark fw-bold" style="letter-spacing: 0.5px; font-size: 0.72rem;">
-            <i class="bi bi-database-check text-primary me-1"></i> Live Storage Tanks &amp; Lubricant Inventory (Audio 9)
+            <i class="bi bi-database-check text-primary me-1"></i> Live Storage Tanks, Dip Variance &amp; Lubricant Inventory
         </span>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{{ route('reports.tank-reconciliation') }}" class="badge bg-info bg-opacity-10 text-info-emphasis border border-info-subtle text-decoration-none py-1 px-2 small">
+            <i class="bi bi-clipboard-data me-1"></i> Wet-Stock Report
+        </a>
+        @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+            <a href="{{ route('tanks.settings') }}" class="badge bg-light text-dark border text-decoration-none py-1 px-2 small">
+                <i class="bi bi-sliders me-1"></i> Tank Settings
+            </a>
+        @endif
         <a href="{{ route('reports.daily-whatsapp') }}" class="badge bg-success text-white text-decoration-none py-1 px-2 small">
             <i class="bi bi-whatsapp me-1"></i> Send Owner Daily Report
         </a>
@@ -99,139 +107,173 @@
     </div>
 </div>
 
-<div class="row g-2 g-md-2.5 mb-3">
-    @php
-        $tankPetrol = $allTanks->firstWhere('tank_number', 'TK-01') ?? $allTanks->first();
-        $tankDiesel = $allTanks->firstWhere('tank_number', 'TK-02');
-        $tankOctane = $allTanks->firstWhere('tank_number', 'TK-03');
-    @endphp
+@php
+    $dipUnit = $tankConfig['dip_unit'] ?? 'mm';
+    $tankBorderColors = ['danger', 'primary', 'warning', 'success', 'info', 'secondary'];
+@endphp
 
-    <!-- 1. Super Petrol (RON 92 / PMG) -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-danger shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Super Petrol (PMG / RON 92)</span>
-                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
-                    {{ $tankPetrol?->tank_number ?: 'Tank 1' }}
-                </span>
-            </div>
-            <div class="d-flex align-items-baseline justify-content-between">
-                <div class="fw-bold text-dark font-monospace fs-5">
-                    {{ number_format($petrolProduct?->current_stock ?? ($tankPetrol?->current_stock ?? 0), 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
+<div class="row g-2 g-md-2.5 mb-2.5">
+    @foreach($tankCards as $idx => $card)
+        @php
+            $t = $card['tank'];
+            $accent = $tankBorderColors[$idx % count($tankBorderColors)];
+            $tCap = max(0, (float) $t->capacity);
+            $tBook = (float) $card['book_stock'];
+            $tPct = $tCap > 0 ? min(100, round(($tBook / $tCap) * 100)) : 0;
+            $tUllage = max(0, $tCap - $tBook);
+            $unitCost = (float) ($t->product?->purchase_price ?? 0);
+            $wLim = $card['thresholds']['warning_liters'] ?? 25;
+            $cLim = $card['thresholds']['critical_liters'] ?? 50;
+            $varStatus = $card['variance_status'];
+        @endphp
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-{{ $accent }} shadow-sm position-relative overflow-hidden d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-1 gap-1">
+                        <a href="{{ route('tanks.show', $t->id) }}" class="text-muted small fw-semibold text-uppercase text-decoration-none text-truncate" style="letter-spacing: 0.4px; font-size: 0.68rem;" title="{{ $t->name }}">
+                            {{ $t->product?->name ?? $t->name }}
+                        </a>
+                        <span class="badge bg-{{ $accent }} bg-opacity-10 text-{{ $accent === 'warning' ? 'warning-emphasis' : $accent }} border border-{{ $accent }}-subtle small py-0.5 px-1.5 flex-shrink-0" style="font-size: 0.65rem;">
+                            {{ $t->tank_number ?: ('Tank #' . ($idx + 1)) }}
+                        </span>
+                    </div>
+
+                    <div class="d-flex align-items-baseline justify-content-between gap-1">
+                        <div class="fw-bold text-dark font-monospace fs-5">
+                            {{ number_format($tBook, 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
+                        </div>
+                        <div class="small text-muted text-end" style="font-size: 0.71rem;">
+                            Dip: <strong class="text-dark">{{ $t->current_dip_reading ? number_format($t->current_dip_reading, 1) . ' ' . $dipUnit : 'N/A' }}</strong>
+                        </div>
+                    </div>
+
+                    @if($tankConfig['show_variance_on_dashboard'])
+                        <div class="d-flex align-items-center justify-content-between gap-1 mt-1" style="font-size: 0.7rem;">
+                            @if($card['has_dip'])
+                                <span class="text-muted">
+                                    Phys: <strong class="text-dark font-monospace">{{ number_format($card['measured_liters'], 1) }} L</strong>
+                                </span>
+                                <span>{!! \App\Models\Tank::formatVarianceBadge($varStatus, $card['variance_liters']) !!}</span>
+                            @else
+                                <span class="text-muted fst-italic">No physical dip logged yet</span>
+                            @endif
+                        </div>
+
+                        @if($card['trend']['has_trend'])
+                            <div class="mt-1">
+                                <span class="badge bg-danger text-white w-100 text-start py-1" style="font-size: 0.64rem;">
+                                    <i class="bi bi-exclamation-octagon-fill me-1"></i>{{ $card['trend']['streak'] }}-Dip Shortage Trend Detected
+                                </span>
+                            </div>
+                        @endif
+                    @endif
+
+                    <div class="progress mt-1.5" style="height: 6px;">
+                        <div class="progress-bar bg-{{ $accent }}" style="width: {{ $tPct }}%"></div>
+                    </div>
                 </div>
-                <div class="small text-muted" style="font-size: 0.72rem;">
-                    Dip: <strong class="text-dark">{{ $tankPetrol?->current_dip_reading ?? 140 }} mm</strong>
+
+                <div class="d-flex justify-content-between align-items-center text-muted mt-1.5 pt-1 border-top border-light" style="font-size: 0.68rem;">
+                    <span>Cap: {{ number_format($tCap) }}L &bull; Space: <strong class="text-primary">{{ number_format($tUllage, 0) }}L</strong></span>
+                    <button type="button" class="btn btn-outline-success btn-sm py-0 px-1.5" style="font-size: 0.66rem;"
+                            onclick="openDipModal({{ $t->id }}, '{{ addslashes($t->name) }}', {{ $t->current_dip_reading ?? 0 }}, {{ $tBook }}, {{ $unitCost }}, {{ $wLim }}, {{ $cLim }}, {{ $card['has_chart'] ? 'true' : 'false' }})">
+                        <i class="bi bi-rulers me-0.5"></i>Dip
+                    </button>
                 </div>
-            </div>
-            @php
-                $pCap = $tankPetrol?->capacity ?? 25000;
-                $pStock = $petrolProduct?->current_stock ?? ($tankPetrol?->current_stock ?? 0);
-                $pPct = $pCap > 0 ? min(100, round(($pStock / $pCap) * 100)) : 0;
-                $pUllage = max(0, $pCap - $pStock);
-            @endphp
-            <div class="progress mt-1.5" style="height: 6px;">
-                <div class="progress-bar bg-danger" style="width: {{ $pPct }}%"></div>
-            </div>
-            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
-                <span>Total Cap: {{ number_format($pCap) }} L</span>
-                <span class="text-primary fw-semibold">Space: {{ number_format($pUllage, 1) }} L</span>
             </div>
         </div>
-    </div>
+    @endforeach
 
-    <!-- 2. High Speed Diesel (HSD) -->
+    <!-- Lubricants Card -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-primary shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">High Speed Diesel (HSD)</span>
-                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
-                    {{ $tankDiesel?->tank_number ?: 'Tank 2' }}
-                </span>
-            </div>
-            <div class="d-flex align-items-baseline justify-content-between">
-                <div class="fw-bold text-dark font-monospace fs-5">
-                    {{ number_format($dieselProduct?->current_stock ?? ($tankDiesel?->current_stock ?? 0), 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-info shadow-sm position-relative overflow-hidden d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Caltex Havoline &amp; Oils</span>
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
+                        Shelf Store
+                    </span>
                 </div>
-                <div class="small text-muted" style="font-size: 0.72rem;">
-                    Dip: <strong class="text-dark">{{ $tankDiesel?->current_dip_reading ?? 140 }} mm</strong>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <div class="fw-bold text-info font-monospace fs-5">
+                        {{ number_format($totalLubricantUnits, 0) }} <small class="fs-6 fw-normal text-muted">Cans / Packs</small>
+                    </div>
+                    <div class="small text-muted" style="font-size: 0.72rem;">
+                        <strong class="text-dark">{{ $lubricantProducts->count() }}</strong> SKUs
+                    </div>
                 </div>
-            </div>
-            @php
-                $dCap = $tankDiesel?->capacity ?? 50000;
-                $dStock = $dieselProduct?->current_stock ?? ($tankDiesel?->current_stock ?? 0);
-                $dPct = $dCap > 0 ? min(100, round(($dStock / $dCap) * 100)) : 0;
-                $dUllage = max(0, $dCap - $dStock);
-            @endphp
-            <div class="progress mt-1.5" style="height: 6px;">
-                <div class="progress-bar bg-primary" style="width: {{ $dPct }}%"></div>
-            </div>
-            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
-                <span>Total Cap: {{ number_format($dCap) }} L</span>
-                <span class="text-primary fw-semibold">Space: {{ number_format($dUllage, 1) }} L</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. Hi-Octane 97 (HOBC) -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-warning shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Hi-Octane 97 (HOBC)</span>
-                <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
-                    {{ $tankOctane?->tank_number ?: 'Tank 3' }}
-                </span>
-            </div>
-            <div class="d-flex align-items-baseline justify-content-between">
-                <div class="fw-bold text-dark font-monospace fs-5">
-                    {{ number_format($octaneProduct?->current_stock ?? ($tankOctane?->current_stock ?? 0), 1) }} <small class="fs-6 fw-normal text-muted">Ltr</small>
-                </div>
-                <div class="small text-muted" style="font-size: 0.72rem;">
-                    Dip: <strong class="text-dark">{{ $tankOctane?->current_dip_reading ?? 140 }} mm</strong>
+                <div class="progress mt-1.5" style="height: 6px;">
+                    <div class="progress-bar bg-info" style="width: 75%"></div>
                 </div>
             </div>
-            @php
-                $oCap = $tankOctane?->capacity ?? 15000;
-                $oStock = $octaneProduct?->current_stock ?? ($tankOctane?->current_stock ?? 0);
-                $oPct = $oCap > 0 ? min(100, round(($oStock / $oCap) * 100)) : 0;
-                $oUllage = max(0, $oCap - $oStock);
-            @endphp
-            <div class="progress mt-1.5" style="height: 6px;">
-                <div class="progress-bar bg-warning" style="width: {{ $oPct }}%"></div>
-            </div>
-            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
-                <span>Total Cap: {{ number_format($oCap) }} L</span>
-                <span class="text-primary fw-semibold">Space: {{ number_format($oUllage, 1) }} L</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. Caltex Havoline Lubricants (Audio 6 & 9) -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-info shadow-sm position-relative overflow-hidden">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.68rem;">Caltex Havoline &amp; Oils</span>
-                <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle small py-0.5 px-1.5" style="font-size: 0.65rem;">
-                    Shelf Store
-                </span>
-            </div>
-            <div class="d-flex align-items-baseline justify-content-between">
-                <div class="fw-bold text-info font-monospace fs-5">
-                    {{ number_format($totalLubricantUnits, 0) }} <small class="fs-6 fw-normal text-muted">Cans / Packs</small>
-                </div>
-                <div class="small text-muted" style="font-size: 0.72rem;">
-                    <strong class="text-dark">{{ $lubricantProducts->count() }}</strong> SKUs
-                </div>
-            </div>
-            <div class="progress mt-1.5" style="height: 6px;">
-                <div class="progress-bar bg-info" style="width: 75%"></div>
-            </div>
-            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
+            <div class="d-flex justify-content-between text-muted mt-1.5 pt-1 border-top border-light" style="font-size: 0.68rem;">
                 <span>Havoline, Helix, 4T Oils</span>
                 <a href="{{ route('products.index') }}" class="text-info text-decoration-none fw-semibold">Manage Store &rarr;</a>
             </div>
         </div>
     </div>
 </div>
+
+@if($tankConfig['show_variance_on_dashboard'] && $wetStockSummary['total_active_tanks'] > 0)
+<!-- Wet-Stock Tank Behaviour & Reconciliation Summary Strip -->
+<div class="row g-2 g-md-2.5 mb-3">
+    <div class="col-12 col-md-4">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 {{ $wetStockSummary['net_variance_liters'] < -0.01 ? 'border-danger' : ($wetStockSummary['net_variance_liters'] > 0.01 ? 'border-info' : 'border-success') }} shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Net Unreconciled Tank Variance</span>
+                <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;">
+                    {{ $wetStockSummary['dipped_tanks_count'] }}/{{ $wetStockSummary['total_active_tanks'] }} Dipped
+                </span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <span class="fw-bold font-monospace kpi-value-text {{ $wetStockSummary['net_variance_liters'] < -0.01 ? 'text-danger' : ($wetStockSummary['net_variance_liters'] > 0.01 ? 'text-info' : 'text-success') }}">
+                    {{ $wetStockSummary['net_variance_liters'] > 0 ? '+' : '' }}{{ number_format($wetStockSummary['net_variance_liters'], 1) }} Ltr
+                </span>
+                <span class="small font-monospace text-muted">
+                    Cost: {{ $wetStockSummary['net_variance_value'] > 0 ? '+' : '' }}Rs. {{ number_format($wetStockSummary['net_variance_value'], 0) }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 border-secondary shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Month Reconciled Shrinkage / Gain</span>
+                <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;">{{ now()->format('M Y') }}</span>
+            </div>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <span class="fw-bold font-monospace kpi-value-text {{ $wetStockSummary['month_reconciled_liters'] < 0 ? 'text-danger' : 'text-success' }}">
+                    {{ $wetStockSummary['month_reconciled_liters'] > 0 ? '+' : '' }}{{ number_format($wetStockSummary['month_reconciled_liters'], 1) }} Ltr
+                </span>
+                <span class="small font-monospace text-muted">
+                    Impact: {{ $wetStockSummary['month_reconciled_value'] > 0 ? '+' : '' }}Rs. {{ number_format($wetStockSummary['month_reconciled_value'], 0) }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="card-custom dashboard-kpi-card h-100 border-start border-3 {{ $wetStockSummary['alert_tanks_count'] > 0 ? 'border-danger' : 'border-success' }} shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Wet-Stock Tolerance Health</span>
+                <a href="{{ route('reports.tank-reconciliation') }}" class="text-primary text-decoration-none small fw-semibold" style="font-size: 0.68rem;">Audit &rarr;</a>
+            </div>
+            <div class="d-flex align-items-center justify-content-between">
+                @if($wetStockSummary['alert_tanks_count'] > 0)
+                    <span class="fw-bold text-danger small">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ $wetStockSummary['alert_tanks_count'] }} Tank(s) Exceed Tolerance / Shortage Trend
+                    </span>
+                @else
+                    <span class="fw-bold text-success small">
+                        <i class="bi bi-check-circle-fill me-1"></i>All Tanks Within Normal Behaviour
+                    </span>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 <!-- Row 1: Liquid Funds & Closing Balances -->
 <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -823,6 +865,7 @@
         </div>
     </div>
 </div>
+@include('tanks.partials.dip_modal')
 @endsection
 
 @push('scripts')

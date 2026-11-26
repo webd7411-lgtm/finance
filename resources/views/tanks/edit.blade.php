@@ -182,7 +182,59 @@
                 </div>
             </div>
 
-            <!-- Section 4: Notes -->
+            <!-- Section 4: Per-Tank Variance Tolerance Overrides -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2 pb-1 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-pill px-2 py-0.5">4</span>
+                        <h6 class="fw-bold mb-0 text-dark">DIP VARIANCE TOLERANCE RULES</h6>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                        <input type="hidden" name="use_default_tolerance" value="0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="use_default_tolerance"
+                               name="use_default_tolerance" value="1"
+                               {{ old('use_default_tolerance', $tank->use_default_tolerance) ? 'checked' : '' }} onchange="toggleCustomTolerance()">
+                        <label class="form-check-label small fw-semibold text-primary" for="use_default_tolerance">
+                            Use Station Default (&plusmn;{{ $tankConfig['warning_liters'] }}L / {{ $tankConfig['warning_percent'] }}%)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="customToleranceBox" class="row g-3 p-2.5 bg-light rounded-3 border {{ old('use_default_tolerance', $tank->use_default_tolerance) ? 'd-none' : '' }}">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-semibold text-secondary">Tolerance Mode</label>
+                        <select name="tolerance_mode" class="form-select form-select-sm py-2">
+                            @foreach($toleranceModes as $mKey => $mLabel)
+                                <option value="{{ $mKey }}" {{ old('tolerance_mode', $tank->tolerance_mode ?: $tankConfig['tolerance_mode']) === $mKey ? 'selected' : '' }}>
+                                    {{ $mLabel }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Warn (Ltr)</label>
+                        <input type="number" step="0.01" min="0" name="warning_tolerance_liters" class="form-control form-control-sm font-monospace py-2"
+                               value="{{ old('warning_tolerance_liters', $tank->warning_tolerance_liters ?? $tankConfig['warning_liters']) }}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Critical (Ltr)</label>
+                        <input type="number" step="0.01" min="0" name="critical_tolerance_liters" class="form-control form-control-sm font-monospace py-2"
+                               value="{{ old('critical_tolerance_liters', $tank->critical_tolerance_liters ?? $tankConfig['critical_liters']) }}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Warn (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="warning_tolerance_percent" class="form-control form-control-sm font-monospace py-2"
+                               value="{{ old('warning_tolerance_percent', $tank->warning_tolerance_percent ?? $tankConfig['warning_percent']) }}">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary">Critical (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="critical_tolerance_percent" class="form-control form-control-sm font-monospace py-2"
+                               value="{{ old('critical_tolerance_percent', $tank->critical_tolerance_percent ?? $tankConfig['critical_percent']) }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: Notes -->
             <div class="mb-4">
                 <label class="form-label small fw-semibold text-secondary">
                     Description &amp; Maintenance Notes <span class="text-muted">(Optional)</span>
@@ -200,4 +252,14 @@
     </div>
 
 </div>
+
+<script>
+function toggleCustomTolerance() {
+    const chk = document.getElementById('use_default_tolerance');
+    const box = document.getElementById('customToleranceBox');
+    if (chk && box) {
+        box.classList.toggle('d-none', chk.checked);
+    }
+}
+</script>
 @endsection

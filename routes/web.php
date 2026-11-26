@@ -75,8 +75,14 @@ Route::middleware('auth')->group(function () {
     // Station Locations & Sites
     Route::resource('locations', StationLocationController::class)->except(['create', 'show', 'edit']);
 
-    // Storage Tanks & Dip Readings
+    // Storage Tanks, Calibration Charts, Reconciliation & Settings
+    Route::get('tanks/settings', [TankController::class, 'settings'])->name('tanks.settings');
+    Route::post('tanks/settings', [TankController::class, 'updateSettings'])->name('tanks.settings.update');
     Route::post('tanks/{tank}/record-dip', [TankController::class, 'recordDip'])->name('tanks.record-dip');
+    Route::post('tanks/{tank}/dip-readings/{dipReading}/reconcile', [TankController::class, 'reconcileDip'])->name('tanks.dip-readings.reconcile');
+    Route::get('tanks/{tank}/lookup-dip', [TankController::class, 'lookupDipChart'])->name('tanks.lookup-dip');
+    Route::post('tanks/{tank}/dip-chart', [TankController::class, 'saveDipChart'])->name('tanks.dip-chart.save');
+    Route::delete('tanks/{tank}/dip-chart/{chartPoint}', [TankController::class, 'deleteDipChartPoint'])->name('tanks.dip-chart.delete');
     Route::resource('tanks', TankController::class);
 
     // Stock & Fuel Purchases
@@ -122,6 +128,7 @@ Route::middleware('auth')->group(function () {
     Route::get('reports/daily-register/export', [ReportController::class, 'exportDailyRegisterCsv'])->name('reports.daily-register.export');
     Route::get('reports/total-sale-summary', [ReportController::class, 'totalSaleSummary'])->name('reports.total-sale-summary');
     Route::get('reports/expenses', [ReportController::class, 'expenseReport'])->name('reports.expenses');
+    Route::get('reports/tank-reconciliation', [ReportController::class, 'tankReconciliationReport'])->name('reports.tank-reconciliation');
 
     // Step 7: Audit Trail & Logs (Owner & Incharge)
     Route::middleware('role:owner,incharge')->group(function () {

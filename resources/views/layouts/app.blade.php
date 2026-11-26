@@ -448,10 +448,17 @@
                             </button>
                             <ul class="dropdown-menu vip-dropdown-menu" style="min-width: 230px;">
                                 <li>
-                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('tanks.*') ? 'active' : '' }}" href="{{ route('tanks.index') }}">
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('tanks.index') || request()->routeIs('tanks.show') || request()->routeIs('tanks.create') || request()->routeIs('tanks.edit') ? 'active' : '' }}" href="{{ route('tanks.index') }}">
                                         <i class="bi bi-database-fill-gear text-info"></i> Fuel Storage Tanks
                                     </a>
                                 </li>
+                                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('tanks.settings') ? 'active' : '' }}" href="{{ route('tanks.settings') }}">
+                                        <i class="bi bi-sliders text-warning"></i> Tank &amp; Dip Settings
+                                    </a>
+                                </li>
+                                @endif
                                 <li>
                                     <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('locations.*') ? 'active' : '' }}" href="{{ route('locations.index') }}">
                                         <i class="bi bi-geo-alt text-danger"></i> Station Locations
@@ -635,6 +642,11 @@
                                         <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
                                     </a>
                                 </li>
+                                <li>
+                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 {{ request()->routeIs('reports.tank-reconciliation') ? 'active' : '' }}" href="{{ route('reports.tank-reconciliation') }}">
+                                        <i class="bi bi-droplet-half text-info"></i> Wet-Stock &amp; Dip Report
+                                    </a>
+                                </li>
                                 @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
                                     <li><hr class="dropdown-divider my-1"></li>
                                     <li>
@@ -785,9 +797,14 @@
                 <a href="{{ route('accounts.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                     <i class="bi bi-bank text-success"></i> Payment Accounts
                 </a>
-                <a href="{{ route('tanks.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('tanks.*') ? 'active' : '' }}">
+                <a href="{{ route('tanks.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('tanks.index') || request()->routeIs('tanks.show') || request()->routeIs('tanks.create') || request()->routeIs('tanks.edit') ? 'active' : '' }}">
                     <i class="bi bi-database-fill-gear text-info"></i> Fuel Storage Tanks
                 </a>
+                @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
+                    <a href="{{ route('tanks.settings') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('tanks.settings') ? 'active' : '' }}">
+                        <i class="bi bi-sliders text-warning"></i> Tank &amp; Dip Settings
+                    </a>
+                @endif
                 <a href="{{ route('locations.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('locations.*') ? 'active' : '' }}">
                     <i class="bi bi-geo-alt text-danger"></i> Station Locations
                 </a>
@@ -848,6 +865,9 @@
                 </a>
                 <a href="{{ route('reports.expenses') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.expenses') ? 'active' : '' }}">
                     <i class="bi bi-receipt-cutoff text-danger"></i> Expense Reports
+                </a>
+                <a href="{{ route('reports.tank-reconciliation') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('reports.tank-reconciliation') ? 'active' : '' }}">
+                    <i class="bi bi-droplet-half text-info"></i> Wet-Stock &amp; Dip Report
                 </a>
                 @if(auth()->user()->isOwner() || auth()->user()->isIncharge())
                     <a href="{{ route('audit-logs.index') }}" class="vip-nav-link w-100 py-2 px-3 rounded-3 {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}">
@@ -1072,7 +1092,7 @@
 
         function isAmountInput(input) {
             if (!input || !input.tagName || input.tagName.toLowerCase() !== 'input') return false;
-            if (input.type === 'hidden' || input.type === 'submit' || input.type === 'button') return false;
+            if (input.type === 'hidden' || input.type === 'submit' || input.type === 'button' || input.type === 'number') return false;
             if (input.classList.contains('amount-format')) return true;
             const name = input.getAttribute('name') || '';
             if (name === 'amount' || name === 'opening_balance' || name.endsWith('[amount]') || name === 'total_sale' || name === 'returns_amount' || name === 'expenses_amount' || name === 'coins') return true;

@@ -155,7 +155,7 @@
                                             Rs. {{ number_format($noz->subtotal, 2) }}
                                             @if($noz->has_rate_change)
                                                 <div class="small text-muted" style="font-size: 0.68rem;">
-                                                    Pre: {{ number_format($noz->old_rate_liters, 1) }}L | Post: {{ number_format($noz->new_rate_liters, 1) }}L
+                                                    Pre: {{ number_format($noz->old_rate_liters, 2) }}L | Post: {{ number_format($noz->new_rate_liters, 2) }}L
                                                 </div>
                                             @endif
                                         </td>

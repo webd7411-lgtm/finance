@@ -103,14 +103,25 @@ class RentalController extends Controller
         ]);
     }
 
+    private function cleanNumericInput(Request $request, string $field): void
+    {
+        if ($request->has($field) && is_string($request->input($field))) {
+            $request->merge([
+                $field => str_replace(',', '', trim($request->input($field))),
+            ]);
+        }
+    }
+
     public function store(Request $request)
     {
+        $this->cleanNumericInput($request, 'monthly_rent');
+
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'facility_type' => ['required', 'string', 'max:100'],
             'tenant_name'   => ['required', 'string', 'max:255'],
             'tenant_phone'  => ['nullable', 'string', 'max:50'],
-            'monthly_rent'  => ['required', 'numeric', 'min:0'],
+            'monthly_rent'  => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'due_day'       => ['nullable', 'integer', 'between:1,31'],
             'notes'         => ['nullable', 'string', 'max:1000'],
         ]);
@@ -137,12 +148,14 @@ class RentalController extends Controller
 
     public function update(Request $request, StationRental $rental)
     {
+        $this->cleanNumericInput($request, 'monthly_rent');
+
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'facility_type' => ['required', 'string', 'max:100'],
             'tenant_name'   => ['required', 'string', 'max:255'],
             'tenant_phone'  => ['nullable', 'string', 'max:50'],
-            'monthly_rent'  => ['required', 'numeric', 'min:0'],
+            'monthly_rent'  => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'due_day'       => ['nullable', 'integer', 'between:1,31'],
             'status'        => ['required', 'string', 'in:active,inactive'],
             'notes'         => ['nullable', 'string', 'max:1000'],
@@ -161,10 +174,12 @@ class RentalController extends Controller
 
     public function collectRent(Request $request, StationRental $rental)
     {
+        $this->cleanNumericInput($request, 'amount');
+
         $validated = $request->validate([
             'payment_date' => ['required', 'date'],
             'rent_month'   => ['required', 'string', 'max:20'], // e.g. 2026-11
-            'amount'       => ['required', 'numeric', 'gt:0'],
+            'amount'       => ['required', 'numeric', 'gt:0', 'max:999999999999.99'],
             'account_id'   => ['required', 'integer', 'exists:accounts,id'],
             'receipt_no'   => ['nullable', 'string', 'max:100'],
             'notes'        => ['nullable', 'string', 'max:500'],

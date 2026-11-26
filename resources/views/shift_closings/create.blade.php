@@ -167,6 +167,20 @@
 <form action="{{ route('shift-closings.store') }}" method="POST" id="shiftClosingForm" novalidate>
     @csrf
 
+    @if($errors->any())
+        <div class="alert alert-danger border-danger d-flex align-items-start gap-2 p-2 mb-2 rounded-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+            <div>
+                <strong>Please fix the following errors before locking the shift:</strong>
+                <ul class="mb-0 ps-3 mt-1">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
     <!-- Top Live KPI Ribbon (Instant Shift Position) -->
     <div class="row g-1.5 mb-2.5 row-cols-2 row-cols-md-3 row-cols-lg-6">
         <!-- KPI 1: Total Volume Dispensed -->
@@ -346,8 +360,13 @@
                     @foreach($dispenserNozzles as $nozzle)
                         @php
                             $nIndex = $nozzle->id;
-                            $rate = $nozzle->product?->sale_price ?? 0;
-                            $lastRead = $nozzle->last_reading ?? 0;
+                            $rate = (float) ($nozzle->product?->sale_price ?? 0);
+                            $lastRead = (float) ($nozzle->last_reading ?? 0);
+                            $latestRev = isset($latestRevisionByProduct) ? $latestRevisionByProduct->get($nozzle->product_id) : null;
+                            $defaultOldRate = $latestRev ? (float) $latestRev->old_sale_rate : $rate;
+                            $defaultNewRate = $rate;
+                            $oldRateChangeChecked = (bool) old("nozzles.{$nIndex}.has_rate_change", false);
+                            $oldSplitMode = old("nozzles.{$nIndex}.split_mode", 'liters');
                         @endphp
                         <div class="nozzle-row-box" id="nozzle_box_{{ $nIndex }}">
                             <div class="row g-1.5 align-items-center">
@@ -406,7 +425,10 @@
 
                                 <!-- Rate / Ltr (Rs.) -->
                                 <div class="col-6 col-sm-4 col-md-1.5" style="flex: 0 0 13%; max-width: 13%;">
-                                    <label class="compact-label">Rate / Ltr</label>
+                                    <label class="compact-label">
+                                        <span>Rate / Ltr</span>
+                                        <span class="badge bg-primary-subtle text-primary px-1 py-0" id="rate_override_badge_{{ $nIndex }}" style="font-size: 0.55rem; display: none;">Split</span>
+                                    </label>
                                     <input type="number" step="0.01" min="0"
                                            name="nozzles[{{ $nIndex }}][fuel_rate]"
                                            id="rate_{{ $nIndex }}"
@@ -431,9 +453,10 @@
                                                id="rate_change_check_{{ $nIndex }}"
                                                name="nozzles[{{ $nIndex }}][has_rate_change]"
                                                value="1"
+                                               {{ $oldRateChangeChecked ? 'checked' : '' }}
                                                onchange="toggleMidnightRateChange({{ $nIndex }})">
                                         <label class="form-check-label small fw-semibold text-secondary" for="rate_change_check_{{ $nIndex }}" style="font-size: 0.7rem; cursor: pointer;">
-                                            <i class="bi bi-moon-stars text-primary me-1"></i> Midnight 12:00 AM Rate Change (Raat 12 Baje Rate Tabdeel Hua)
+                                            <i class="bi bi-moon-stars text-primary me-1"></i> Midnight 12:00 AM Rate Change (Pre-12 AM / Post-12 AM Split)
                                         </label>
                                     </div>
                                     <span class="badge bg-light text-secondary border small" id="split_badge_{{ $nIndex }}" style="font-size: 0.62rem; display: none;">
@@ -444,55 +467,77 @@
                                 <!-- Collapsible Midnight Split Box -->
                                 <div class="col-12" id="midnight_split_{{ $nIndex }}" style="display: none;">
                                     <div class="p-2 bg-light bg-opacity-75 rounded-2 border border-primary-subtle mt-1">
-                                        <div class="row g-1.5 align-items-center">
-                                            <!-- 12:00 AM Midnight Reading -->
+                                        <input type="hidden" name="nozzles[{{ $nIndex }}][split_mode]" id="split_mode_{{ $nIndex }}" value="{{ $oldSplitMode }}">
+                                        <div class="row g-1.5 align-items-start">
+                                            <!-- Post-12 AM Sold Liters (12:00 AM - 9:00 AM) -->
                                             <div class="col-12 col-sm-6 col-md-3">
-                                                <label class="compact-label text-primary fw-bold">12:00 AM Midnight Reading <span class="text-danger">*</span></label>
+                                                <label class="compact-label text-primary fw-bold" for="new_ltr_{{ $nIndex }}">
+                                                    <span>Post-12 AM Sold (12 AM - 9 AM)</span>
+                                                    <span class="text-muted" style="font-size: 0.6rem;">Ltr</span>
+                                                </label>
+                                                <input type="number" step="0.01" min="0"
+                                                       name="nozzles[{{ $nIndex }}][new_rate_liters]"
+                                                       id="new_ltr_{{ $nIndex }}"
+                                                       class="form-control compact-input fw-bold border-primary text-primary"
+                                                       value="{{ old("nozzles.{$nIndex}.new_rate_liters", '') }}"
+                                                       placeholder="0.00"
+                                                       oninput="onPostMidnightLitersInput({{ $nIndex }})">
+                                                <small class="text-secondary d-block" style="font-size: 0.6rem;">Liters sold after 12:00 AM at New Rate (remaining uses Old Rate)</small>
+                                                <div class="text-danger fw-semibold mt-0.5" id="split_error_{{ $nIndex }}" style="font-size: 0.65rem; display: none;"></div>
+                                            </div>
+
+                                            <!-- 12:00 AM Midnight Reading (Optional / Auto-Synced) -->
+                                            <div class="col-12 col-sm-6 col-md-2">
+                                                <label class="compact-label text-secondary" for="midnight_{{ $nIndex }}">
+                                                    <span>12:00 AM Reading</span>
+                                                    <span class="text-muted" style="font-size: 0.58rem;">Opt.</span>
+                                                </label>
                                                 <input type="number" step="0.01" min="0"
                                                        name="nozzles[{{ $nIndex }}][midnight_reading]"
                                                        id="midnight_{{ $nIndex }}"
-                                                       class="form-control compact-input fw-bold border-primary text-primary"
-                                                       placeholder="Midnight Reading"
-                                                       oninput="calculateNozzleRow({{ $nIndex }})">
-                                                <small class="text-secondary" style="font-size: 0.6rem;">Reading recorded at 12:00 AM</small>
+                                                       class="form-control compact-input fw-semibold"
+                                                       value="{{ old("nozzles.{$nIndex}.midnight_reading", '') }}"
+                                                       placeholder="Auto / Reading"
+                                                       oninput="onMidnightReadingInput({{ $nIndex }})">
+                                                <small class="text-secondary d-block" style="font-size: 0.6rem;">Auto-calculated or enter meter</small>
                                             </div>
 
                                             <!-- Pre-Midnight Rate -->
                                             <div class="col-6 col-sm-3 col-md-2">
-                                                <label class="compact-label text-secondary">Old Rate (Pre-12 AM)</label>
+                                                <label class="compact-label text-secondary" for="old_rate_{{ $nIndex }}">Old Rate (Pre-12 AM)</label>
                                                 <input type="number" step="0.01" min="0"
                                                        name="nozzles[{{ $nIndex }}][old_fuel_rate]"
                                                        id="old_rate_{{ $nIndex }}"
                                                        class="form-control compact-input fw-semibold"
-                                                       value="{{ old("nozzles.{$nIndex}.old_fuel_rate", number_format($rate, 2, '.', '')) }}"
+                                                       value="{{ old("nozzles.{$nIndex}.old_fuel_rate", number_format($defaultOldRate, 2, '.', '')) }}"
                                                        oninput="calculateNozzleRow({{ $nIndex }})">
                                             </div>
 
                                             <!-- Post-Midnight Rate -->
                                             <div class="col-6 col-sm-3 col-md-2">
-                                                <label class="compact-label text-success fw-bold">New Rate (Post-12 AM)</label>
+                                                <label class="compact-label text-success fw-bold" for="new_rate_{{ $nIndex }}">New Rate (Post-12 AM)</label>
                                                 <input type="number" step="0.01" min="0"
                                                        name="nozzles[{{ $nIndex }}][new_fuel_rate]"
                                                        id="new_rate_{{ $nIndex }}"
                                                        class="form-control compact-input fw-bold border-success text-success"
-                                                       value="{{ old("nozzles.{$nIndex}.new_fuel_rate", number_format($rate, 2, '.', '')) }}"
+                                                       value="{{ old("nozzles.{$nIndex}.new_fuel_rate", number_format($defaultNewRate, 2, '.', '')) }}"
                                                        oninput="calculateNozzleRow({{ $nIndex }})">
                                             </div>
 
                                             <!-- Split Calculation Breakdown Display -->
-                                            <div class="col-12 col-md-5">
-                                                <div class="p-1.5 bg-white rounded border small" style="font-size: 0.65rem;">
-                                                    <div class="d-flex justify-content-between text-secondary">
-                                                        <span>Pre-12 AM (Old):</span>
-                                                        <strong class="text-dark" id="pre_calc_{{ $nIndex }}">0.00 Ltr @ Rs. 0.00 = Rs. 0.00</strong>
+                                            <div class="col-12 col-md-3">
+                                                <label class="compact-label text-secondary">Split Summary</label>
+                                                <div class="p-1.5 bg-white rounded border small" style="font-size: 0.64rem;">
+                                                    <div class="d-flex justify-content-between text-secondary gap-1">
+                                                        <span>Pre-12 AM:</span>
+                                                        <strong class="text-dark text-end" id="pre_calc_{{ $nIndex }}">0.00 Ltr @ Rs. 0.00 = Rs. 0.00</strong>
                                                     </div>
-                                                    <div class="d-flex justify-content-between text-secondary mt-0.5">
-                                                        <span>Post-12 AM (New):</span>
-                                                        <strong class="text-success" id="post_calc_{{ $nIndex }}">0.00 Ltr @ Rs. 0.00 = Rs. 0.00</strong>
+                                                    <div class="d-flex justify-content-between text-secondary gap-1 mt-0.5">
+                                                        <span>Post-12 AM:</span>
+                                                        <strong class="text-success text-end" id="post_calc_{{ $nIndex }}">0.00 Ltr @ Rs. 0.00 = Rs. 0.00</strong>
                                                     </div>
                                                 </div>
                                                 <input type="hidden" name="nozzles[{{ $nIndex }}][old_rate_liters]" id="old_ltr_{{ $nIndex }}" value="0.00">
-                                                <input type="hidden" name="nozzles[{{ $nIndex }}][new_rate_liters]" id="new_ltr_{{ $nIndex }}" value="0.00">
                                                 <input type="hidden" name="nozzles[{{ $nIndex }}][old_rate_subtotal]" id="old_sub_{{ $nIndex }}" value="0.00">
                                                 <input type="hidden" name="nozzles[{{ $nIndex }}][new_rate_subtotal]" id="new_sub_{{ $nIndex }}" value="0.00">
                                             </div>
@@ -815,41 +860,145 @@
         const chk = document.getElementById('rate_change_check_' + nIndex);
         const splitBox = document.getElementById('midnight_split_' + nIndex);
         const badge = document.getElementById('split_badge_' + nIndex);
+        const rateInput = document.getElementById('rate_' + nIndex);
+        const rateOverrideBadge = document.getElementById('rate_override_badge_' + nIndex);
         if (chk && chk.checked) {
             splitBox.style.display = 'block';
             badge.style.display = 'inline-block';
+            if (rateOverrideBadge) rateOverrideBadge.style.display = 'inline-block';
+            if (rateInput) rateInput.classList.add('text-muted', 'bg-light');
         } else {
             splitBox.style.display = 'none';
             badge.style.display = 'none';
+            if (rateOverrideBadge) rateOverrideBadge.style.display = 'none';
+            if (rateInput) rateInput.classList.remove('text-muted', 'bg-light');
         }
         calculateNozzleRow(nIndex);
+    }
+
+    function onPostMidnightLitersInput(nIndex) {
+        const modeEl = document.getElementById('split_mode_' + nIndex);
+        if (modeEl) modeEl.value = 'liters';
+        calculateNozzleRow(nIndex);
+    }
+
+    function onMidnightReadingInput(nIndex) {
+        const modeEl = document.getElementById('split_mode_' + nIndex);
+        if (modeEl) modeEl.value = 'reading';
+        calculateNozzleRow(nIndex);
+    }
+
+    function setNozzleSplitError(nIndex, msg, targetInputId = null) {
+        const errEl = document.getElementById('split_error_' + nIndex);
+        const newLtrInp = document.getElementById('new_ltr_' + nIndex);
+        const midInp = document.getElementById('midnight_' + nIndex);
+
+        if (newLtrInp) newLtrInp.classList.remove('is-invalid');
+        if (midInp) midInp.classList.remove('is-invalid');
+
+        if (msg) {
+            if (errEl) {
+                errEl.textContent = msg;
+                errEl.style.display = 'block';
+            }
+            if (targetInputId) {
+                const target = document.getElementById(targetInputId);
+                if (target) target.classList.add('is-invalid');
+            }
+        } else {
+            if (errEl) {
+                errEl.textContent = '';
+                errEl.style.display = 'none';
+            }
+        }
     }
 
     function calculateNozzleRow(nIndex) {
         const start = parseFloat(document.getElementById('start_' + nIndex).value) || 0;
         const end = parseFloat(document.getElementById('end_' + nIndex).value) || 0;
-        const test = parseFloat(document.getElementById('testing_' + nIndex).value) || 0;
-        const rate = parseFloat(document.getElementById('rate_' + nIndex).value) || 0;
+        const test = Math.max(0, parseFloat(document.getElementById('testing_' + nIndex).value) || 0);
+        const rate = Math.max(0, parseFloat(document.getElementById('rate_' + nIndex).value) || 0);
         const chk = document.getElementById('rate_change_check_' + nIndex);
 
-        let soldLtr = 0;
+        const meterDiff = Math.max(0, end - start);
+        const netSold = Math.max(0, meterDiff - test);
+        let soldLtr = netSold;
         let subtotal = 0;
 
-        if (chk && chk.checked) {
-            const mid = parseFloat(document.getElementById('midnight_' + nIndex).value) || 0;
-            const oldRate = parseFloat(document.getElementById('old_rate_' + nIndex).value) || 0;
-            const newRate = parseFloat(document.getElementById('new_rate_' + nIndex).value) || 0;
+        setNozzleSplitError(nIndex, '');
 
-            const oldLtr = Math.max(0, mid - start);
-            const newLtr = Math.max(0, (end - mid) - test);
-            const oldSub = oldLtr * oldRate;
-            const newSub = newLtr * newRate;
+        if (chk && chk.checked) {
+            const oldRate = Math.max(0, parseFloat(document.getElementById('old_rate_' + nIndex).value) || 0);
+            const newRate = Math.max(0, parseFloat(document.getElementById('new_rate_' + nIndex).value) || 0);
+            const mode = document.getElementById('split_mode_' + nIndex)?.value || 'liters';
+            const newLtrEl = document.getElementById('new_ltr_' + nIndex);
+            const midEl = document.getElementById('midnight_' + nIndex);
+
+            let oldLtr = netSold;
+            let newLtr = 0;
+
+            if (mode === 'reading') {
+                const midRaw = midEl ? midEl.value.trim() : '';
+                if (midRaw !== '') {
+                    const mid = parseFloat(midRaw);
+                    if (isNaN(mid) || mid < start || mid > end) {
+                        setNozzleSplitError(
+                            nIndex,
+                            `Reading must be between ${start.toFixed(2)} and ${end.toFixed(2)}.`,
+                            'midnight_' + nIndex
+                        );
+                        const clampedMid = isNaN(mid) ? start : Math.min(Math.max(mid, start), end);
+                        const preM = Math.max(0, clampedMid - start);
+                        const postM = Math.max(0, end - clampedMid);
+                        const dedPost = Math.min(test, postM);
+                        newLtr = Math.max(0, postM - dedPost);
+                        oldLtr = Math.max(0, preM - (test - dedPost));
+                    } else {
+                        const preM = Math.max(0, mid - start);
+                        const postM = Math.max(0, end - mid);
+                        const dedPost = Math.min(test, postM);
+                        newLtr = Math.max(0, postM - dedPost);
+                        oldLtr = Math.max(0, preM - (test - dedPost));
+                        if (newLtrEl) newLtrEl.value = newLtr.toFixed(2);
+                    }
+                } else {
+                    oldLtr = netSold;
+                    newLtr = 0;
+                    if (newLtrEl) newLtrEl.value = '';
+                }
+            } else {
+                const rawNewLtr = newLtrEl ? newLtrEl.value.trim() : '';
+                const enteredNew = rawNewLtr === '' ? 0 : parseFloat(rawNewLtr);
+
+                if (rawNewLtr !== '' && (isNaN(enteredNew) || enteredNew < 0)) {
+                    setNozzleSplitError(nIndex, 'Post-12 AM liters cannot be negative.', 'new_ltr_' + nIndex);
+                    newLtr = 0;
+                    oldLtr = netSold;
+                } else if (enteredNew > netSold + 0.001) {
+                    setNozzleSplitError(
+                        nIndex,
+                        `Post-12 AM liters (${enteredNew.toFixed(2)}) cannot exceed net sold (${netSold.toFixed(2)} Ltr).`,
+                        'new_ltr_' + nIndex
+                    );
+                    newLtr = netSold;
+                    oldLtr = 0;
+                } else {
+                    newLtr = Math.max(0, enteredNew);
+                    oldLtr = Math.max(0, netSold - newLtr);
+                }
+
+                if (midEl) {
+                    midEl.value = rawNewLtr !== '' ? (start + oldLtr).toFixed(2) : '';
+                }
+            }
+
+            const oldSub = Math.round(oldLtr * oldRate * 100) / 100;
+            const newSub = Math.round(newLtr * newRate * 100) / 100;
 
             soldLtr = oldLtr + newLtr;
             subtotal = oldSub + newSub;
 
             document.getElementById('old_ltr_' + nIndex).value = oldLtr.toFixed(2);
-            document.getElementById('new_ltr_' + nIndex).value = newLtr.toFixed(2);
             document.getElementById('old_sub_' + nIndex).value = oldSub.toFixed(2);
             document.getElementById('new_sub_' + nIndex).value = newSub.toFixed(2);
 
@@ -862,9 +1011,8 @@
                 postCalc.textContent = `${newLtr.toFixed(2)} Ltr @ Rs. ${newRate.toFixed(2)} = Rs. ${newSub.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             }
         } else {
-            const meterDiff = Math.max(0, end - start);
-            soldLtr = Math.max(0, meterDiff - test);
-            subtotal = soldLtr * rate;
+            soldLtr = netSold;
+            subtotal = Math.round(soldLtr * rate * 100) / 100;
         }
 
         document.getElementById('liters_display_' + nIndex).textContent = soldLtr.toFixed(2) + ' Ltr';
@@ -1239,11 +1387,23 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Calculate all pre-loaded nozzles
+        // Calculate all pre-loaded nozzles (and restore midnight rate split boxes if checked)
         @foreach($pumps as $pump)
-            calculateNozzleRow({{ $pump->id }});
+            toggleMidnightRateChange({{ $pump->id }});
         @endforeach
         calculateDenominations();
+
+        const closingForm = document.getElementById('shiftClosingForm');
+        if (closingForm) {
+            closingForm.addEventListener('submit', function (e) {
+                const invalidSplit = closingForm.querySelector('[id^="midnight_split_"] .is-invalid');
+                if (invalidSplit) {
+                    e.preventDefault();
+                    invalidSplit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    invalidSplit.focus();
+                }
+            });
+        }
 
         // Restore old expenses on validation failure, or auto-add one blank expense row on initial load
         @if(old('counter_expenses'))
